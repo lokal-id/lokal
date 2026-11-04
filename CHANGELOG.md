@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format is based on 
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-05
+
 Fixes for the third round of the independent evaluation, and for everything a full end-to-end audit of every tool and feature found after it, with tests in this repository's own words.
 
 ### Changed
@@ -462,7 +464,8 @@ First public release.
 - Claude Code plugin and marketplace manifests.
 - End-to-end evaluation against real Claude Code sessions (`npm run eval`).
 
-[Unreleased]: https://github.com/lokal-id/lokal/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/lokal-id/lokal/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/lokal-id/lokal/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/lokal-id/lokal/compare/v0.16.1...v0.17.0
 [0.16.1]: https://github.com/lokal-id/lokal/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/lokal-id/lokal/compare/v0.15.0...v0.16.0

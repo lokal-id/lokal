@@ -456,7 +456,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: lokal-id/lokal@v0.17.0
+      - uses: lokal-id/lokal@v0.18.0
         # with:
         #   scope: all              # semua file yang dilacak git, bukan hanya perubahan
         #   min-confidence: medium  # termasuk nilai tanpa label atau nama kolom
@@ -475,7 +475,7 @@ repos:
         name: Data pribadi Indonesia
         entry: lokal-mcp scan --staged
         language: node
-        additional_dependencies: ['@lokal-id/mcp@0.17.0']
+        additional_dependencies: ['@lokal-id/mcp@0.18.0']
         pass_filenames: false
 ```
 
@@ -692,10 +692,10 @@ Guard sengaja meloloskan satu nilai biasa, misalnya satu nomor HP di hasil `grep
 |---|---|---|---|---|
 | 0.8.3: semua 6.160 nilai | 96,7% | 91,3% | 94,0% | 93,4–94,6% |
 | 0.9.0: semua 6.160 nilai | 99,8% | 95,8% | 96,6% | 96,1–97,0% |
-| **0.17.0: semua 6.160 nilai** | **99,8%** | **97,2%** | **97,3%** | 96,9–97,7% |
-| 0.17.0, NIK (0.9.0: 88,1%) | | | 100% | 98,8–100% |
-| 0.17.0, terlemah: agama | | | 85,7% | 81,1–89,3% |
-| 0.17.0, terlemah: nama | | | 93,6% | 92,4–94,6% |
+| **0.18.0: semua 6.160 nilai** | **99,8%** | **97,2%** | **97,3%** | 96,9–97,7% |
+| 0.18.0, NIK (0.9.0: 88,1%) | | | 100% | 98,8–100% |
+| 0.18.0, terlemah: agama | | | 85,7% | 81,1–89,3% |
+| 0.18.0, terlemah: nama | | | 93,6% | 92,4–94,6% |
 | 0.13.0 dengan model NER opsional (Python): semua nilai | 99,8% | 97,9% | 98,7% | 98,4–98,9% |
 | 0.13.0 dengan model NER opsional (Python): nama | | | 98,1% | 97,4–98,6% |
 | 0.14.0 dengan model NER opsional (Python, `gold`): semua nilai | 99,6% | 98,4% | 99,2% | 98,9–99,4% |
