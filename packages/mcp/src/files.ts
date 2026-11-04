@@ -1,4 +1,5 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
+import { homedir } from 'node:os';
 import { gunzipSync } from 'node:zlib';
 import {
   closeSync, existsSync, fstatSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, readSync, realpathSync,
@@ -173,14 +174,15 @@ export function loadInRoot(root: string, p: string): { abs: string; doc: Documen
  * Writes `data` to `p` inside `root`: into a new file with a random name next to it, checked like a read, then renamed
  * into place. A swap after the check can only move the new file, whose name nobody knows, and the rename then fails.
  */
-export function writeInRoot(root: string, p: string, data: string): string {
+export function writeInRoot(root: string, p: string, data: string, encoding: TextEncoding = 'utf8'): string {
   const abs = resolveInRoot(root, p);
   mkdirSync(path.dirname(abs), { recursive: true });
-  const tmp = path.join(path.dirname(abs), `.${path.basename(abs)}.${randomBytes(8).toString('hex')}.tmp`);
+  // The name kept short enough that a file name the system allows (255) still has room for the random part.
+  const tmp = path.join(path.dirname(abs), `.${path.basename(abs).slice(0, 200)}.${randomBytes(8).toString('hex')}.tmp`);
   const fd = openChecked(root, p, tmp, 'wx');
   let written = false;
   try {
-    writeSync(fd, data, 0, 'utf8');
+    writeSync(fd, encodeText(data, encoding));
     closeSync(fd);
     written = true;
     renameSync(tmp, abs);
@@ -192,17 +194,90 @@ export function writeInRoot(root: string, p: string, data: string): string {
   return abs;
 }
 
+export type TextEncoding = 'utf8' | 'latin1' | 'utf16le' | 'utf16be';
+
+// ignoreBOM: a BOM stays in the text, so the file is written back with it.
+const UTF8 = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+
+/**
+ * A text file's text. UTF-8 when it is valid UTF-8; otherwise read byte for byte as Latin-1, so an old export
+ * ("José" saved in Windows-1252) keeps its letters instead of turning them into U+FFFD, and is written back the same.
+ * A buffer cut in the middle of a character (a sample) is still UTF-8.
+ */
+export function decodeText(buf: Buffer, sample = false): { text: string; encoding?: TextEncoding } {
+  const utf16 = utf16Of(buf.subarray(0, 8000));
+  if (utf16) {
+    // A BOM stays in the text (U+FEFF), so the file is written back with it; a sample keeps whole characters.
+    const whole = buf.subarray(0, buf.length & ~1);
+    return { text: new TextDecoder(utf16 === 'utf16le' ? 'utf-16le' : 'utf-16be', { ignoreBOM: true }).decode(whole), encoding: utf16 };
+  }
+  for (let cut = 0; cut <= (sample ? 3 : 0) && cut < buf.length; cut++) {
+    if (cut && !unfinishedChar(buf.subarray(buf.length - cut))) continue;
+    try {
+      const text = UTF8.decode(buf.subarray(0, buf.length - cut));
+      return { text: cut ? text + buf.subarray(buf.length - cut).toString('utf8') : text };
+    } catch {
+      // Not UTF-8 up to there either.
+    }
+  }
+  if (!buf.length) return { text: '' };
+  return { text: buf.toString('latin1'), encoding: 'latin1' };
+}
+
+/** The start of a UTF-8 character that needs more bytes than `tail` has: a lead byte, then only continuation bytes. */
+function unfinishedChar(tail: Buffer): boolean {
+  const lead = tail[0]!;
+  const need = lead >= 0xf0 && lead <= 0xf4 ? 4 : lead >= 0xe0 && lead <= 0xef ? 3 : lead >= 0xc2 && lead <= 0xdf ? 2 : 0;
+  return need > tail.length && tail.subarray(1).every((b) => b >= 0x80 && b <= 0xbf);
+}
+
+/** Text as bytes in `encoding`; UTF-8 if it has a character Latin-1 cannot hold. */
+export function encodeText(text: string, encoding: TextEncoding = 'utf8'): Buffer {
+  if (encoding === 'utf16le') return Buffer.from(text, 'utf16le');
+  if (encoding === 'utf16be') return Buffer.from(text, 'utf16le').swap16();
+  if (encoding !== 'latin1') return Buffer.from(text, 'utf8');
+  for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) > 0xff) return Buffer.from(text, 'utf8');
+  return Buffer.from(text, 'latin1');
+}
+
 export function toPosix(p: string): string {
   return p.split(path.sep).join('/');
 }
 
-/** Binary files have NUL bytes early on; text files do not. */
+/**
+ * UTF-16 text: a byte order mark, or (without one) a zero in every other byte of mostly-ASCII text. What Windows
+ * PowerShell 5.1 writes with `>` and Out-File, and Notepad's "Unicode"; its zero bytes made it look binary.
+ */
+export function utf16Of(head: Buffer): 'utf16le' | 'utf16be' | undefined {
+  if (head[0] === 0xff && head[1] === 0xfe) return 'utf16le';
+  if (head[0] === 0xfe && head[1] === 0xff) return 'utf16be';
+  const n = Math.min(head.length, 8000) & ~1;
+  if (n < 8) return undefined;
+  let evenZero = 0;
+  let oddZero = 0;
+  for (let i = 0; i < n; i += 2) {
+    if (head[i] === 0) evenZero++;
+    if (head[i + 1] === 0) oddZero++;
+  }
+  const pairs = n / 2;
+  if (oddZero >= pairs * 0.9 && evenZero === 0) return 'utf16le';
+  if (evenZero >= pairs * 0.9 && oddZero === 0) return 'utf16be';
+  return undefined;
+}
+
+/** Binary data: NUL bytes early on that are not UTF-16 text. */
+export function looksBinary(buf: Buffer): boolean {
+  const head = buf.subarray(0, 8000);
+  return head.includes(0) && !utf16Of(head);
+}
+
+/** Binary files have NUL bytes early on; text files (UTF-16 too) do not, apart from UTF-16's own. */
 export function isTextFile(file: string): boolean {
   const fd = openSync(file, 'r');
   try {
     const buf = Buffer.alloc(8000);
     const n = readSync(fd, buf, 0, buf.length, 0);
-    return !buf.subarray(0, n).includes(0);
+    return !looksBinary(buf.subarray(0, n));
   } finally {
     closeSync(fd);
   }
@@ -273,6 +348,8 @@ export interface SamaranConfig {
   guard?: 'strict';
   /** Names without a label or cue, from Lokal's NER model (@lokal-id/ner), in what the server and proxy mask. */
   ner?: boolean;
+  /** Settings that would weaken protection and were left out, as the user has not approved this file (`lokal-mcp trust`). */
+  untrusted?: string[];
 }
 
 /** Built-in types whose policy is `allow`: the model may see them. */
@@ -309,12 +386,22 @@ export function underPolicy(
  *
  * A file that is there but wrong throws: a rule that silently did nothing would mask less than the team expects.
  */
-export function loadConfig(root: string): SamaranConfig {
+export function loadConfig(root: string, options: { trusted?: boolean } = {}): SamaranConfig {
   const file = path.join(root, '.samaran.json');
   if (!existsSync(file)) return { custom: [], allow: [] };
+  return parseConfig(readFileSync(file, 'utf8'), root, options.trusted ?? trustedFiles(root).has('.samaran.json'));
+}
+
+/**
+ * A `.samaran.json` from its text. What makes protection weaker (values allowed through, a type the model may see or
+ * that goes to another endpoint, a longer vault) applies only when `trusted`: the user approved this very file on
+ * their machine (`lokal-mcp trust`), or it is the reviewed version a scan compares with. A repository that was cloned,
+ * or an agent that edited the file, cannot turn masking off. What makes it stricter always applies.
+ */
+export function parseConfig(text: string, root: string, trusted: boolean): SamaranConfig {
   let raw: unknown;
   try {
-    raw = JSON.parse(readFileSync(file, 'utf8'));
+    raw = JSON.parse(text.replace(/^﻿/, ''));
   } catch (e) {
     throw new Error(`.samaran.json is not valid JSON: ${(e as Error).message}`);
   }
@@ -372,6 +459,8 @@ export function loadConfig(root: string): SamaranConfig {
     for (const [k, v] of Object.entries({ openai, anthropic })) {
       if (v === undefined) continue;
       if (typeof v !== 'string' || !/^https?:\/\//.test(v)) fail(`route.${k} must be an http(s) URL`);
+      // Routed requests go unmasked: only to a model on this machine or the local network.
+      if (!localEndpoint(v as string)) fail(`route.${k} must be on this machine or the local network (localhost, 127.0.0.1, 10.x, 192.168.x, *.local), not ${v}`);
     }
     if (model !== undefined && typeof model !== 'string') fail('route.model must be a string');
     config.route = { openai: openai as string | undefined, anthropic: anthropic as string | undefined, model: model as string | undefined };
@@ -383,6 +472,7 @@ export function loadConfig(root: string): SamaranConfig {
   if (audit !== undefined && audit !== false) {
     if (audit !== true && (typeof audit !== 'string' || !audit.trim())) fail('"audit" must be true or a file path');
     config.audit = path.resolve(root, audit === true ? '.lokal/audit.jsonl' : (audit as string));
+    if (outside(path.resolve(root), config.audit)) fail('"audit" must be a file inside the project');
   }
   if (vaultTtlMinutes !== undefined) {
     if (typeof vaultTtlMinutes !== 'number' || !(vaultTtlMinutes > 0)) fail('"vaultTtlMinutes" must be a positive number');
@@ -397,7 +487,183 @@ export function loadConfig(root: string): SamaranConfig {
     if (typeof ner !== 'boolean') fail('"ner" must be true or false');
     if (ner) config.ner = true;
   }
-  return config;
+  return trusted ? config : withoutWeakening(config);
+}
+
+/** The vault is forgotten after this long without use, unless the project's approved config says otherwise. */
+export const DEFAULT_VAULT_TTL_MINUTES = 60;
+
+/** A config with what would weaken protection taken out, listing what was left out in `untrusted`. */
+function withoutWeakening(config: SamaranConfig): SamaranConfig {
+  const left: string[] = [];
+  const out: SamaranConfig = { ...config };
+  if (config.allow.length) {
+    left.push('"allow"');
+    out.allow = [];
+  }
+  if (config.policy) {
+    const weak = Object.entries(config.policy).filter(([, action]) => action === 'allow' || action === 'route');
+    if (weak.length) {
+      left.push(...weak.map(([key, action]) => `policy ${key}: "${action}"`));
+      out.policy = Object.fromEntries(Object.entries(config.policy).filter(([, action]) => action !== 'allow' && action !== 'route'));
+    }
+  }
+  if (config.route) {
+    left.push('"route"');
+    delete out.route;
+  }
+  if (config.vaultTtlMinutes !== undefined && config.vaultTtlMinutes > DEFAULT_VAULT_TTL_MINUTES) {
+    left.push(`"vaultTtlMinutes": ${config.vaultTtlMinutes}`);
+    delete out.vaultTtlMinutes;
+  }
+  if (left.length) out.untrusted = left;
+  return out;
+}
+
+/**
+ * Why a tool must not write to `abs`, or undefined: Lokal's own settings and records, git's internals and hooks, and
+ * the agent's settings. Real values have no place there, and writing them is how an agent would switch protection off.
+ */
+export function protectedPath(root: string, abs: string): string | undefined {
+  const rel = toPosix(path.relative(root, abs));
+  const [first] = rel.split('/');
+  const name = path.basename(abs).toLowerCase();
+  if (name === '.samaran.json' || name === '.samaranignore') return `${rel} is Lokal's configuration`;
+  if (first === '.lokal') return `${rel} is Lokal's own record`;
+  if (first === '.git') return `${rel} is inside git's folder (hooks run commands)`;
+  if (first === '.claude' || first === '.cursor' || first === '.gemini' || first === '.codex') return `${rel} holds the agent's settings`;
+  return undefined;
+}
+
+/**
+ * A name Windows keeps for a device (CON, NUL, COM1, …, with any extension), or one it changes (a trailing dot or
+ * space, a stream after ":"): writing there does not make the file asked for, so it is refused on every OS.
+ */
+export function reservedName(abs: string): string | undefined {
+  const name = path.basename(abs);
+  if (/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i.test(name)) return `${name} is a device name on Windows, not a file`;
+  if (/[. ]$/.test(name) || name.includes(':')) return `${name} is not a plain file name (a trailing dot or space, or a ":" stream)`;
+  return undefined;
+}
+
+/** localhost, a loopback or private address, or a .local / .internal name: a model on this machine or network. */
+export function localEndpoint(url: string): boolean {
+  let host: string;
+  try {
+    host = new URL(url).hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  } catch {
+    return false;
+  }
+  // A name without a dot (a Docker Compose service such as "ollama") resolves only on the local network.
+  return host === 'localhost' || host === '::1' || host === '0.0.0.0' || !host.includes('.') || /\.(?:local|internal|localhost)$/.test(host)
+    || /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(?:1[6-9]|2\d|3[01])\./.test(host)
+    || /^f[cd][0-9a-f]{2}:/.test(host);
+}
+
+// ------------------------------------------------------------------------------------------------ trust
+//
+// What a repository's .samaran.json and .samaranignore may relax applies only once the user approved those very
+// files on their machine: `lokal-mcp trust` records their SHA-256 in the user's cache, and any change to a file (by a
+// pull, or by an agent) needs approval again. The guard does not let an agent run `trust` or write the record.
+
+const TRUSTABLE = ['.samaran.json', '.samaranignore'] as const;
+
+/** Lokal's folder in the user's cache: LOKAL_CACHE_DIR, %LOCALAPPDATA%, or ~/.cache. */
+export function cacheDir(): string {
+  const base = process.env.LOKAL_CACHE_DIR ?? (process.platform === 'win32'
+    ? (process.env.LOCALAPPDATA ?? path.join(homedir(), 'AppData', 'Local'))
+    : (process.env.XDG_CACHE_HOME ?? path.join(homedir(), '.cache')));
+  return path.join(base, 'lokal-id');
+}
+
+/** A key for a project: the hash of its real path. */
+function projectKey(root: string): string {
+  let real = root;
+  try {
+    real = realpathSync.native(root);
+  } catch {
+    // a root that does not exist yet keeps its own path
+  }
+  return createHash('sha256').update(process.platform === 'win32' ? real.toLowerCase() : real).digest('hex').slice(0, 32);
+}
+
+export const trustStore = () => path.join(cacheDir(), 'trust.json');
+
+function digest(root: string, name: string): string | undefined {
+  try {
+    return createHash('sha256').update(readFileSync(path.join(root, name))).digest('hex');
+  } catch {
+    return undefined;
+  }
+}
+
+function readTrust(): Record<string, Record<string, string>> {
+  try {
+    const all = JSON.parse(readFileSync(trustStore(), 'utf8')) as unknown;
+    return all && typeof all === 'object' && !Array.isArray(all) ? (all as Record<string, Record<string, string>>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Which of .samaran.json and .samaranignore the user approved as they are now. */
+export function trustedFiles(root: string): Set<string> {
+  const record = readTrust()[projectKey(root)] ?? {};
+  return new Set(TRUSTABLE.filter((name) => {
+    const now = digest(root, name);
+    return now !== undefined && record[name] === now;
+  }));
+}
+
+/** The SHA-256 of the project's .samaran.json and .samaranignore as they are now (the ones that exist). */
+export function trustDigests(root: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const name of TRUSTABLE) {
+    const now = digest(root, name);
+    if (now !== undefined) out[name] = now;
+  }
+  return out;
+}
+
+/**
+ * Approves the project's .samaran.json and .samaranignore as they are now; returns the files approved. `only` limits
+ * it to some of them (init approves what it wrote, not a file that was already there); `expected` approves a file only
+ * if it is still what the user was shown (a file changed while they read it is not approved). Other approvals stay.
+ */
+export function recordTrust(root: string, only?: readonly string[], expected?: Record<string, string>): string[] {
+  const all = readTrust();
+  const key = projectKey(root);
+  const now = trustDigests(root);
+  const record: Record<string, string> = {};
+  // Earlier approvals of the files left alone stay while those files are unchanged.
+  for (const [name, hash] of Object.entries(all[key] ?? {})) {
+    if (only && !only.includes(name) && now[name] === hash) record[name] = hash;
+  }
+  const approved: string[] = [];
+  for (const name of TRUSTABLE) {
+    if (only && !only.includes(name)) continue;
+    const hash = now[name];
+    if (hash === undefined || (expected && expected[name] !== hash)) continue;
+    record[name] = hash;
+    approved.push(name);
+  }
+  all[key] = record;
+  mkdirSync(path.dirname(trustStore()), { recursive: true });
+  writeFileSync(trustStore(), `${JSON.stringify(all, null, 2)}\n`);
+  return approved;
+}
+
+/** Withdraws the approval for a project. */
+export function revokeTrust(root: string): void {
+  const all = readTrust();
+  delete all[projectKey(root)];
+  mkdirSync(path.dirname(trustStore()), { recursive: true });
+  writeFileSync(trustStore(), `${JSON.stringify(all, null, 2)}\n`);
+}
+
+/** Whether the project has a .samaranignore the user has not approved (it is then not applied). */
+export function untrustedIgnore(root: string): boolean {
+  return existsSync(path.join(root, '.samaranignore')) && !trustedFiles(root).has('.samaranignore');
 }
 
 /** detectPii with the project's own rules, minus the values it allows. */
@@ -413,28 +679,45 @@ export function detectConfigured(text: string, options: DetectOptions, config: S
 // Only paths, never contents; in .lokal/, which is kept out of git.
 const UNMASKED_LIST = path.join('.lokal', 'unmasked.json');
 
-/** The files write_file_unmasked wrote in this project, as absolute paths. */
-export function loadUnmasked(root: string): string[] {
+/**
+ * The same list outside the project, in the user's cache (keyed by the project's real path): an agent that deletes or
+ * empties .lokal/unmasked.json does not make the files readable again, and the guard holds back commands that touch
+ * either copy.
+ */
+export function unmaskedCopy(root: string): string {
+  return path.join(cacheDir(), 'unmasked', `${projectKey(root)}.json`);
+}
+
+function readList(file: string, root: string): string[] {
   try {
-    const list = JSON.parse(readFileSync(path.join(root, UNMASKED_LIST), 'utf8')) as { files?: unknown };
+    const list = JSON.parse(readFileSync(file, 'utf8')) as { files?: unknown };
     return Array.isArray(list.files) ? list.files.filter((f): f is string => typeof f === 'string').map((f) => path.resolve(root, f)) : [];
   } catch {
     return [];
   }
 }
 
-/** Adds a file write_file_unmasked wrote to the list. Never throws: the write itself already happened. */
+/** The files write_file_unmasked wrote in this project, as absolute paths: both copies of the list together. */
+export function loadUnmasked(root: string): string[] {
+  return [...new Set([...readList(path.join(root, UNMASKED_LIST), root), ...readList(unmaskedCopy(root), root)])];
+}
+
+/** Adds a file write_file_unmasked wrote to both lists. Never throws: the write itself already happened. */
 export function recordUnmasked(root: string, file: string): void {
   try {
     const rel = toPosix(path.relative(root, file));
     const known = loadUnmasked(root).map((f) => toPosix(path.relative(root, f)));
-    if (known.includes(rel)) return;
+    const files = known.includes(rel) ? known : [...known, rel];
+    const text = `${JSON.stringify({ files }, null, 2)}\n`;
     const dir = path.join(root, '.lokal');
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
       writeFileSync(path.join(dir, '.gitignore'), '*\n');
     }
-    writeInRoot(root, UNMASKED_LIST, `${JSON.stringify({ files: [...known, rel] }, null, 2)}\n`);
+    writeInRoot(root, UNMASKED_LIST, text);
+    const copy = unmaskedCopy(root);
+    mkdirSync(path.dirname(copy), { recursive: true });
+    writeFileSync(copy, text);
   } catch (e) {
     process.stderr.write(`lokal: could not record ${file} as holding real data: ${(e as Error).message}\n`);
   }
@@ -444,10 +727,14 @@ export function recordUnmasked(root: string, file: string): void {
  * `.samaranignore` at the project root: gitignore-like patterns for files known to hold
  * only fake data (test fixtures, seeders). Patterns without "/" match the file name anywhere.
  */
-export function loadIgnore(root: string): (absPath: string) => boolean {
+export function loadIgnore(root: string, options: { trusted?: boolean; text?: string } = {}): (absPath: string) => boolean {
   const file = path.join(root, '.samaranignore');
-  if (!existsSync(file)) return () => false;
-  const rules = readFileSync(file, 'utf8')
+  const text = options.text ?? (existsSync(file) ? readFileSync(file, 'utf8') : undefined);
+  if (text === undefined) return () => false;
+  // Files left out of every check: only when the user approved this list (`lokal-mcp trust`), or it is the reviewed
+  // version a scan compares with. A cloned repository or an agent cannot add `*` to it.
+  if (!(options.trusted ?? trustedFiles(root).has('.samaranignore'))) return () => false;
+  const rules = text
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter((l) => l && !l.startsWith('#'))
@@ -478,7 +765,8 @@ export function loadIgnore(root: string): (absPath: string) => boolean {
 
 export type Document =
   /** `sampled`: only the first `sampleBytes`, cut at a line break. */
-  | { kind: 'text'; text: string; sampled?: boolean }
+  /** `encoding`: 'latin1' for a file that is not UTF-8 (an old export in Windows-1252 or ISO-8859-1), read byte for byte. */
+  | { kind: 'text'; text: string; sampled?: boolean; encoding?: TextEncoding }
   /**
    * Spreadsheet sheets, a Word document's text and tables (`unit: 'part'`), or a PDF's pages (`unit: 'page'`).
    * `unscanned` says what could not be read, such as scanned pages in an otherwise text-based PDF.
@@ -509,7 +797,7 @@ function readHead(file: string, bytes: number): string {
   try {
     const buf = Buffer.alloc(bytes);
     const n = readSync(fd, buf, 0, bytes, 0);
-    const text = buf.subarray(0, n).toString('utf8');
+    const text = decodeText(buf.subarray(0, n), true).text;
     const lastBreak = text.lastIndexOf('\n');
     return lastBreak > 0 ? text.slice(0, lastBreak) : text;
   } finally {
@@ -601,11 +889,11 @@ function gunzipText(buf: Buffer, sampleBytes?: number): Document {
   } catch (e) {
     return unsupported(/maxOutputLength|buffer length/i.test((e as Error).message) ? `unpacks to more than ${mb(MAX_FILE_BYTES)}` : 'damaged gzip file');
   }
-  if (text.subarray(0, 8000).includes(0)) return unsupported('archive');
+  if (looksBinary(text)) return unsupported('archive');
   if (sampleBytes !== undefined && text.length > sampleBytes) {
-    return { kind: 'text', text: text.subarray(0, sampleBytes).toString('utf8').replace(/\n[^\n]*$/, '\n'), sampled: true };
+    return { kind: 'text', text: decodeText(text.subarray(0, sampleBytes), true).text.replace(/\n[^\n]*$/, '\n'), sampled: true };
   }
-  return { kind: 'text', text: text.toString('utf8') };
+  return { kind: 'text', ...decodeText(text) };
 }
 const GZIPPED_TEXT = /\.gz$/i;
 const isGzippedText = (file: string) => GZIPPED_TEXT.test(file) && !/\.tar\.gz$/i.test(file);
@@ -627,7 +915,7 @@ export function loadDocument(file: string, options: LoadOptions = {}): Document 
   if (options.sampleBytes !== undefined && st.size > options.sampleBytes) {
     return { kind: 'text', text: readHead(file, options.sampleBytes), sampled: true };
   }
-  return { kind: 'text', text: readFileSync(file, 'utf8') };
+  return { kind: 'text', ...decodeText(readFileSync(file)) };
 }
 
 /** Like loadDocument, for content that is not on disk, such as a file staged in git. */
@@ -638,6 +926,6 @@ export function loadBuffer(name: string, buf: Buffer): Document {
   if (PARSED_WHOLE.has(ext)) return parseWhole(ext, buf);
   const why = UNSUPPORTED_DATA[ext];
   if (why) return unsupported(why);
-  if (buf.subarray(0, 8000).includes(0)) return unsupported('binary file', false);
-  return { kind: 'text', text: buf.toString('utf8') };
+  if (looksBinary(buf)) return unsupported('binary file', false);
+  return { kind: 'text', ...decodeText(buf) };
 }

@@ -123,9 +123,22 @@ class KembaranTextsResult(Result):
 
 # Numbers looked up across inputs. Shorter or other numbers (amounts, IDs) are too common to look up.
 _CROSS_DIGITS = frozenset(('NIK', 'KK', 'NPWP', 'PHONE', 'BANK_ACCOUNT', 'CARD', 'BPJS', 'SIM', 'NIP', 'NISN'))
+# Titles that say whether a stand-in name must be a man's or a woman's.
+_MALE_TITLES = {
+    'pak', 'bapak', 'bpk', 'bp', 'mas', 'bang', 'abang', 'tn', 'tuan', 'sdr', 'saudara',
+    'kang', 'akang', 'koko', 'om', 'h',
+}
+_FEMALE_TITLES = {
+    'bu', 'ibu', 'mbak', 'mba', 'ny', 'nyonya', 'nn', 'nona', 'sdri', 'saudari', 'teh', 'teteh', 'cici', 'tante', 'hj',
+}
+_TITLE_BEFORE = re.compile(r'([A-Za-z]+)\.?\s+$')
+# Sixteen digits with any of these separators, or none, wherever they are: the NIK backstop of `texts`.
+_NIK_SWEEP = re.compile(r'(?<![0-9])[0-9](?:[ ./_-]?[0-9]){15}(?![0-9])')
 _CROSS_DIGIT_RUN = re.compile(r'(?<![A-Za-z0-9_+])\+?[0-9](?:[ .-]?[0-9]){7,18}(?![A-Za-z0-9_])')
 _CROSS_EMAIL = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
 _NAME_WORD = re.compile(r"[A-Za-z'’-]{2,}")
+_EMAIL_LOCAL_END = re.compile(r'\s*(?:@|\[at\]|\(at\))', re.IGNORECASE)
+_EMAIL_NAME_LOCAL = re.compile(r'([a-z]{2,}(?:([._-])[a-z]{2,})*)(\d*)')
 
 
 def _digit_key(pii_type: str, digits: str) -> str:
@@ -293,6 +306,8 @@ class Kembaran:
         self._nik_days: dict[str, _Day] = {}
         # Canonical real values of the inputs given to `texts`: no stand-in may be one of them.
         self._originals: dict[str, set[str]] = {}
+        # The title right before the name being replaced ("pak", "bu"), for its stand-in's gender.
+        self._title_before: Optional[str] = None
 
     def text(self, text: str) -> KembaranResult:
         """Replaces every piece of personal data in a text: a CSV, an SQL dump, JSON, a log, or prose."""
@@ -325,12 +340,13 @@ class Kembaran:
                     core = self._name_core(m.value)
                     if len(core) >= 2 and all(_NAME_WORD.fullmatch(w) for w in core):
                         names.add(' '.join(w.lower() for w in core))
-        # A backstop that does not depend on the detector: any run of 16 digits, however it is separated, that is a
-        # valid NIK by its structure is taken for one, replaced, and counted if it is left. A NIK the detector misses
-        # ("3276.0101.0180.0001" before 0.17.0) must never pass through an "anonymized" file unseen.
+        # A backstop that does not depend on the detector: any run of 16 digits, separated by spaces, dots, dashes,
+        # slashes, or underscores or not at all, and inside a word or a path too ("scan_ktp_3275_0412_0592_0003.pdf"),
+        # that is a valid NIK by its structure is taken for one, replaced, and counted if it is left. A NIK the detector
+        # misses must never pass through an "anonymized" file unseen.
         if 'NIK' not in self._keep:
             for text in inputs:
-                for run in _CROSS_DIGIT_RUN.finditer(text):
+                for run in _NIK_SWEEP.finditer(text):
                     d = _only_digits(run.group(0))
                     if len(d) != 16 or d in digits or not parse_nik(d).valid:
                         continue
@@ -360,6 +376,9 @@ class Kembaran:
                     pii_type = 'PHONE'
                 if pii_type is not None:
                     hits.append(_Hit(pii_type, m.start(), m.end(), m.group(0)))
+            for m in _NIK_SWEEP.finditer(text):
+                if digits.get(_only_digits(m.group(0))) == 'NIK':
+                    hits.append(_Hit('NIK', m.start(), m.end(), m.group(0)))
             for m in _CROSS_EMAIL.finditer(text):
                 if m.group(0).lower() in emails:
                     hits.append(_Hit('EMAIL', m.start(), m.end(), m.group(0)))
@@ -415,7 +434,12 @@ class Kembaran:
                 row_days[line] = day
         for i, m in enumerate(matches):
             if out[i] is None:
+                # The title right before a name ("Pak Rusdi") says whose name it is, though it is not part of the match.
+                if m.type == 'NAME':
+                    before = _TITLE_BEFORE.search(text[max(0, m.start - 12) : m.start])
+                    self._title_before = before.group(1).lower() if before else None
                 out[i] = self._value(m.type, m.value, row_days.get(line_of(m.start)))
+                self._title_before = None
         parts: list[str] = []
         cursor = 0
         replaced: dict[str, int] = {}
@@ -469,13 +493,64 @@ class Kembaran:
 
     def _canon(self, pii_type: str, value: str) -> str:
         if pii_type == 'NAME':
-            return ' '.join(t.lower() for t in self._name_core(value))
+            return ' '.join(t.lower() for t in self._name_words(value))
         return _canonical(pii_type, value)  # type: ignore[arg-type]
 
     @staticmethod
     def _name_core(name: str) -> list[str]:
         """The words of a name that identify the person: not honorifics, titles, or "bin"."""
         return [w for w in _js.split_ws(name) if w and w.lower().replace('.', '').replace(',', '') not in NAME_KEEP]
+
+    @classmethod
+    def _flipped(cls, name: str) -> int:
+        """How many words come after the comma in a name written family name first, "Santoso, Budi": 0 when it is not
+        written so. "Budi Santoso, S.Kom" has a degree after the comma, not a given name."""
+        parts = name.split(',')
+        if len(parts) != 2:
+            return 0
+        before = cls._name_core(parts[0])
+        after = cls._name_core(parts[1])
+        if before and after and all(_NAME_WORD.fullmatch(w) for w in [*before, *after]):
+            return len(after)
+        return 0
+
+    @classmethod
+    def _name_words(cls, name: str) -> list[str]:
+        """The identifying words in the order a name is said: given name first, also for "Santoso, Budi"."""
+        core = [w for w in (w.removesuffix(',') for w in cls._name_core(name)) if w]
+        k = cls._flipped(name)
+        return [*core[len(core) - k :], *core[: len(core) - k]] if k else core
+
+    def _email_from_name(self, email: str) -> Optional[str]:
+        """An address made from a name's stand-in, when its local part is a name in the data ("budi.santoso",
+        "siti_aminah", "budi.santoso87") or the given name of exactly one person in it ("siti"). The same separator
+        and as many digits."""
+        if 'NAME' in self._keep:
+            return None
+        local = _EMAIL_LOCAL_END.split(email, maxsplit=1)[0].strip().lower()
+        m = _EMAIL_NAME_LOCAL.fullmatch(local)
+        if not m:
+            return None
+        sep = m[2] or '.'
+        words = re.split(r'[._-]', m[1])
+        canon = ' '.join(words)
+        known = self._originals.get('NAME', set())
+        # The full names this given name could be: in the data, or already given a stand-in in this text.
+        named = known | {k[5:] for k in self._fakes if k.startswith('NAME|')}
+        full = [n for n in named if n.startswith(f'{canon} ')] if len(words) == 1 else []
+        if f'NAME|{canon}' not in self._fakes and canon not in known and len(full) != 1:
+            return None
+        stand_in = self._fakes.get(f'NAME|{canon}')
+        if stand_in is None:
+            if len(full) == 1:
+                stand_in = self._fakes.get(f'NAME|{full[0]}') or self._value('NAME', full[0], None)
+            else:
+                stand_in = self._value('NAME', canon, None)
+        name = [w for w in (re.sub('[^a-z]', '', w) for w in stand_in.lower().split()) if w]
+        if not name:
+            return None
+        digits = _Stream(self._key, f'EMAIL|digits|{local}').digits(len(m[3])) if m[3] else ''
+        return sep.join(name[: len(words)]) + digits
 
     def _make(self, pii_type: str, original: str, canon: str, rng: _Stream) -> str:  # noqa: C901 - one branch per type
         if pii_type == 'NIK':
@@ -506,15 +581,26 @@ class Kembaran:
             d = _only_digits(original)
             return d[:4] + rng.digits(max(0, len(d) - 4))
         if pii_type == 'EMAIL':
+            # "budi.santoso@…" next to the name Budi Santoso: the stand-in's address is made from that name's stand-in.
+            from_name = self._email_from_name(original)
+            if from_name is not None:
+                taken = from_name in self._used.get('EMAIL', set())
+                return f'{from_name}{_pad(rng.below(100))}' if taken else from_name
             female = rng.below(2) == 1
             first = rng.pick(FEMALE_FIRST if female else MALE_FIRST).lower()
             last = rng.pick(FEMALE_LAST if female else MALE_LAST).lower()
             return f'{first}.{last}{_pad(rng.below(100))}'
         if pii_type == 'NAME':
-            core = self._name_core(original)
+            core = self._name_words(original)
             lead = next((w for w in core if not _INITIAL.fullmatch(w)), None)
             lead = lead.lower().replace('.', '').replace(',', '') if lead is not None else None
-            if lead is not None and lead in _FEMALE_SET:
+            # "Pak Rusdi" is a man and "Bu Rusdi" a woman, whatever the lists say of the name: the title decides first.
+            words_lower = [w.lower().replace('.', '').replace(',', '') for w in original.split()]
+            titled = [w for w in [self._title_before, *words_lower] if w in _MALE_TITLES or w in _FEMALE_TITLES]
+            title = titled[0] if titled else None
+            if title is not None:
+                female = title in _FEMALE_TITLES
+            elif lead is not None and lead in _FEMALE_SET:
                 female = True
             elif lead is not None and lead in _MALE_SET:
                 female = False
@@ -596,7 +682,10 @@ class Kembaran:
         if pii_type == 'EMAIL':
             return f'{fake}@example.com' if '@' in original else f'{fake} [at] example [dot] com'
         if pii_type == 'NAME':
-            words = fake.split(' ')
+            # The stand-in is given name first; "Santoso, Budi" gets it back family name first.
+            given = fake.split(' ')
+            k = self._flipped(original)
+            words = [*given[k:], *given[:k]] if k else given
             index = 0
             out = []
             for part in _WS_KEEP.split(original):
@@ -668,6 +757,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     import argparse
     from pathlib import Path
 
+    from .files._load import decode_text, encode_text
+
     parser = argparse.ArgumentParser(
         prog='python -m lokal.kembaran',
         description='Replace Indonesian personal data in text files (SQL dumps, CSV, JSON, logs) with realistic '
@@ -693,11 +784,13 @@ def main(argv: Optional[list[str]] = None) -> int:
             print(f'{dest} exists; pass --overwrite to replace it', file=sys.stderr)
             return 1
     # All files at once: a value found in one is replaced in the others too, where it has no label or column name.
-    result = k.texts(src.read_bytes().decode('utf-8', 'replace') for src in args.inputs)
+    # A file that is not UTF-8 (an old Latin-1 export, UTF-16 from PowerShell) is written back in its own encoding.
+    decoded = [decode_text(src.read_bytes()) for src in args.inputs]
+    result = k.texts(text for text, _ in decoded)
     empty = 0
-    for src, dest, out in zip(args.inputs, targets, result.files, strict=True):
+    for src, dest, out, (_, encoding) in zip(args.inputs, targets, result.files, decoded, strict=True):
         dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(out.text.encode('utf-8'))
+        dest.write_bytes(encode_text(out.text, encoding))
         replaced = ', '.join(f'{t}={n}' for t, n in out.replaced.items())
         crossed = sum(out.crossed.values())
         if not replaced and not crossed:

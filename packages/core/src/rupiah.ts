@@ -81,6 +81,8 @@ function isNumberToken(tok: string): boolean {
 }
 
 /** Reads "1.500.000", "1,5", "1.5", "1,500,000" with Indonesian conventions first. */
+const GROUPED: Record<string, RegExp> = { '.': /^\d{1,3}(?:\.\d{3})+$/, ',': /^\d{1,3}(?:,\d{3})+$/ };
+
 function parseNumberToken(tok: string, hasUnit: boolean): number {
   const dots = (tok.match(/\./g) ?? []).length;
   const commas = (tok.match(/,/g) ?? []).length;
@@ -88,8 +90,12 @@ function parseNumberToken(tok: string, hasUnit: boolean): number {
   if (dots && commas) {
     const decimalSep = tok.lastIndexOf(',') > tok.lastIndexOf('.') ? ',' : '.';
     const thousandSep = decimalSep === ',' ? '.' : ',';
+    // Thousands in groups of three: "1.500.000,50", never "1.50.000,5".
+    if (!GROUPED[thousandSep]!.test(tok.slice(0, tok.lastIndexOf(decimalSep)))) return Number.NaN;
     normalized = tok.split(thousandSep).join('').replace(decimalSep, '.');
   } else if (dots + commas > 1) {
+    // "1.500.000" or "1,500,000"; "1.2.3" is no amount.
+    if (!GROUPED['.']!.test(tok) && !GROUPED[',']!.test(tok)) return Number.NaN;
     normalized = tok.replace(/[.,]/g, '');
   } else if (dots + commas === 1) {
     const [, after = ''] = tok.split(/[.,]/);
@@ -127,6 +133,11 @@ function stripApproxSuffix(tok: string): { tok: string; approx: boolean } {
 export function parseRupiah(text: string): ParsedRupiah | null {
   let t = String(text).toLowerCase().trim();
   if (!t) return null;
+  // A debit or a refund: "Rp -1.000", "-Rp 1.000", "minus 1.000", and accounting's "(Rp 1.000)".
+  const negative = /^\(.*\)$/.test(t) || /^(?:rp\.?\s*)?[-−]\s*(?:rp\.?\s*)?\d/.test(t) || /^minus\b/.test(t);
+  if (negative) t = t.replace(/^\(|\)$/g, '').replace(/^(rp\.?\s*)?[-−]/, '$1').replace(/^minus\b/, '');
+  // "1-2 juta", "1 sampai 2 juta", "100rb - 200rb": a range is not one amount (its numbers were added up).
+  if (/\d\s*(?:[a-z]+\.?\s*)?(?:[-–−]|\bsampai\b|\bhingga\b|\bs\.?\s?d\.?|\bs\/d\b)\s*(?:rp\.?\s*)?\d/.test(t)) return null;
   t = t
     .replace(/[~±]/g, ' sekitar ')
     .replace(/\brp\.?/g, ' ')
@@ -225,5 +236,6 @@ export function parseRupiah(text: string): ParsedRupiah | null {
   }
 
   if (!sawValue) return null;
-  return { amount: Math.round((total + current) * 100) / 100, approximate };
+  const amount = Math.round((total + current) * 100) / 100;
+  return { amount: negative ? -amount : amount, approximate };
 }

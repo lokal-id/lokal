@@ -2,7 +2,7 @@
 // for the Chrome Web Store or "Load unpacked". Its version follows the npm release.
 //
 //   node scripts/build-extension.mjs            dist/ and the zip
-//   node scripts/build-extension.mjs --test     also runs on http://127.0.0.1, for scripts/test-extension.mjs
+//   node scripts/build-extension.mjs --test     also runs on http://127.0.0.1 and http://localhost, for scripts/test-extension.mjs
 import { build } from 'esbuild';
 import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -15,7 +15,8 @@ const test = process.argv.includes('--test');
 const DIST = path.join(EXT, test ? 'dist-test' : 'dist');
 const { version } = JSON.parse(readFileSync(path.join(ROOT, 'packages/core/package.json'), 'utf8'));
 const { MATCHES } = await import(pathToFileURL(path.join(EXT, 'src/sites.ts')).href);
-const matches = test ? [...MATCHES, 'http://127.0.0.1/*'] : MATCHES;
+// Two local origins, so the test can check that one site never sees another's vault.
+const matches = test ? [...MATCHES, 'http://127.0.0.1/*', 'http://localhost/*'] : MATCHES;
 
 rmSync(DIST, { recursive: true, force: true });
 await build({
@@ -128,5 +129,5 @@ if (!test) {
   writeFileSync(out, archive);
   console.log(`${path.relative(ROOT, DIST)}/ and ${path.relative(ROOT, out)} (${Math.round(archive.length / 1024)} KB)`);
 } else {
-  console.log(`${path.relative(ROOT, DIST)}/ (runs on http://127.0.0.1 too)`);
+  console.log(`${path.relative(ROOT, DIST)}/ (runs on http://127.0.0.1 and http://localhost too)`);
 }

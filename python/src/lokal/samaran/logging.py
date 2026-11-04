@@ -25,7 +25,10 @@ from .types import Confidence, PiiType
 
 
 class SamaranFilter(logging.Filter):
-    """A ``logging.Filter`` that masks the formatted message, exception text, and stack info of each record.
+    """A ``logging.Filter`` that masks the formatted message, exception text, stack info, and the ``extra`` fields of
+    each record (strings, and strings inside dicts, lists, and tuples, as JSON and structured formatters print them).
+    Add it to a handler: on a logger it does not see the records of that logger's children (Python's logging calls a
+    logger's filters only for its own records).
 
     ``mode="partial"`` (default) keeps logs readable: 3201********0001, 0812****7890. ``mode="placeholder"`` gives
     [NIK_1]-style tokens with a fresh vault per record. The record is changed in place and always let through.
@@ -66,4 +69,23 @@ class SamaranFilter(logging.Filter):
             record.exc_text = self._mask(record.exc_text)
         if record.stack_info:
             record.stack_info = self._mask(record.stack_info)
+        # Fields passed with extra={...}: structured and JSON formatters print them next to the message.
+        for key, value in list(vars(record).items()):
+            if key not in _RECORD_FIELDS:
+                setattr(record, key, self._mask_value(value))
         return True
+
+    def _mask_value(self, value: object, depth: int = 0) -> object:
+        if isinstance(value, str):
+            return self._mask(value)
+        if depth > 5:
+            return value
+        if isinstance(value, dict):
+            return {k: self._mask_value(v, depth + 1) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return type(value)(self._mask_value(v, depth + 1) for v in value)
+        return value
+
+
+# The attributes every LogRecord has, and what formatters add: anything else on a record came from ``extra``.
+_RECORD_FIELDS = frozenset(vars(logging.LogRecord('', 0, '', 0, '', None, None))) | {'message', 'asctime', 'taskName'}

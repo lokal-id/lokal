@@ -67,6 +67,11 @@ runs:
         case "$INPUT_SCOPE" in
           all)
             args+=("$INPUT_PATH")
+            # A pull request must not decide how it is checked: read .samaran.json and .samaranignore from its base.
+            if [ -n "$PR_BASE" ]; then
+              if ! git cat-file -e "${PR_BASE}^{commit}" 2>/dev/null; then git fetch -q --no-tags --depth=1 origin "$PR_BASE" || true; fi
+              if git cat-file -e "${PR_BASE}^{commit}" 2>/dev/null; then args+=(--config-ref "$PR_BASE"); fi
+            fi
             ;;
           changes)
             base="$INPUT_BASE"

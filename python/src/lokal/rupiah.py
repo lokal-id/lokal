@@ -108,6 +108,15 @@ def _is_number_token(tok: str) -> bool:
     return _NUMBER_TOKEN.fullmatch(tok) is not None
 
 
+_GROUPED = {'.': re.compile(r'\d{1,3}(?:\.\d{3})+'), ',': re.compile(r'\d{1,3}(?:,\d{3})+')}
+_PARENS = re.compile(r'^\(.*\)$')
+_PAREN_EDGES = re.compile(r'^\(|\)$')
+_MINUS = re.compile(r'^(?:rp\.?\s*)?[-−]\s*(?:rp\.?\s*)?\d')
+_MINUS_SIGN = re.compile(r'^(rp\.?\s*)?[-−]')
+_MINUS_WORD = re.compile(r'^minus\b')
+_RANGE = re.compile(r'\d\s*(?:[a-z]+\.?\s*)?(?:[-–−]|\bsampai\b|\bhingga\b|\bs\.?\s?d\.?|\bs/d\b)\s*(?:rp\.?\s*)?\d')
+
+
 def _parse_number_token(tok: str, has_unit: bool) -> float:
     """Reads "1.500.000", "1,5", "1.5", "1,500,000" with Indonesian conventions first."""
     dots = tok.count('.')
@@ -115,8 +124,14 @@ def _parse_number_token(tok: str, has_unit: bool) -> float:
     if dots and commas:
         decimal_sep = ',' if tok.rfind(',') > tok.rfind('.') else '.'
         thousand_sep = '.' if decimal_sep == ',' else ','
+        # Thousands in groups of three: "1.500.000,50", never "1.50.000,5".
+        if not _GROUPED[thousand_sep].fullmatch(tok[: tok.rfind(decimal_sep)]):
+            return float('nan')
         normalized = tok.replace(thousand_sep, '').replace(decimal_sep, '.', 1)
     elif dots + commas > 1:
+        # "1.500.000" or "1,500,000"; "1.2.3" is no amount.
+        if not (_GROUPED['.'].fullmatch(tok) or _GROUPED[','].fullmatch(tok)):
+            return float('nan')
         normalized = re.sub(r'[.,]', '', tok)
     elif dots + commas == 1:
         sep = '.' if dots else ','
@@ -150,6 +165,13 @@ def parse_rupiah(text: str) -> Optional[ParsedRupiah]:
     """
     t = trim(str(text).lower())
     if not t:
+        return None
+    # A debit or a refund: "Rp -1.000", "-Rp 1.000", "minus 1.000", and accounting's "(Rp 1.000)".
+    negative = bool(_PARENS.match(t) or _MINUS.match(t) or _MINUS_WORD.match(t))
+    if negative:
+        t = _MINUS_WORD.sub('', _MINUS_SIGN.sub(r'\1', _PAREN_EDGES.sub('', t)), count=1)
+    # "1-2 juta", "1 sampai 2 juta", "100rb - 200rb": a range is not one amount (its numbers were added up).
+    if _RANGE.search(t):
         return None
     t = re.sub(r'[~±]', ' sekitar ', t)
     t = re.sub(r'\brp\.?', ' ', t, flags=re.ASCII)
@@ -246,4 +268,6 @@ def parse_rupiah(text: str) -> Optional[ParsedRupiah]:
     if not saw_value:
         return None
     amount = round_half_up((total + current) * 100) / 100
+    if negative:
+        amount = -amount
     return ParsedRupiah(int(amount) if float(amount).is_integer() else amount, approximate)

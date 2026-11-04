@@ -58,6 +58,11 @@ export const KEEP_BY_DEFAULT: readonly PiiType[] = ['GENDER', 'RELIGION', 'MARIT
 // Numbers looked up across inputs. Shorter or other numbers (amounts, IDs) are too common to look up.
 const CROSS_DIGITS: ReadonlySet<PiiType> = new Set(['NIK', 'KK', 'NPWP', 'PHONE', 'BANK_ACCOUNT', 'CARD', 'BPJS', 'SIM', 'NIP', 'NISN']);
 const DIGIT_RUN = /(?<![A-Za-z0-9_+])\+?\d(?:[ .-]?\d){7,18}(?![A-Za-z0-9_])/g;
+// Titles that say whether a stand-in name must be a man's or a woman's.
+const MALE_TITLES = new Set(['pak', 'bapak', 'bpk', 'bp', 'mas', 'bang', 'abang', 'tn', 'tuan', 'sdr', 'saudara', 'kang', 'akang', 'koko', 'om', 'h']);
+const FEMALE_TITLES = new Set(['bu', 'ibu', 'mbak', 'mba', 'ny', 'nyonya', 'nn', 'nona', 'sdri', 'saudari', 'teh', 'teteh', 'cici', 'tante', 'hj']);
+// Sixteen digits with any of these separators, or none, wherever they are: the NIK backstop of `texts`.
+const NIK_SWEEP = /(?<!\d)\d(?:[ ./_-]?\d){15}(?!\d)/g;
 const EMAIL_RUN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const NAME_WORD = /^[A-Za-z'’-]{2,}$/;
 
@@ -215,6 +220,8 @@ export class Kembaran {
   private readonly nikDays = new Map<string, Day>();
   /** Canonical real values of the inputs given to `texts`: no stand-in may be one of them. */
   private readonly originals = new Map<PiiType, Set<string>>();
+  /** The title right before the name being replaced ("pak", "bu"), for its stand-in's gender. */
+  private titleBefore: string | undefined;
 
   constructor(options: KembaranOptions = {}) {
     for (const t of options.keep ?? []) {
@@ -261,12 +268,13 @@ export class Kembaran {
         }
       }
     }
-    // A backstop that does not depend on the detector: any run of 16 digits, however it is separated, that is a valid
-    // NIK by its structure is taken for one, replaced, and counted if it is left. A NIK the detector misses ("3276.0101.
-    // 0180.0001" before 0.17.0) must never pass through an "anonymized" file unseen.
+    // A backstop that does not depend on the detector: any run of 16 digits, separated by spaces, dots, dashes, slashes,
+    // or underscores or not at all, and inside a word or a path too ("scan_ktp_3275_0412_0592_0003.pdf"), that is a valid
+    // NIK by its structure is taken for one, replaced, and counted if it is left. A NIK the detector misses must never
+    // pass through an "anonymized" file unseen.
     if (!this.keep.has('NIK')) {
       for (const input of inputs) {
-        for (const m of input.matchAll(DIGIT_RUN)) {
+        for (const m of input.matchAll(NIK_SWEEP)) {
           const d = onlyDigits(m[0]);
           if (d.length !== 16 || digits.has(d) || !parseNik(d).valid) continue;
           digits.set(d, 'NIK');
@@ -291,6 +299,9 @@ export class Kembaran {
         let type = digits.get(d);
         if (type === undefined && d.startsWith('62') && digits.get(`0${d.slice(2)}`) === 'PHONE') type = 'PHONE';
         if (type !== undefined) hits.push({ type, start: m.index, end: m.index + m[0].length, value: m[0] });
+      }
+      for (const m of text.matchAll(NIK_SWEEP)) {
+        if (digits.get(onlyDigits(m[0])) === 'NIK') hits.push({ type: 'NIK', start: m.index, end: m.index + m[0].length, value: m[0] });
       }
       for (const m of text.matchAll(EMAIL_RUN)) {
         if (emails.has(m[0].toLowerCase())) hits.push({ type: 'EMAIL', start: m.index, end: m.index + m[0].length, value: m[0] });
@@ -344,7 +355,11 @@ export class Kembaran {
       if (day && !rowDays.has(line)) rowDays.set(line, day);
     });
     matches.forEach((m, i) => {
-      if (out[i] === undefined) out[i] = this.value(m.type, m.value, rowDays.get(lineOf(m.start)));
+      if (out[i] !== undefined) return;
+      // The title right before a name ("Pak Rusdi") says whose name it is, though it is not part of the match.
+      if (m.type === 'NAME') this.titleBefore = /([A-Za-z]+)\.?\s+$/.exec(input.slice(Math.max(0, m.start - 12), m.start))?.[1]?.toLowerCase();
+      out[i] = this.value(m.type, m.value, rowDays.get(lineOf(m.start)));
+      this.titleBefore = undefined;
     });
     let text = '';
     let cursor = 0;
@@ -394,12 +409,56 @@ export class Kembaran {
   }
 
   private canon(type: PiiType, value: string): string {
-    return type === 'NAME' ? this.nameCore(value).map((t) => t.toLowerCase()).join(' ') : canonical(type, value);
+    return type === 'NAME' ? this.nameWords(value).map((t) => t.toLowerCase()).join(' ') : canonical(type, value);
   }
 
   /** The words of a name that identify the person: not honorifics, titles, or "bin". */
   private nameCore(name: string): string[] {
     return name.split(/\s+/).filter((w) => w && !NAME_KEEP.has(w.toLowerCase().replace(/[.,]/g, '')));
+  }
+
+  /**
+   * How many words come after the comma in a name written family name first, "Santoso, Budi": 0 when it is not
+   * written so. "Budi Santoso, S.Kom" has a degree after the comma, not a given name.
+   */
+  private flipped(name: string): number {
+    const parts = name.split(',');
+    if (parts.length !== 2) return 0;
+    const before = this.nameCore(parts[0]!);
+    const after = this.nameCore(parts[1]!);
+    return before.length && after.length && [...before, ...after].every((w) => NAME_WORD.test(w)) ? after.length : 0;
+  }
+
+  /** The identifying words in the order a name is said: given name first, also for "Santoso, Budi". */
+  private nameWords(name: string): string[] {
+    const core = this.nameCore(name).map((w) => w.replace(/,$/, '')).filter(Boolean);
+    const k = this.flipped(name);
+    return k ? [...core.slice(core.length - k), ...core.slice(0, core.length - k)] : core;
+  }
+
+  /**
+   * An address made from a name's stand-in, when its local part is a name in the data ("budi.santoso", "siti_aminah",
+   * "budi.santoso87") or the given name of exactly one person in it ("siti"). The same separator and as many digits.
+   */
+  private emailFromName(email: string): string | undefined {
+    if (this.keep.has('NAME')) return undefined;
+    const local = email.split(/\s*(?:@|\[at\]|\(at\))/i)[0]!.trim().toLowerCase();
+    const m = /^([a-z]{2,}(?:([._-])[a-z]{2,})*)(\d*)$/.exec(local);
+    if (!m) return undefined;
+    const sep = m[2] ?? '.';
+    const words = m[1]!.split(/[._-]/);
+    const canon = words.join(' ');
+    const known = this.originals.get('NAME');
+    // The full names this given name could be: in the data, or already given a stand-in in this text.
+    const named = new Set([...(known ?? []), ...[...this.fakes.keys()].filter((k) => k.startsWith('NAME|')).map((k) => k.slice(5))]);
+    const full = words.length === 1 ? [...named].filter((n) => n.startsWith(`${canon} `)) : [];
+    if (!this.fakes.has(`NAME|${canon}`) && !known?.has(canon) && full.length !== 1) return undefined;
+    const standIn =
+      this.fakes.get(`NAME|${canon}`) ?? (full.length === 1 ? (this.fakes.get(`NAME|${full[0]}`) ?? this.value('NAME', full[0]!)) : this.value('NAME', canon));
+    const name = standIn.toLowerCase().split(/\s+/).map((w) => w.replace(/[^a-z]/g, '')).filter(Boolean);
+    if (!name.length) return undefined;
+    const digits = m[3] ? new Stream(this.key, `EMAIL|digits|${local}`).digits(m[3].length) : '';
+    return name.slice(0, words.length).join(sep) + digits;
   }
 
   /** A stand-in in canonical form: digits for numbers, words joined by spaces for names. */
@@ -429,15 +488,25 @@ export class Kembaran {
         return d.slice(0, 4) + rng.digits(Math.max(0, d.length - 4));
       }
       case 'EMAIL': {
+        // "budi.santoso@…" next to the name Budi Santoso: the stand-in's address is made from that name's stand-in.
+        const fromName = this.emailFromName(original);
+        if (fromName !== undefined) {
+          return this.used.get('EMAIL')?.has(fromName) ? `${fromName}${pad(rng.int(100))}` : fromName;
+        }
         const female = rng.int(2) === 1;
         const first = rng.pick(female ? FEMALE_FIRST : MALE_FIRST).toLowerCase();
         const last = rng.pick(female ? FEMALE_LAST : MALE_LAST).toLowerCase();
         return `${first}.${last}${pad(rng.int(100))}`;
       }
       case 'NAME': {
-        const core = this.nameCore(original);
+        const core = this.nameWords(original);
         const lead = core.find((w) => !INITIAL.test(w))?.toLowerCase().replace(/[.,]/g, '');
-        const female = lead !== undefined && FEMALE_SET.has(lead) ? true : lead !== undefined && MALE_SET.has(lead) ? false : rng.int(2) === 1;
+        // "Pak Rusdi" is a man and "Bu Rusdi" a woman, whatever the lists say of the name: the title decides first.
+        const title = [this.titleBefore, ...original.split(/\s+/).map((w) => w.toLowerCase().replace(/[.,]/g, ''))]
+          .find((w) => w !== undefined && (MALE_TITLES.has(w) || FEMALE_TITLES.has(w)));
+        const female = title !== undefined
+          ? FEMALE_TITLES.has(title)
+          : lead !== undefined && FEMALE_SET.has(lead) ? true : lead !== undefined && MALE_SET.has(lead) ? false : rng.int(2) === 1;
         const words: string[] = [];
         let firstDone = false;
         for (const w of core) {
@@ -531,7 +600,10 @@ export class Kembaran {
       case 'EMAIL':
         return original.includes('@') ? `${fake}@example.com` : `${fake} [at] example [dot] com`;
       case 'NAME': {
-        const words = fake.split(' ');
+        // The stand-in is given name first; "Santoso, Budi" gets it back family name first.
+        const given = fake.split(' ');
+        const k = this.flipped(original);
+        const words = k ? [...given.slice(k), ...given.slice(0, k)] : given;
         let i = 0;
         return original
           .split(/(\s+)/)

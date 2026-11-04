@@ -149,7 +149,7 @@ logging.info('refund ke rek BCA %s, HP %s', '1234567890', '0812-3456-7890')
 # INFO:root:refund ke rek BCA ******7890, HP 0812****7890
 ```
 
-The filter masks the formatted message, tracebacks, and stack info. Attach it to handlers, not loggers, so records from every logger pass through it.
+The filter masks the formatted message, tracebacks, stack info, and fields passed with `extra=` (`logging.info('order', extra={'customer_nik': nik})`), so a JSON formatter that writes them out gets them masked too. Attach it to handlers, not loggers, so records from every logger pass through it.
 
 ### Files: uploads, exports, and documents
 
@@ -159,7 +159,8 @@ The filter masks the formatted message, tracebacks, and stack info. Attach it to
 from lokal import Samaran
 from lokal.files import load_document, scan_path
 
-report = scan_path('var/media', exclude=['FINANCIAL'])
+# Uploads: no .samaranignore or .samaran.json from the folder itself, since anyone uploading could put one there.
+report = scan_path('var/media', exclude=['FINANCIAL'], ignore_file=False, config=False)
 report.totals                       # {'NIK': 12, 'NAME': 9, 'PHONE': 7, ...}
 report.findings[0]                  # Finding(file='kredit/formulir.pdf', part='Halaman 1', line=4, type='NIK',
                                     #         confidence='high', uu_pdp='umum', preview='3201********0001')
@@ -174,7 +175,7 @@ masked = [(part.name, s.mask(part.text).text) for part in doc.parts]   # one par
 
 - Findings never contain the values, only partial masks, so a report can be logged or shown in an admin page.
 - Files that may hold personal data but cannot be read (photos, scanned or encrypted PDFs, `.xls`, archives) are listed in `not_scanned`, never treated as clean. `report.clean` is true only when nothing was found and nothing was left unread.
-- Folders skip `node_modules`, `.git`, virtualenvs, and build output, and honor `.samaranignore` at the folder root for fixtures that hold only fake data.
+- Folders skip `node_modules`, `.git`, virtualenvs, and build output, and honor `.samaranignore` and the allow list in `.samaran.json` at the folder root, for fixtures that hold only fake data. Pass `ignore_file=False, config=False` for a folder other people can write to (uploads, a repository you did not write).
 - Pure Python, like the rest of the package. A PDF of 1,000 pages takes about 6 seconds; most documents take milliseconds.
 
 ### Kembaran: production data for staging

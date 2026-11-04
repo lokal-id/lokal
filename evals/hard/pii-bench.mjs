@@ -827,8 +827,8 @@ const cases = [
   },
   {
     format: 'Nomor HP format internasional lain',
-    text: 'call me at +6281234567890 or 0062 812 3456 7890',
-    secrets: ['6281234567890', '0062 812 3456 7890'],
+    text: 'call me at +6281234567890 or 0062 812 3456 7891',
+    secrets: ['6281234567890', '0062 812 3456 7891'],
     keep: [],
   },
   {

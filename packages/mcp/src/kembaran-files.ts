@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'no
 import path from 'node:path';
 import { PII_TYPES, type CustomRule, type PiiType } from '@lokal-id/core';
 import { KEEP_BY_DEFAULT, Kembaran } from '@lokal-id/core/kembaran';
-import { isTextFile, loadConfig, loadInRoot, MAX_FILE_BYTES, writeInRoot } from './files.ts';
+import { decodeText, encodeText, isTextFile, loadConfig, loadInRoot, MAX_FILE_BYTES, writeInRoot, type TextEncoding } from './files.ts';
 
 export interface AnonymizeOptions {
   secret?: string;
@@ -68,20 +68,27 @@ export function anonymizeFiles(inputs: string[], output: string, options: Anonym
     custom: options.custom,
   });
   // All files at once: a value found in one is replaced in the others too, where it has no label or column name.
+  // A file that is not UTF-8 (an old Latin-1 export) is written back in its own encoding.
+  const encodings: Array<TextEncoding | undefined> = [];
   const read = (file: string): string => {
-    if (options.root === undefined) return readFileSync(file, 'utf8');
+    if (options.root === undefined) {
+      const { text, encoding } = decodeText(readFileSync(file));
+      encodings.push(encoding);
+      return text;
+    }
     const { doc } = loadInRoot(options.root, file);
     if (doc.kind !== 'text') throw new Error(`${file} is not a text file. Kembaran reads SQL dumps, CSV, JSON, and logs.`);
+    encodings.push(doc.encoding);
     return doc.text;
   };
   const result = kembaran.texts(inputs.map(read));
   const files = result.files.map(({ text, replaced, crossed }, i) => {
     if (!options.dryRun) {
       if (options.root !== undefined) {
-        writeInRoot(options.root, targets[i]!, text);
+        writeInRoot(options.root, targets[i]!, text, encodings[i]);
       } else {
         mkdirSync(path.dirname(targets[i]!), { recursive: true });
-        writeFileSync(targets[i]!, text, 'utf8');
+        writeFileSync(targets[i]!, encodeText(text, encodings[i]));
       }
     }
     return { from: inputs[i]!, to: targets[i]!, replaced, crossed };

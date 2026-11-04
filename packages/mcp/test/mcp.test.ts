@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { samples } from './pdf-builder.ts';
+import { recordTrust } from '../src/files.ts';
 
 const CLI = path.resolve(import.meta.dirname, '../src/cli.ts');
 
@@ -21,6 +22,8 @@ let client: Client;
 
 before(async () => {
   dir = mkdtempSync(path.join(tmpdir(), 'lokal-mcp-'));
+  // The copy of the unmasked-files list goes to the user's cache: a folder of the test's own, not the real one.
+  process.env.LOKAL_CACHE_DIR = mkdtempSync(path.join(tmpdir(), 'lokal-cache-'));
   writeFileSync(path.join(dir, 'pelanggan.csv'), CSV);
   mkdirSync(path.join(dir, 'test'));
   writeFileSync(path.join(dir, 'test', 'fixture.json'), '{"nik":"3201011508950001"}');
@@ -31,6 +34,8 @@ before(async () => {
   writeFileSync(path.join(dir, 'ekspor', 'laporan.pdf'), '%PDF-1.4\n\0binary');
   writeFileSync(path.join(dir, 'ekspor', 'ktp.jpg'), Buffer.from([0xff, 0xd8, 0xff, 0x00]));
   writeFileSync(path.join(dir, '.samaranignore'), 'test/\n');
+  // The team's list of fake data, approved as a user does with `lokal-mcp trust`.
+  recordTrust(dir);
 
   client = new Client({ name: 'test', version: '0.0.0' });
   await client.connect(
@@ -333,6 +338,7 @@ test('guard: foto dokumen dan PDF yang tidak terbaca ditanyakan dulu ke pengguna
     writeFileSync(path.join(dir, name), data);
   }
   writeFileSync(path.join(dir, '.samaranignore'), 'test/\ncontoh/\n');
+  recordTrust(dir);
 
   for (const name of ['var/media/kredit/ktp-budi.jpg', 'storage/app/uploads/IMG_2041.HEIC', 'arsip/selfie_siti.png', 'ekspor/ktp.jpg']) {
     const r = read(path.join(dir, name));
@@ -353,6 +359,7 @@ test('guard: foto dokumen dan PDF yang tidak terbaca ditanyakan dulu ke pengguna
   assert.match(decision(read(path.join(dir, 'scan/lampiran.pdf'))).permissionDecisionReason, /pages 2-3 of 3 have no text layer/);
   assert.match(decision(read(path.join(dir, 'ekspor/laporan.pdf'))).permissionDecisionReason, /unreadable PDF/);
   writeFileSync(path.join(dir, '.samaranignore'), 'test/\n');
+  recordTrust(dir);
 });
 
 test('guard untuk Cursor: selalu menjawab JSON dalam format Cursor', () => {
@@ -696,6 +703,16 @@ test('guard: file yang ditulis write_file_unmasked diperiksa seperti file data, 
     assert.equal(cat.status, 2, cat.stderr);
     // Other Markdown is still source, not data.
     assert.equal(guard({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: path.join(dir, 'README.md') }, cwd: dir }).status, 0);
+    // The list cannot be emptied or deleted to make the file readable again; without the one in the project, the copy
+    // in the user's cache still holds it.
+    for (const command of ['rm .lokal/unmasked.json', "echo '{}' > .lokal/unmasked.json", 'rm -rf .lokal', 'git clean -fdX', 'Remove-Item .lokal -Recurse']) {
+      assert.equal(guard({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd: dir }).status, 2, command);
+    }
+    const edit = guard({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: path.join(dir, '.lokal', 'unmasked.json'), content: '{}' }, cwd: dir });
+    assert.equal(edit.status, 2);
+    assert.equal(guard({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'cat .lokal/unmasked.json' }, cwd: dir }).status, 0, 'reading the list is fine');
+    rmSync(path.join(dir, '.lokal'), { recursive: true, force: true });
+    assert.equal(guard({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: note }, cwd: dir }).status, 2, 'the copy in the cache');
   } finally {
     rmSync(note, { force: true });
     rmSync(path.join(dir, '.lokal'), { recursive: true, force: true });

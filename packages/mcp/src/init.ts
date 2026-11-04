@@ -7,7 +7,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { PiiType } from '@lokal-id/core';
-import { loadConfig, type SamaranConfig } from './files.ts';
+import {
+  DEFAULT_VAULT_TTL_MINUTES, loadConfig, localEndpoint, recordTrust, revokeTrust, trustDigests, trustedFiles, untrustedIgnore, type SamaranConfig,
+} from './files.ts';
 import { VERSION } from './version.ts';
 
 export type Profile = 'personal' | 'team' | 'strict';
@@ -131,6 +133,15 @@ export function runInit(args: string[]): void {
   if (dryRun) {
     for (const p of plan.filter((f) => f.action !== 'keep')) out.push('', `--- ${p.file}`, p.content.trimEnd());
   } else {
+    // Approve only the files init wrote itself: a .samaran.json or .samaranignore that was already there (from a
+    // cloned repository, or written by an agent) is the user's to read and approve with `trust`.
+    const wrote = plan.filter((p) => p.action !== 'keep').map((p) => p.file);
+    const approved = recordTrust(root, wrote);
+    if (approved.length) out.push('', `Approved ${approved.join(' and ')} on this machine (lokal-mcp trust).`);
+    const kept = plan.filter((p) => p.action === 'keep' && ['.samaran.json', '.samaranignore'].includes(p.file) && !trustedFiles(root).has(p.file));
+    if (kept.length) {
+      out.push('', `${kept.map((p) => p.file).join(' and ')} was already here and is not approved: read it, then run lokal-mcp trust in your terminal.`);
+    }
     out.push('', 'Next:', ...NEXT[profile].map((l) => `  - ${l}`), '  - lokal-mcp check shows what the configuration does.');
   }
   process.stdout.write(`${out.join('\n')}\n`);
@@ -141,15 +152,6 @@ export function runInit(args: string[]): void {
 /** Types that identify someone on their own: letting the model see them is worth a second look. */
 const IDENTIFIERS: PiiType[] = ['NIK', 'KK', 'NPWP', 'PASSPORT', 'SIM', 'NIP', 'NISN', 'AKTA', 'BANK_ACCOUNT', 'BPJS', 'CARD'];
 
-const isLocal = (url: string) => {
-  try {
-    const host = new URL(url).hostname.replace(/^\[|\]$/g, '');
-    return /^(localhost|127\.\d+\.\d+\.\d+|::1|0\.0\.0\.0|host\.docker\.internal)$/.test(host) || !host.includes('.') ||
-      /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host);
-  } catch {
-    return false;
-  }
-};
 
 /** What a configuration does, as lines, and the warnings worth reading. */
 export function describeConfig(root: string, config: SamaranConfig, env: NodeJS.ProcessEnv = process.env): { lines: string[]; warnings: string[] } {
@@ -173,14 +175,14 @@ export function describeConfig(root: string, config: SamaranConfig, env: NodeJS.
     `policy          ${policy.length ? `${policy.map(([k, a]) => `${k}=${a}`).join(', ')}; everything else is masked` : 'everything is masked'}`,
     `route           ${config.route ? [config.route.openai && `openai ${config.route.openai}`, config.route.anthropic && `anthropic ${config.route.anthropic}`, config.route.model && `model ${config.route.model}`].filter(Boolean).join(', ') : 'none'}`,
     `audit log       ${config.audit ? path.relative(root, config.audit) || config.audit : 'off'}`,
-    `vault           ${env.LOKAL_VAULT_TTL_MINUTES ? `forgotten after ${env.LOKAL_VAULT_TTL_MINUTES} min (LOKAL_VAULT_TTL_MINUTES)` : config.vaultTtlMinutes ? `forgotten after ${config.vaultTtlMinutes} min without use` : 'kept until the MCP server stops (set "vaultTtlMinutes" or call clear_vault)'}`,
+    `vault           ${env.LOKAL_VAULT_TTL_MINUTES ? `forgotten after ${env.LOKAL_VAULT_TTL_MINUTES} min (LOKAL_VAULT_TTL_MINUTES)` : `forgotten after ${config.vaultTtlMinutes ?? DEFAULT_VAULT_TTL_MINUTES} min without use${config.vaultTtlMinutes ? '' : ' (the default)'}`}`,
     `.samaranignore  ${ignore ? `${ignore.length} pattern(s)` : 'not found'}`,
   ];
   if (env.SAMARAN_GUARD === 'off') warnings.push('The guard is off on this machine: prompts and file reads are not checked.');
   const allowedIds = policy.filter(([k, a]) => a === 'allow' && IDENTIFIERS.includes(k as PiiType)).map(([k]) => k);
   if (allowedIds.length) warnings.push(`policy allows ${allowedIds.join(', ')}: the model sees these identity numbers unmasked.`);
   for (const [kind, url] of Object.entries({ openai: config.route?.openai, anthropic: config.route?.anthropic })) {
-    if (url && !isLocal(url)) warnings.push(`route.${kind} (${url}) is not on this machine or a private network: routed requests are sent there unmasked.`);
+    if (url && !localEndpoint(url)) warnings.push(`route.${kind} (${url}) is not on this machine or a private network: routed requests are sent there unmasked.`);
   }
   if (config.audit && path.relative(root, config.audit).split(path.sep)[0] !== '.lokal' && !path.relative(root, config.audit).startsWith('..')) {
     warnings.push(`The audit log ${path.relative(root, config.audit)} is inside the project: keep it out of git (it lists file names).`);
@@ -205,7 +207,114 @@ export function runCheck(args: string[]): void {
     return;
   }
   const { lines, warnings } = describeConfig(root, config);
-  const out = [`Samaran configuration in ${root}`, '', ...lines];
+  const out = [`Samaran configuration in ${root}`, '', ...lines, ...trustLines(root, config)];
   if (warnings.length) out.push('', 'Warnings:', ...warnings.map((w) => `  - ${w}`));
   process.stdout.write(`${out.join('\n')}\n`);
+}
+
+/** What `check` and `trust --status` say about the approval of the project's files. */
+function trustLines(root: string, config: SamaranConfig): string[] {
+  const out: string[] = [];
+  const present = ['.samaran.json', '.samaranignore'].filter((f) => existsSync(path.join(root, f)));
+  if (!present.length) return out;
+  const trusted = trustedFiles(root);
+  out.push(`approved        ${present.map((f) => `${f} ${trusted.has(f) ? 'yes' : 'no'}`).join(', ')}`);
+  if (config.untrusted?.length) out.push(`left out        ${config.untrusted.join(', ')} (not approved: run lokal-mcp trust)`);
+  if (untrustedIgnore(root)) out.push('                .samaranignore is not applied until approved (lokal-mcp trust)');
+  return out;
+}
+
+const TRUST_USAGE = `Usage: lokal-mcp trust [folder] [--status | --revoke]
+
+Approves this project's .samaran.json and .samaranignore on this machine, as they are now. Until then, what they
+would relax does not apply: values on the allow list, types with policy "allow" or "route", "route" itself, a vault
+kept longer than ${DEFAULT_VAULT_TTL_MINUTES} minutes, and the files .samaranignore leaves out. A change to either file
+needs approval again. It shows the settings and asks you to type "yes", in a terminal only: an agent or a script
+cannot approve them.
+
+  --status   show what is approved, and what is left out
+  --revoke   withdraw the approval`;
+
+/** How `trust` asks the user: only in a terminal, where an agent's shell (no terminal) cannot answer. */
+export interface TrustPrompt {
+  interactive: boolean;
+  ask(question: string): Promise<string>;
+}
+
+async function askInTerminal(question: string): Promise<string> {
+  const { createInterface } = await import('node:readline/promises');
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    return await rl.question(question);
+  } finally {
+    rl.close();
+  }
+}
+
+const TERMINAL_PROMPT: TrustPrompt = {
+  interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
+  ask: askInTerminal,
+};
+
+export async function runTrust(args: string[], prompt: TrustPrompt = TERMINAL_PROMPT): Promise<void> {
+  if (args.includes('--help') || args.includes('-h')) {
+    process.stdout.write(`${TRUST_USAGE}\n`);
+    return;
+  }
+  const root = path.resolve(args.find((a) => !a.startsWith('-')) ?? '.');
+  if (args.includes('--revoke')) {
+    revokeTrust(root);
+    process.stdout.write(`Approval withdrawn for ${root}.\n`);
+    return;
+  }
+  let full: SamaranConfig;
+  try {
+    full = loadConfig(root, { trusted: true });
+  } catch (e) {
+    process.stderr.write(`${(e as Error).message}\n`);
+    process.exitCode = 1;
+    return;
+  }
+  const { lines, warnings } = describeConfig(root, full);
+  const out = [`Samaran configuration in ${root}`, '', ...lines];
+  if (warnings.length) out.push('', 'Warnings:', ...warnings.map((w) => `  - ${w}`));
+  if (args.includes('--status')) {
+    out.push('', ...trustLines(root, loadConfig(root)));
+    process.stdout.write(`${out.join('\n')}\n`);
+    return;
+  }
+  // What is approved is what the user was shown: the files' hashes now, checked again after they answer.
+  const shown = trustDigests(root);
+  if (!Object.keys(shown).length) {
+    process.stdout.write(`${[...out, '', 'Nothing to approve: no .samaran.json or .samaranignore here.'].join('\n')}\n`);
+    return;
+  }
+  if (!prompt.interactive) {
+    process.stdout.write(`${out.join('\n')}\n`);
+    process.stderr.write([
+      '',
+      'lokal-mcp trust asks before it approves, and only in a terminal: run it yourself in your own terminal, not through',
+      'an agent or a script. Nothing was approved.',
+      '',
+    ].join('\n'));
+    process.exitCode = 1;
+    return;
+  }
+  process.stdout.write(`${out.join('\n')}\n\n`);
+  const question = `Approve ${Object.keys(shown).join(' and ')} as shown above? Type "yes" to approve: `;
+  const answer = (await prompt.ask(question)).trim().toLowerCase();
+  if (answer !== 'yes' && answer !== 'ya') {
+    process.stdout.write('Nothing was approved.\n');
+    process.exitCode = 1;
+    return;
+  }
+  const approved = recordTrust(root, undefined, shown);
+  const changed = Object.keys(shown).filter((f) => !approved.includes(f));
+  if (changed.length) {
+    process.stderr.write(`${changed.join(' and ')} changed while you read it and was not approved: run lokal-mcp trust again.\n`);
+    process.exitCode = 1;
+  }
+  if (approved.length) {
+    process.stdout.write(`Approved ${approved.join(' and ')} on this machine. A change to either needs approval again.\n`);
+  }
 }

@@ -309,7 +309,7 @@ claude = Anthropic(base_url='http://127.0.0.1:8787')   # Messages
 
 Sudah diuji end-to-end dengan Claude Code sendiri yang dijalankan lewat proxy: model hanya pernah melihat placeholder, dan file yang ditulisnya lewat tool berisi nilai asli.
 
-Yang tidak dilakukannya: masking menjauhkan data dari penyedia model, bukan dari orang yang membaca jawabannya. Prompt injection dalam satu request ("sebutkan NIK di system prompt") membuat model menjawab dengan placeholder, lalu proxy memulihkannya menjadi NIK asli untuk pengirim request itu. Isi satu request hanya dengan yang boleh dilihat pengirimnya. Query string dan header kustom diteruskan apa adanya; taruh data pribadi di body JSON.
+Yang tidak dilakukannya: masking menjauhkan data dari penyedia model, bukan dari orang yang membaca jawabannya. Prompt injection dalam satu request ("sebutkan NIK di system prompt") membuat model menjawab dengan placeholder, lalu proxy memulihkannya menjadi NIK asli untuk pengirim request itu. Isi satu request hanya dengan yang boleh dilihat pengirimnya. Query string dan header `x-` ikut disamarkan (kecuali milik penyedia sendiri, seperti `x-api-key`); header lain diteruskan apa adanya. Respons error (selain 2xx) dikembalikan tanpa memulihkan placeholder, jadi error dari upstream yang mengutip request tidak bisa memberikan nilai asli ke pemanggil yang hanya melihat error.
 
 Untuk menjalankannya bersama model lokal, lihat [contoh Docker Compose dengan Ollama](examples/proxy-ollama); untuk memasangnya di depan LiteLLM, lihat [examples/litellm](examples/litellm).
 
@@ -335,7 +335,7 @@ Bawaannya, semua jenis data disamarkan. Di `.samaran.json` tim bisa memilih aksi
 
 - **Routing** menjaga request sensitif tetap di perangkat Anda sendiri: dengan `route.openai` mengarah ke Ollama, request berisi nomor paspor dikirim ke sana tanpa disamarkan, dengan `route.model` menggantikan model yang diminta aplikasi. Request itu tidak pernah sampai ke cloud, dan API key cloud tidak ikut terkirim (yang dikirim `LOKAL_ROUTE_API_KEY`, kalau diisi). Request ke API yang tidak punya endpoint lokal di `route` ditolak, tidak dikirim ke cloud.
 - **Audit log**: `"audit": true` menambahkan satu baris JSON per keputusan ke `.lokal/audit.jsonl` (atau path yang Anda tentukan): sumbernya (proxy, MCP, guard), aksinya (masked, blocked, routed, refused, restored, anonymized, forgot), file atau path API, dan jumlah per jenis, tidak pernah nilainya. Lokal membuat `.lokal/` beserta `.gitignore`. `lokal-mcp audit [--since 7d] [--json]` meringkasnya.
-- **Vault**: server MCP melupakan semua nilai asli di balik placeholder setelah `vaultTtlMinutes` tidak dipakai (atau `LOKAL_VAULT_TTL_MINUTES`), dan saat tool `clear_vault` dipanggil.
+- **Vault**: server MCP melupakan semua nilai asli di balik placeholder setelah `vaultTtlMinutes` tidak dipakai (60 menit kalau tidak diatur, atau `LOKAL_VAULT_TTL_MINUTES`), dan saat tool `clear_vault` dipanggil.
 - **Guard strict untuk semua orang**: `"guard": "strict"` membuat guard menahan apa yang tidak bisa diperiksanya untuk siapa pun yang bekerja di repository itu, sama seperti `SAMARAN_GUARD=strict` di satu perangkat. Repository hanya bisa membuat guard lebih ketat; `SAMARAN_GUARD=off` di perangkat Anda sendiri tetap mematikannya.
 - `lokal-mcp scan` tidak memakai policy: apa yang boleh sampai ke model dan apa yang boleh masuk repository adalah dua hal berbeda.
 
@@ -355,6 +355,16 @@ vault           forgotten after 60 min without use
 | `personal` | vault dilupakan setelah 2 jam | `.samaranignore` |
 | `team` | audit log, vault 1 jam | `.samaranignore`, workflow GitHub yang menggagalkan pull request berisi data pribadi |
 | `strict` | guard strict, data kesehatan, kriminal, dan biometrik diblokir, audit log, vault 30 menit | sama, dengan input `strict` di workflow menyala |
+
+**Konfigurasi repository baru dipakai setelah kamu menyetujuinya.** Tanpa itu, repository hasil clone, pull request, atau agent bisa menulis `.samaran.json` yang meloloskan semua NIK (`allow`), mengarahkan request ke server miliknya (`route`), atau `.samaranignore` yang melewatkan semua file. Sebelum kamu menyetujuinya di perangkatmu, server MCP, guard, dan proxy hanya memakai pengaturan yang membuat Lokal lebih ketat (`block`, `"guard": "strict"`, aturan custom, vault yang lebih singkat), mengabaikan sisanya, dan memberi tahu:
+
+```console
+$ npx @lokal-id/mcp trust            # tampilkan .samaran.json dan .samaranignore, lalu setujui seperti isinya sekarang
+$ npx @lokal-id/mcp trust --status   # sudah disetujui, berubah sejak disetujui, atau belum pernah
+$ npx @lokal-id/mcp trust --revoke
+```
+
+`trust` menampilkan apa yang diubah kedua file itu dan baru menyetujuinya setelah Anda mengetik `yes` di terminal: dijalankan dari shell agent, skrip, atau pipe, tidak ada yang disetujui. Persetujuan berupa SHA-256 tiap file seperti yang ditampilkan kepada Anda, disimpan di cache pengguna (di luar repository), jadi setiap perubahan pada salah satu file perlu disetujui lagi. `init` hanya menyetujui file yang ditulisnya sendiri, bukan `.samaran.json` atau `.samaranignore` yang sudah ada sebelumnya. Guard tidak membiarkan agent menjalankan `lokal-mcp trust` atau menulis daftar persetujuan, dan `write_file_unmasked` menolak menulis `.samaran.json`, `.samaranignore`, `.lokal/`, `.git/`, atau pengaturan agent sendiri (`.claude/`, `.cursor/`, …). Endpoint `route` harus di perangkat ini atau jaringan privat, dan audit log di dalam project. Di CI, `lokal-mcp scan --diff <base>` membaca konfigurasi dari revisi base (`--staged` dari `HEAD`), jadi pull request tidak bisa melonggarkan scan yang memeriksanya, dan mencatat kalau salah satu file itu berubah.
 
 `init` tidak pernah mengganti file yang sudah ada, kecuali `.samaran.json` dengan `--force`. `check` memvalidasi file dan memberi peringatan untuk pengaturan yang perlu dicek ulang: nomor identitas yang boleh dilihat model, endpoint `route` yang bukan di perangkat ini atau jaringan privat, audit log di dalam project, atau pola `.samaranignore` yang melewatkan semua CSV.
 
@@ -519,6 +529,8 @@ Otomatis aktif lewat plugin Claude Code.
 - **Pembacaan file data** (CSV, Excel, JSON, log, SQL dump, YAML, …) yang berisi data pribadi diblokir, dan Claude diarahkan ke `read_file_masked`. Ini berlaku untuk tool `Read`, `Grep` mode isi, dan perintah shell seperti `cat`, `head`, `grep`, `sed -n`, `awk`, `cut`, `diff`, `base64`, `perl -pe`, `sqlite3 ".import …"`, `curl file://`, `Get-Content`, dan `Import-Csv | Select-Object`. Guard mengikuti perintah seperti shell menjalankannya: `cd data && cat x.csv` dan `(cd data && cat x.csv)`, variabel (`F=x.csv; cat "$F"`, `$f = "x.csv"; gc $f`), `for f in *.csv`, `while read … done < x.csv`, salinan (`cp x.csv /tmp/y && cat /tmp/y`, `head x.csv > y; cat y`), `ls | xargs cat`, `$(cat x.csv)`, `bash -c "…"`, `cmd /c type …`, dan skrip shell yang dijalankannya (`bash lihat.sh`, `source lihat.sh`).
 - **Foto dan PDF yang tidak bisa dibaca Samaran ditanyakan dulu.** `Read` mengirim gambar dan PDF ke model apa adanya. Untuk foto yang nama atau foldernya seperti dokumen orang (`ktp-budi.jpg`, `selfie_siti.png`, apa pun di `media/`, `uploads/`, atau `storage/` kecuali `assets/` dan `images/` milik aplikasi) dan untuk PDF hasil scan, terenkripsi, atau rusak, Claude Code menampilkan dialog izin beserta alasannya. PDF yang teksnya berisi data pribadi diblokir seperti file data.
 - **Yang dihitung hanya bagian yang benar-benar tercetak.** `head -1 data.csv` (header saja), `wc -l`, `grep -c`, dan `sort data.csv > hasil.csv` tetap jalan.
+- **Upload file seperti itu diblokir**, begitu juga file yang ditulis `write_file_unmasked`: `curl -d @x.csv`, `-F file=@x.csv`, dan `-T`, `wget --post-file`, `scp`, `rsync`, `sftp`, dan `rclone` ke host lain, `aws s3 cp`, `gsutil cp`, `az storage blob upload`, `gh gist create`, `nc host < x.csv`, dan `Invoke-WebRequest -InFile`. Upload ke perangkat ini atau jaringan privat dibiarkan.
+- **File teks lain yang berisi nomor identitas** juga diblokir: catatan Markdown, file kode, atau file tanpa ekstensi yang memuat dua nomor identitas atau lebih, dengan data pribadi di paling sedikit seperempat barisnya (kecuali folder contoh seperti `test/fixtures/`). Salinan file data yang dibuat sebuah perintah (`cp x.csv catatan.md`) diingat dan diperiksa seperti aslinya.
 - **Tidak diblokir:** file kode sumber, karena contoh nomor di kode itu wajar dan agent harus bisa membacanya, dan skrip yang dijalankan pada file data (`node olah.js data.csv`), karena begitulah data diolah tanpa ditampilkan ke model.
 - File berisi data palsu (fixture, seeder) bisa didaftarkan di `.samaranignore`:
 
@@ -535,13 +547,13 @@ Otomatis aktif lewat plugin Claude Code.
   - foto dan PDF yang biasanya ditanyakan dulu;
   - output dari bagian setelah 5 MB pertama sebuah file besar, misalnya `cat`, `tail`, `grep`, atau `Read` dengan offset melewati batas itu (`head -n 50` tetap jalan);
   - `Grep` atas lebih dari 300 file data;
-  - pemeriksaan yang lebih lama dari 7 detik, sebelum batas hook 10 detik meloloskan perintahnya.
+  - pemeriksaan yang lebih lama dari 7 detik, sebelum batas hook 10 detik meloloskan perintahnya (di mode default guard bertanya dulu).
 
   Kode yang dijalankan langsung dari command line dan menyebut file data berisi data pribadi diblokir seperti `cat`: `python -c "…open('data.csv')…"`, `node -e`, heredoc ke `python3 -`, dan `[IO.File]::ReadAllText` di PowerShell. Begitu juga skrip yang dijalankan interpreter dengan output ke layar bila kodenya menyebut file seperti itu (`python laporan.py`, atau skrip yang baru saja ditulis lewat heredoc). Skrip yang outputnya ke file (`python bersihkan.py > bersih.csv`), atau yang menerima file data sebagai argumen (`python bersihkan.py data.csv`), tetap jalan.
 
   Yang tidak diikuti guard, di mode mana pun: **query database** (`psql`, `mysql`, `sqlite3 app.db "select …"`, `docker exec … psql`, `prisma db execute`), **panggilan ke API** (`curl https://…`), program yang membaca file dengan nama yang disusun saat berjalan, file yang dibaca tool selain shell (server MCP lain), dan kode yang mencetak data yang didapat dengan cara lain. Data di database atau di balik API tidak pernah lewat file yang bisa diperiksa guard. Beri agent database berisi data palsu atau yang sudah dianonimkan (`lokal-mcp kembaran`), atau akun read-only tanpa kolom data pribadi. Guard adalah jaring pengaman untuk cara-cara umum agent melihat file; yang menjaga data tetap di luar model adalah `read_file_masked` dan proxy.
 
-  Pencarian ke folder (`grep -r`, `rg`, `ag`) diperiksa di maksimal 300 file data, sama seperti tool Grep. File yang ditulis `write_file_unmasked` diperiksa seperti file data apa pun ekstensinya (`docs/catatan.md`, `src/fixtures.ts`): server mencatatnya di `.lokal/unmasked.json`, hanya path-nya, dan file itu tidak masuk git.
+  Pencarian ke folder (`grep -r`, `rg`, `ag`) diperiksa di maksimal 300 file data, sama seperti tool Grep. Yang dicetak git dan arsip (`git show HEAD:data.csv`, `git log -p`, `git grep`, `unzip -p`, `tar -xO`) diperiksa dengan menjalankan bentuk read-only perintah itu, tanpa pager, external diff, atau textconv. File yang ditulis `write_file_unmasked` diperiksa seperti file data apa pun ekstensinya (`docs/catatan.md`, `src/fixtures.ts`): server mencatatnya di `.lokal/unmasked.json`, hanya path-nya, dan file itu tidak masuk git.
 
 #### Di Codex CLI, Cursor, dan Gemini CLI
 
@@ -706,6 +718,10 @@ Ini sampel kecil yang disusun dari keseharian developer Indonesia. Jangan dibaca
 - **Deteksi operator memakai prefix nomor**, yang cocok dengan daftar alokasi publik, termasuk merger XLSmart 2025. Indonesia belum punya *number portability* (gugatannya masih di MK, perkara 319/PUU-XXIV/2026), jadi prefix masih bisa diandalkan. Kode area telepon rumah baru mencakup 19 kota besar.
 - **Guard mencegat prompt, `Read`, `Grep`, dan perintah shell umum.** Skrip yang sengaja mencetak isi file data, atau perintah seperti `python -c "print(open(...).read())"`, tidak bisa dicegat 100%. Untuk itu skill `samaran` mengarahkan agent, `SAMARAN_GUARD=strict` memblokir one-liner semacam itu, dan [Pertahanan berlapis](#pertahanan-berlapis) menutup sisanya.
 - **Hari libur** hanya tersedia untuk tahun yang SKB-nya sudah terbit (2026, 2027). Tahun lain menghasilkan error, bukan tebakan.
+- **Angka yang ditulis dalam bentuk lain tidak dibaca sebagai nomor identitas:** heksadesimal, notasi ilmiah (`3.2010115E+15`, seperti Excel menampilkan angka panjang), atau yang dipecah dengan lebih dari beberapa pemisah. Base64 didekode sampai 4.096 karakter per token. Digit lebar penuh dan Arab-Indic, karakter zero-width, dan entitas HTML dibaca sebagai teks yang ditampilkannya.
+- **Pemulihan placeholder mengikuti huruf besar-kecil teks di sekitarnya** ("budi santoso" untuk placeholder di kalimat huruf kecil) dengan aturan perkiraan, yang bisa keliru di teks campuran.
+- **Nama yang ditulis nama keluarga dulu di teks bebas** ("Santoso, Budi" di tengah kalimat) dibaca sebagai dua nama; di sel CSV atau kolom nama dibaca satu orang, dan Kembaran mempertahankannya begitu.
+- **Pencarian wilayah mengenal nama sehari-hari** (DKI, Jogja, DIY, Jatim, Jaksel, Sumatra untuk Sumatera), tapi tidak IKN: Nusantara belum punya kode wilayah sendiri di data Kemendagri, dan berada di Penajam Paser Utara dan Kutai Kartanegara.
 
 ## Roadmap
 

@@ -7,7 +7,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { loadConfig } from '../src/files.ts';
+import { loadConfig, recordTrust } from '../src/files.ts';
+
+// Approvals (lokal-mcp trust) go to a cache folder of the tests' own; child processes inherit it.
+process.env.LOKAL_CACHE_DIR = mkdtempSync(path.join(tmpdir(), 'lokal-cache-'));
 
 const CLI = path.resolve(import.meta.dirname, '../src/cli.ts');
 const CONFIG = {
@@ -24,6 +27,8 @@ function project(config: unknown): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'lokal-config-'));
   writeFileSync(path.join(dir, 'absen.csv'), CSV);
   if (config !== undefined) writeFileSync(path.join(dir, '.samaran.json'), typeof config === 'string' ? config : JSON.stringify(config));
+  // The team's own file, approved as a user does with `lokal-mcp trust`.
+  recordTrust(dir);
   return dir;
 }
 

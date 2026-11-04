@@ -89,10 +89,14 @@ const DATA: Record<number, YearData> = {
 /** Years with official data. Anything else throws instead of silently assuming no holidays. */
 export const HOLIDAY_YEARS: readonly number[] = Object.keys(DATA).map(Number);
 
-function toIsoDate(date: string | Date): string {
+/**
+ * A Date is a moment, not a day: it is the day it is in `timeZone` (default Asia/Jakarta, where the holidays are), so
+ * Monday 06:00 WIB is Monday, not Sunday 23:00 UTC. A "YYYY-MM-DD" string is that day.
+ */
+function toIsoDate(date: string | Date, timeZone = 'Asia/Jakarta'): string {
   if (date instanceof Date) {
     if (Number.isNaN(date.getTime())) throw new RangeError('Tanggal tidak valid.');
-    return date.toISOString().slice(0, 10);
+    return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
   }
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   if (!m) throw new RangeError(`Tanggal harus berformat YYYY-MM-DD: ${date}`);
@@ -128,8 +132,8 @@ export function getHolidays(year: number): HolidayYear {
 }
 
 /** Holidays on a date (a date can be both, rarely). */
-export function holidaysOn(date: string | Date): Holiday[] {
-  const iso = toIsoDate(date);
+export function holidaysOn(date: string | Date, options: { timeZone?: string } = {}): Holiday[] {
+  const iso = toIsoDate(date, options.timeZone);
   return yearData(Number(iso.slice(0, 4))).holidays.filter((h) => h.date === iso);
 }
 
@@ -141,10 +145,12 @@ export interface WorkingDayOptions {
   cutiBersama?: boolean;
   /** Days of the week that are off: 0 = Minggu … 6 = Sabtu. Default [0, 6]. */
   weekend?: number[];
+  /** The time zone a Date is read in. Default Asia/Jakarta (WIT and WITA: Asia/Jayapura, Asia/Makassar). */
+  timeZone?: string;
 }
 
 export function isWorkingDay(date: string | Date, options: WorkingDayOptions = {}): boolean {
-  const iso = toIsoDate(date);
+  const iso = toIsoDate(date, options.timeZone);
   const { cutiBersama = true, weekend = [0, 6] } = options;
   if (weekend.includes(new Date(`${iso}T00:00:00Z`).getUTCDay())) return false;
   return !holidaysOn(iso).some((h) => h.type === 'libur_nasional' || cutiBersama);
@@ -158,7 +164,7 @@ function shift(iso: string, days: number): string {
 
 /** The date `n` working days after (or before, if negative) `date`. SLA and delivery estimates. */
 export function addWorkingDays(date: string | Date, n: number, options: WorkingDayOptions = {}): string {
-  let iso = toIsoDate(date);
+  let iso = toIsoDate(date, options.timeZone);
   const step = n < 0 ? -1 : 1;
   for (let left = Math.abs(n); left > 0; ) {
     iso = shift(iso, step);
@@ -167,11 +173,13 @@ export function addWorkingDays(date: string | Date, n: number, options: WorkingD
   return iso;
 }
 
-/** Working days from `from` to `to`, both inclusive. */
+/** Working days from `from` to `to`, both inclusive; negative when `to` comes before `from`, as addWorkingDays counts back. */
 export function countWorkingDays(from: string | Date, to: string | Date, options: WorkingDayOptions = {}): number {
-  let iso = toIsoDate(from);
-  const end = toIsoDate(to);
+  let iso = toIsoDate(from, options.timeZone);
+  let end = toIsoDate(to, options.timeZone);
+  const sign = end < iso ? -1 : 1;
+  if (sign < 0) [iso, end] = [end, iso];
   let count = 0;
   for (; iso <= end; iso = shift(iso, 1)) if (isWorkingDay(iso, options)) count++;
-  return count;
+  return sign * count;
 }

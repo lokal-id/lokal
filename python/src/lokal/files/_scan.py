@@ -14,7 +14,7 @@ from typing import Literal, Optional
 
 from .._result import Result
 from ..samaran import UU_PDP_CATEGORY, Confidence, PiiType, ScanStatus, detect_pii, partial_mask
-from ..samaran.custom import RuleLike, to_rules
+from ..samaran.custom import CustomRule, RuleLike, to_rules
 from ..samaran.detectors import check_types
 from ._load import Document, StrPath, load_config, load_document, load_ignore, walk_files
 
@@ -72,6 +72,7 @@ def scan_path(
     exclude: Optional[Iterable[PiiType]] = None,
     min_confidence: Confidence = 'high',
     ignore_file: bool = True,
+    config: bool = True,
     file_limit: int = 5000,
     custom: Optional[Iterable[RuleLike]] = None,
 ) -> ScanReport:
@@ -79,8 +80,10 @@ def scan_path(
 
     Folders skip dependency, build, and VCS directories, and files listed in ``.samaranignore`` at the folder root
     (``ignore_file=False`` scans them too). The rules and allowed values in ``.samaran.json`` there apply too, unless
-    ``custom`` gives the rules instead. Files that may hold personal data but cannot be read, such as images,
-    scanned or encrypted PDFs, and archives, are listed in ``not_scanned``.
+    ``custom`` gives the rules instead (``config=False`` reads no ``.samaran.json``). On a folder other people can
+    write to, such as uploads, pass ``ignore_file=False, config=False``: a ``.samaranignore`` or an allow list uploaded
+    into it would otherwise leave files or values out of the scan. Files that may hold personal data but cannot be
+    read, such as images, scanned or encrypted PDFs, and archives, are listed in ``not_scanned``.
 
     >>> report = scan_path('var/media')                                      # doctest: +SKIP
     >>> report.totals, [n.file for n in report.not_scanned]                  # doctest: +SKIP
@@ -89,7 +92,12 @@ def scan_path(
     is_dir = target.is_dir()
     root = target if is_dir else target.parent
     ignored = load_ignore(root) if ignore_file else None
-    rules, allow = (list(to_rules(custom)), []) if custom is not None else load_config(root)
+    rules: list[CustomRule] = []
+    allow: list[str] = []
+    if custom is not None:
+        rules = list(to_rules(custom))
+    elif config:
+        rules, allow = load_config(root)
     report = ScanReport()
     files = list(walk_files(target, file_limit + 1)) if is_dir else [target]
     if len(files) > file_limit:

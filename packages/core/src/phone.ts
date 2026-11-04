@@ -71,6 +71,8 @@ export function parsePhone(input: string): PhoneInfo {
 
   let rest: string;
   if (clean.startsWith('+62')) rest = clean.slice(3);
+  // "0062 812 …" dials out of another country the way "+62" does.
+  else if (clean.startsWith('0062') && clean.length >= 12) rest = clean.slice(4);
   else if (clean.startsWith('62') && clean.length >= 10) rest = clean.slice(2);
   else if (clean.startsWith('0')) rest = clean.slice(1);
   else if (clean.startsWith('8')) rest = clean;

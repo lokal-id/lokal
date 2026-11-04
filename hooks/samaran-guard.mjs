@@ -148,6 +148,8 @@ function parsePhone(input) {
   let rest;
   if (clean.startsWith("+62"))
     rest = clean.slice(3);
+  else if (clean.startsWith("0062") && clean.length >= 12)
+    rest = clean.slice(4);
   else if (clean.startsWith("62") && clean.length >= 10)
     rest = clean.slice(2);
   else if (clean.startsWith("0"))
@@ -329,7 +331,49 @@ function checkCustomRules(rules) {
         throw new RangeError(`Custom rule ${rule.label}: pattern does not compile (${e.message}).`);
       }
     }
+    const source = typeof rule.pattern === "string" ? rule.pattern : rule.pattern?.source;
+    if (source !== void 0 && source.length > MAX_PATTERN) {
+      throw new RangeError(`Custom rule ${rule.label}: pattern is longer than ${MAX_PATTERN} characters.`);
+    }
+    if (source !== void 0 && nestedQuantifier(source)) {
+      throw new RangeError(`Custom rule ${rule.label}: a repeated group that repeats inside, like (a+)+, can take exponential time on some text and stop the guard; write it without the nesting.`);
+    }
   }
+}
+var MAX_PATTERN = 1e3;
+function nestedQuantifier(source) {
+  const inner = [];
+  let repeated = false;
+  for (let i = 0; i < source.length; i++) {
+    const c = source[i];
+    if (c === "\\") {
+      i++;
+      repeated = false;
+    } else if (c === "[") {
+      for (i++; i < source.length && source[i] !== "]"; i++)
+        if (source[i] === "\\")
+          i++;
+      repeated = false;
+    } else if (c === "(") {
+      inner.push(false);
+      repeated = false;
+    } else if (c === ")") {
+      repeated = inner.pop() ?? false;
+      if (repeated && inner.length)
+        inner[inner.length - 1] = true;
+      const next = source[i + 1];
+      const repeats = next === "*" || next === "+" || next === "{" && /^\{\d*,\d*\}|^\{\d+\}/.test(source.slice(i + 1)) && !/^\{[01]\}/.test(source.slice(i + 1));
+      if (repeated && repeats)
+        return true;
+    } else if (c === "*" || c === "+" || c === "{" && /^\{\d*,/.test(source.slice(i))) {
+      if (inner.length)
+        inner[inner.length - 1] = true;
+      repeated = false;
+    } else {
+      repeated = false;
+    }
+  }
+  return false;
 }
 var escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function custom(label, start, value) {
@@ -727,8 +771,20 @@ var NIK_KEYWORD = /\b(nik|ktp|nomor induk kependudukan)\b/;
 var NPWP_KEYWORD = /\bnpwp\b/;
 var NISN_KEYWORD = /\b(nisn|nomor induk siswa nasional)\b[^\d]*$/;
 var BPJS_KEYWORD = /\b(bpjs|jkn|kis|kartu indonesia sehat|kpj|jamsostek)\b/;
+var NOT_A_NIK_LABEL = /(?:\b(?:rp|idr|usd|sgd|eur)\.?|[$€£])\s*$|(?:\b|_)(?:order|pesanan|invoice|inv|txn|trx|transaction|transaksi|ref|reference|referensi|booking|resi|tracking|trace|request|req|session|ticket|tiket)(?:[_ -]?(?:id|no|number|nomor|key))?\s*[:=#]?\s*["']?$/i;
+var ROLE_MAILBOX = /^(?:no-?reply|do-?not-?reply|donotreply|noreply-\w+|support|info|admin|administrator|cs|help|helpdesk|halo|hello|contact|kontak|sales|marketing|billing|notifications?|notif|security|privacy|webmaster|postmaster|hostmaster|abuse|hr|careers?|karir|humas|layanan|pengaduan|redaksi|team|tim|office|kantor|enquiries|inquiry|newsletter|news|mailer-daemon|bounce|system|alerts?|cs-\w+|customer-?(?:service|care|support))@/i;
+var BIBLE_BOOKS = new Set("kejadian keluaran imamat bilangan ulangan yosua hakim rut samuel raja tawarikh ezra nehemia ester ayub mazmur amsal pengkhotbah kidung yesaya yeremia ratapan yehezkiel daniel hosea yoel amos obaja yunus mikha nahum habakuk zefanya hagai zakharia maleakhi matius markus lukas yohanes kisah roma korintus galatia efesus filipi kolose tesalonika timotius titus filemon ibrani yakobus petrus yudas wahyu".split(" "));
+var TITLES_BEFORE = /(?:\b(?:dr|drs|dra|prof|ir|h|hj|kh|k\.h|st|sh|se|mr|mrs|raden|r)\.?\s+)+$/i;
+function notAPerson(text, m) {
+  const lead = text.slice(Math.max(0, m.start - 40), m.start).replace(TITLES_BEFORE, "");
+  const prev = /(?:^|[ \t])([A-Za-z]+)\.?[ \t]+$/.exec(lead)?.[1]?.toLowerCase();
+  if (prev && (PLACE_WORDS.has(prev) || ORGANIZATION.has(prev)))
+    return true;
+  const book = m.value.replace(/^\d\s+/, "").toLowerCase();
+  return BIBLE_BOOKS.has(book) && /^\s*\d+(?::\d+(?:-\d+)?)?\b/.test(text.slice(m.end, m.end + 12));
+}
 var TECH_ID_LABEL = /(?:\b|_)(?:trace|span|request|req|correlation|corr|session|sess|message|msg|event|job|task|order|pesanan|invoice|inv|txn|trx|transaction|transaksi|ref|reference|referensi|idempotency|booking|resi|tracking|uuid|nonce|seq|sequence)(?:[_ -]?(?:id|no|number|nomor|key))?\s*[:=#]?\s*["']?$/;
-var BANK_KEYWORD = /\b(no\.?\s*rek(ening)?|norek|rekening|rek|account|acc|a\/c|virtual account|va|transfer|tf|bca|bri|bni|mandiri|bsi|cimb|niaga|permata|danamon|btn|jago|seabank|blu|ocbc|panin|maybank|mega|muamalat)\b/;
+var BANK_KEYWORD = /\b(no\.?\s*rek(ening)?|norek|rekening|rek|account|acct|acc|a\/c|virtual account|va|transfer|tf|bca|bri|bni|mandiri|bsi|cimb|niaga|permata|danamon|btn|jago|seabank|blu|ocbc|panin|maybank|mega|muamalat)\b/;
 var DOTTED_ID = /^(?:\d{4}\.\d{4}\.\d{4}\.\d{4}|\d{2}\.\d{2}\.\d{2}\.\d{6}\.\d{4}|\d{6}\.\d{6}\.\d{4})$/;
 function detectDigitRuns(text) {
   const out = [];
@@ -745,12 +801,14 @@ function detectDigitRuns(text) {
       continue;
     if (/^(?:19|20)\d{2}-\d{2}-\d{2}(?: \d{2})?$|^\d{2}-\d{2}-(?:19|20)\d{2}(?: \d{2})?$/.test(value))
       continue;
+    if (NOT_A_NIK_LABEL.test(label) && !NIK_KEYWORD.test(ctx))
+      continue;
     const title = NUMBER_ONLY_LABEL.test(label) ? previousLine(text, m.index) : "";
     if (digits.length === 16 && (KK_KEYWORD.test(label) || /\bkartu keluarga\b/.test(title)))
       push("KK", "high");
     else if (digits.length >= 12 && digits.length <= 16 && SIM_KEYWORD.test(label))
       push("SIM", "high");
-    else if (digits.length === 16 && parseNik(digits).valid)
+    else if (digits.length === 16 && parseNik(digits).valid && (NIK_KEYWORD.test(ctx) || !NOT_A_NIK_LABEL.test(label)))
       push("NIK", "high");
     else if (isNip(digits))
       push("NIP", "high");
@@ -844,7 +902,7 @@ function isMeasurement(text, index, end) {
 }
 function detectPhones(text) {
   const out = [];
-  const mobile = /(?<![\d+\w])(?:\+62|0062|62|0)[ \t-]?8\d{1,2}(?:[ \t.-]?\d{3,4}){2,3}(?![\d\w])/g;
+  const mobile = /(?<![\d+\w])(?:\+62[ \t]?\(0\)|\+62|0062|62|0)[ \t-]?8\d{1,2}(?:[ \t.-]?\d{3,4}){2,3}(?![\d\w])/g;
   for (const m of text.matchAll(mobile)) {
     if (isMeasurement(text, m.index, m.index + m[0].length))
       continue;
@@ -885,12 +943,16 @@ function detectPhones(text) {
 var RESERVED_EMAIL_DOMAIN = /@(?:[\w-]+\.)*(?:example\.(?:com|net|org)|[\w-]+\.(?:example|test|invalid|localhost))$/i;
 function detectEmails(text) {
   const re = /(?<![\w.+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}(?![\w-])/g;
-  const out = [...text.matchAll(re)].filter((m) => !RESERVED_EMAIL_DOMAIN.test(m[0])).map((m) => match("EMAIL", m.index, m[0], "high"));
+  const out = [...text.matchAll(re)].filter((m) => !RESERVED_EMAIL_DOMAIN.test(m[0]) && !ROLE_MAILBOX.test(m[0])).map((m) => match("EMAIL", m.index, m[0], "high"));
   const AT = String.raw`\s*(?:\[\s*at\s*\]|\(\s*at\s*\)|\{\s*at\s*\})\s*`;
   const DOT = String.raw`(?:\s*(?:\[\s*dot\s*\]|\(\s*dot\s*\)|\{\s*dot\s*\})\s*|\.)`;
   const spelled = new RegExp(String.raw`(?<![\w.+-])[A-Za-z0-9._%+-]+${AT}[A-Za-z0-9-]+(?:${DOT}[A-Za-z0-9-]+)*${DOT}[A-Za-z]{2,}(?![\w-])`, "gi");
   for (const m of text.matchAll(spelled))
     out.push(match("EMAIL", m.index, m[0], "high"));
+  const spaced = /(?<![\w.+-])[A-Za-z0-9_%+-]+(?:[ \t]?\.[ \t]?[A-Za-z0-9_%+-]+)*[ \t]?@[ \t]?[A-Za-z0-9-]+(?:[ \t]?\.[ \t]?[A-Za-z0-9-]+)*[ \t]?\.[ \t]?[A-Za-z]{2,}(?![\w-])/g;
+  for (const m of text.matchAll(spaced))
+    if (/[ \t]/.test(m[0]) && !RESERVED_EMAIL_DOMAIN.test(m[0].replace(/[ \t]/g, "")))
+      out.push(match("EMAIL", m.index, m[0], "high"));
   for (const m of text.matchAll(/(?<![\w.+-])[A-Za-z0-9._+-]+%40[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}(?![\w-])/g)) {
     out.push(match("EMAIL", m.index, m[0], "high"));
   }
@@ -1582,7 +1644,7 @@ function detectGluedIds(text) {
   }
   return out;
 }
-var DIGIT_WORD = "(?:nol|kosong|satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan)";
+var DIGIT_WORD = "(?:nol|kosong|satu|dua|tiga|empat|lima|enam|tujuh|delapan|lapan|sembilan)";
 var OCR_ID = /\b(nik|no\.?\s*ktp|ktp|no\.?\s*kk|kk|nomor\s+induk\s+kependudukan)\b[ \t]*[:.=]?[ \t]*([0-9oil|](?:[ ]?[0-9oil|]){15})(?![0-9a-z|])/gi;
 function detectOcrIds(text) {
   const out = [];
@@ -1612,9 +1674,87 @@ function detectRecordBirthDates(text) {
   }
   return out;
 }
+var DIGIT_VALUE = {
+  nol: "0",
+  kosong: "0",
+  satu: "1",
+  dua: "2",
+  tiga: "3",
+  empat: "4",
+  lima: "5",
+  enam: "6",
+  tujuh: "7",
+  delapan: "8",
+  lapan: "8",
+  sembilan: "9"
+};
 function detectSpokenPhones(text) {
-  const re = new RegExp(`\\b(?:nol|kosong)[\\s,.-]+delapan(?:[\\s,.-]+${DIGIT_WORD}){8,11}\\b`, "gi");
-  return [...text.matchAll(re)].map((m) => match("PHONE", m.index, m[0], "medium"));
+  const out = [];
+  const re = new RegExp(`(?<![\\w])(?:${DIGIT_WORD}|\\d{1,4})(?:[\\s,.-]+(?:${DIGIT_WORD}|\\d{1,4})){4,20}(?![\\w])`, "gi");
+  for (const m of text.matchAll(re)) {
+    const tokens = m[0].split(/[\s,.-]+/).filter(Boolean);
+    if (!tokens.some((t) => /^[a-z]/i.test(t)))
+      continue;
+    const digits = tokens.map((t) => DIGIT_VALUE[t.toLowerCase()] ?? t).join("");
+    if (/^08|^628/.test(digits) && digits.length >= 10 && digits.length <= 13)
+      out.push(match("PHONE", m.index, m[0], "medium"));
+    else if (digits.length === 16 && parseNik(digits).valid)
+      out.push(match("NIK", m.index, m[0], "high"));
+  }
+  return out;
+}
+var SPLIT_NIK = /\b(?:nik|no\.?\s*ktp|ktp|no\.?\s*kk|kk)\b[^\d\n]{0,15}(\d{2,14})[ \t]*\r?\n[ \t]*(\d{2,14})(?!\d)/gi;
+function detectSplitNiks(text) {
+  const out = [];
+  for (const m of text.matchAll(SPLIT_NIK)) {
+    const digits = m[1] + m[2];
+    if (digits.length !== 16 || !parseNik(digits).valid)
+      continue;
+    const start = m.index + m[0].indexOf(m[1]);
+    out.push(match("NIK", start, text.slice(start, m.index + m[0].length), "high"));
+  }
+  return out;
+}
+var BASE64_TOKEN = /(?<![A-Za-z0-9+/=_-])[A-Za-z0-9+/]{16,4096}={0,2}(?![A-Za-z0-9+/=_-])/g;
+var ENCODED_WORD = /=\?[\w-]+\?([BQbq])\?([^?\s]*)\?=/g;
+var DECODED_TYPES = ["NIK", "KK", "NPWP", "PASSPORT", "BANK_ACCOUNT", "CARD", "BPJS", "PHONE", "EMAIL", "NAME", "ADDRESS"];
+var decoding = false;
+function fromBase64(s) {
+  try {
+    const binary = atob(s);
+    return new TextDecoder().decode(Uint8Array.from(binary, (c) => c.charCodeAt(0)));
+  } catch {
+    return "";
+  }
+}
+function detectEncoded(text) {
+  if (decoding || !/[A-Za-z0-9+/]{16}|=\?/.test(text))
+    return [];
+  decoding = true;
+  try {
+    const out = [];
+    const inside = (decoded, cue) => {
+      if (!decoded || [...decoded].filter((c) => c < " " && c !== "\n" && c !== "	").length > decoded.length / 20 || decoded.includes("\uFFFD"))
+        return void 0;
+      return detectPii(`${cue}${decoded}`, { types: DECODED_TYPES, minConfidence: "high" })[0];
+    };
+    for (const m of text.matchAll(ENCODED_WORD)) {
+      const decoded = m[1].toUpperCase() === "B" ? fromBase64(m[2]) : m[2].replace(/_/g, " ").replace(/=([\dA-F]{2})/gi, (_, h) => String.fromCharCode(Number.parseInt(h, 16)));
+      const found = inside(decoded, "Nama: ");
+      if (found)
+        out.push(match(found.type, m.index, m[0], "high"));
+    }
+    for (const m of text.matchAll(BASE64_TOKEN)) {
+      if (!/[a-z]/.test(m[0]) || !/[A-Z]/.test(m[0]))
+        continue;
+      const found = inside(fromBase64(m[0]), "");
+      if (found && found.type !== "NAME")
+        out.push(match(found.type, m.index, m[0], "high"));
+    }
+    return out;
+  } finally {
+    decoding = false;
+  }
 }
 function detectLoneGivenNames(text) {
   const out = [];
@@ -1665,6 +1805,87 @@ function detectSentenceSubjects(text) {
     if (!GIVEN_NAMES.has(bare) && !JAVANESE_NAME.test(bare))
       continue;
     out.push(match("NAME", m.index + m[0].length - m[1].length, m[1], "medium"));
+  }
+  return out;
+}
+var IBAN = /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){2,7}(?:[ ]?[A-Z0-9]{1,4})?\b/g;
+function ibanValid(iban) {
+  const s = iban.replace(/ /g, "");
+  if (s.length < 15 || s.length > 34)
+    return false;
+  const moved = s.slice(4) + s.slice(0, 4);
+  let rest = 0;
+  for (const c of moved) {
+    const v = /\d/.test(c) ? c : String(c.charCodeAt(0) - 55);
+    for (const d of v)
+      rest = (rest * 10 + Number(d)) % 97;
+  }
+  return rest === 1;
+}
+function detectIbans(text) {
+  return [...text.matchAll(IBAN)].filter((m) => ibanValid(m[0])).map((m) => match("BANK_ACCOUNT", m.index, m[0], "high"));
+}
+var XML_FIELD = /<([A-Za-z_][\w.-]{0,40})(?:\s[^<>]*)?>([^<>]{1,200})<\/\1>/g;
+var SQL_CONDITION = /\b([A-Za-z_][\w.]{0,60})\s+(?:I?LIKE|=|<>|!=)\s*(N?)'%?([^'%]{2,120})%?'/gi;
+function detectMarkupFields(text) {
+  const out = [];
+  const push = (key, value, start) => {
+    const type = fieldType(key.split(".").pop());
+    const trimmed = value.trim();
+    if (!type || !trimmed || !isPlausibleValue(type, trimmed, key))
+      return;
+    out.push(match(type, start + value.indexOf(trimmed), trimmed, "high"));
+  };
+  for (const m of text.matchAll(XML_FIELD))
+    push(m[1], m[2], m.index + m[0].indexOf(">") + 1);
+  for (const m of text.matchAll(SQL_CONDITION))
+    push(m[1], m[3], m.index + m[0].lastIndexOf(m[3]));
+  return out;
+}
+var DOCUMENT_TITLE = /\b(?:e-?ktp|ktp|kartu[ _-]keluarga|npwp|paspor|passport|ijazah|transkrip|akta[ _-]lahir|akta[ _-]kelahiran|slip[ _-]gaji|cv|resume|surat[ _-]lamaran|rapor|raport|kartu[ _-]bpjs|selfie|swafoto|foto[ _-]ktp)[ _-]+([A-Za-z][A-Za-z'’]+(?:[ _-][A-Za-z][A-Za-z'’]+){0,3})(?=[ _-]*(?:\d|\.[A-Za-z]{2,4}\b|$|[\s,;)]))/gi;
+function detectDocumentTitles(text) {
+  const out = [];
+  for (const m of text.matchAll(DOCUMENT_TITLE)) {
+    const words = m[1].split(/[ _-]+/);
+    const bare = words.map((w) => w.toLowerCase());
+    if (bare.some((w) => NOT_NAME.has(w) || PLACE_WORDS.has(w) || TITLE_WORDS.has(w)))
+      continue;
+    const fileName = /[_-]/.test(m[0]) || /\.[A-Za-z]{2,4}\b/.test(text.slice(m.index + m[0].length, m.index + m[0].length + 8));
+    if (!fileName && !words.every((w) => /^[A-Z]/.test(w)) && !bare.some(isKnownNamePart))
+      continue;
+    out.push(match("NAME", m.index + m[0].length - m[1].length, m[1], "high"));
+  }
+  return out;
+}
+var SENSITIVE_MEDICINE = "clozapine|risperidone|haloperidol|olanzapine|quetiapine|aripiprazole|lithium|sertraline|fluoxetine|escitalopram|amitriptyline|alprazolam|clonazepam|diazepam|methadone|metadon|buprenorphine|naltrexone|tenofovir|efavirenz|dolutegravir|lamivudine|zidovudine|arv|insulin|metformin|levothyroxine|isoniazid|rifampicin|rifampisin|carbamazepine|valproate|valproat|levetiracetam|phenytoin|fenitoin|tamoxifen|letrozole|imatinib|methotrexate";
+var DISABILITY = "(?:penyandang\\s+)?disabilitas\\s+(?:netra|rungu|wicara|daksa|grahita|intelektual|mental|fisik|ganda|sensorik)|tuna(?:netra|rungu|wicara|daksa|grahita|laras)";
+var HEALTH_TERM = new RegExp(`\\b(?:(?:minum|konsumsi|mengonsumsi|diresepkan|resep|obat|terapi|pakai)\\s+(?:obat\\s+)?(${SENSITIVE_MEDICINE})|(${DISABILITY}))\\b`, "gi");
+var PERSON_CUE = /\b(?:saya|aku|gue|gw|anak(?:\s+saya)?|istri|suami|ibu|bapak|ayah|adik|kakak|pasien|pelamar|pelanggan|nasabah|karyawan|pegawai|siswa|beliau|dia|pak|bu|mas|mbak|atas\s+nama|a\.n\.|nama|rutin)\b/i;
+function detectHealthWithoutLabel(text) {
+  const out = [];
+  for (const m of text.matchAll(HEALTH_TERM)) {
+    const lineStart = text.lastIndexOf("\n", m.index) + 1;
+    const lineEnd = text.indexOf("\n", m.index);
+    const line = text.slice(lineStart, lineEnd === -1 ? text.length : lineEnd);
+    if (!PERSON_CUE.test(line) && !/\b[A-Z][a-z]{2,}\b/.test(text.slice(lineStart, m.index)))
+      continue;
+    const value = m[1] ?? m[2];
+    out.push(match("HEALTH", m.index + m[0].lastIndexOf(value), value, "medium"));
+  }
+  return out;
+}
+var EMBEDDED_NIK = /(?<!\d)\d(?:[/_ .-]?\d){15}(?!\d)/g;
+var NIK_GROUPS = /* @__PURE__ */ new Set(["16", "4,4,4,4", "2,2,2,6,4", "6,6,4"]);
+function detectEmbeddedNiks(text) {
+  const out = [];
+  for (const m of text.matchAll(EMBEDDED_NIK)) {
+    const groups = m[0].split(/[/_ .-]/).map((g) => g.length).join(",");
+    if (!NIK_GROUPS.has(groups) || !parseNik(m[0].replace(/\D/g, "")).valid)
+      continue;
+    const ctx = before(text, m.index);
+    if (!NIK_KEYWORD.test(ctx) && NOT_A_NIK_LABEL.test(ctx.slice(-25)))
+      continue;
+    out.push(match("NIK", m.index, m[0], "high"));
   }
   return out;
 }
@@ -2282,10 +2503,17 @@ var DETECTORS = [
   detectRecordBirthDates,
   detectCardCodes,
   detectSpokenPhones,
+  detectSplitNiks,
+  detectEncoded,
+  detectIbans,
+  detectMarkupFields,
+  detectDocumentTitles,
+  detectHealthWithoutLabel,
   detectLoneGivenNames,
   detectNamesWithAge,
   detectNamePairs,
   detectPatronymicsAndInitials,
+  detectEmbeddedNiks,
   detectAttendance,
   detectSentenceSubjects,
   detectBracketHandles,
@@ -2371,8 +2599,66 @@ function escapesAsBreaks(text) {
     return text;
   return text.replace(ESCAPED_BREAK, (e) => " ".repeat(e.length - 1) + BREAK_FOR[e[e.length - 1]]);
 }
+var LIST_NEXT_NAME = /^(\s*(?:,\s*(?:dan\s+|serta\s+)?|\s(?:dan|serta|atau|&)\s+))([A-Z][a-z'’-]+(?:\s+[A-Z][a-z'’-]+){0,3})(?![\w'’-])/;
 var NAME_TAIL = /\s+(?:telah|sudah|akan|sedang|pernah|masih|tidak|tak|belum|lalu|kemudian|segera|sempat|(?:meng|meny|memb|memp)[a-z]{3,})\b/i;
+var HIDDEN = /[！-～　٠-٩۰-۹  -‍  ⁠﻿­]|&(?:#\d{1,7}|#x[\da-f]{1,6}|nbsp|commat|period|amp|lt|gt|quot|apos);/i;
+var ENTITY2 = /^&(?:#(\d{1,7})|#x([\da-f]{1,6})|(nbsp|commat|period|amp|lt|gt|quot|apos));/i;
+var NAMED_ENTITY = { nbsp: " ", commat: "@", period: ".", amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+function normalize(text) {
+  let norm = "";
+  const from = [];
+  const to = [];
+  const at = new Array(text.length + 1);
+  const put = (c, start, end) => {
+    norm += c;
+    from.push(start);
+    to.push(end);
+  };
+  for (let i = 0; i < text.length; ) {
+    at[i] = norm.length;
+    const code = text.charCodeAt(i);
+    if (code === 38) {
+      const m = ENTITY2.exec(text.slice(i, i + 12));
+      const point = m && !m[3] ? Number.parseInt(m[1] ?? m[2], m[1] ? 10 : 16) : void 0;
+      const value = m ? m[3] ? NAMED_ENTITY[m[3].toLowerCase()] : point <= 1114111 ? String.fromCodePoint(point) : void 0 : void 0;
+      if (m && value !== void 0 && value.length === 1 && value.charCodeAt(0) >= 32 && value.charCodeAt(0) < 127) {
+        for (let k = i + 1; k < i + m[0].length; k++)
+          at[k] = norm.length;
+        put(value, i, i + m[0].length);
+        i += m[0].length;
+        continue;
+      }
+    }
+    if (code >= 65281 && code <= 65374)
+      put(String.fromCharCode(code - 65248), i, i + 1);
+    else if (code >= 1632 && code <= 1641)
+      put(String.fromCharCode(code - 1632 + 48), i, i + 1);
+    else if (code >= 1776 && code <= 1785)
+      put(String.fromCharCode(code - 1776 + 48), i, i + 1);
+    else if (code === 12288 || code === 160 || code >= 8192 && code <= 8202 || code === 8239 || code === 8287)
+      put(" ", i, i + 1);
+    else if (code >= 8203 && code <= 8205 || code === 8288 || code === 65279 || code === 173) {
+    } else
+      put(text[i], i, i + 1);
+    i++;
+  }
+  at[text.length] = norm.length;
+  return { norm, from, to, at };
+}
 function detectPii(text, options = {}) {
+  if (!HIDDEN.test(text))
+    return detectPlain(text, options);
+  const { norm, from, to, at } = normalize(text);
+  const extra = options.extra?.map((m) => ({ ...m, start: at[m.start], end: at[m.end], value: norm.slice(at[m.start], at[m.end]) }));
+  return detectPlain(norm, { ...options, extra }).flatMap((m) => {
+    if (m.end <= m.start)
+      return [];
+    const start = from[m.start];
+    const end = to[m.end - 1];
+    return [{ ...m, start, end, value: text.slice(start, end) }];
+  });
+}
+function detectPlain(text, options = {}) {
   for (const t of [...options.types ?? [], ...options.exclude ?? []]) {
     if (!PII_TYPES.includes(t))
       throw new RangeError(`Unknown PII type "${t}". Valid types: ${PII_TYPES.join(", ")}`);
@@ -2405,14 +2691,42 @@ function detectPii(text, options = {}) {
     accepted.push(c);
   }
   accepted.sort((a, b) => a.start - b.start);
+  for (let i = 0; i < accepted.length; i++) {
+    const m = accepted[i];
+    if (m.type !== "NAME")
+      continue;
+    const next = LIST_NEXT_NAME.exec(text.slice(m.end, m.end + 80));
+    if (!next)
+      continue;
+    const words = next[2].split(/\s+/).map((w) => w.toLowerCase());
+    if (words.some((w) => NOT_NAME.has(w) || PLACE_WORDS.has(w) || TITLE_WORDS.has(w) || ORGANIZATION.has(w)))
+      continue;
+    if (words.length < 2 && !isKnownNamePart(words[0]) || /^\s*\d/.test(text.slice(m.end + next[0].length, m.end + next[0].length + 3)))
+      continue;
+    const start = m.end + next[1].length;
+    const end = start + next[2].length;
+    let free = true;
+    for (let k = start; k < end && free; k++)
+      free = taken[k] === 0;
+    if (!free)
+      continue;
+    taken.fill(1, start, end);
+    accepted.splice(i + 1, 0, match("NAME", start, next[2], m.confidence));
+  }
   for (const [i, m] of accepted.entries()) {
     if (m.type !== "NAME")
       continue;
+    if (notAPerson(text, m)) {
+      accepted[i] = { ...m, end: m.start };
+      continue;
+    }
     const tail = NAME_TAIL.exec(m.value);
     if (tail && tail.index > 0)
       accepted[i] = { ...m, end: m.start + tail.index, value: m.value.slice(0, tail.index) };
   }
   return accepted.flatMap((m) => {
+    if (m.end <= m.start)
+      return [];
     let end = m.end;
     for (; ; ) {
       if (end > m.start && view[end - 1] !== text[end - 1])
@@ -2488,6 +2802,8 @@ function partialMask(type, value) {
 }
 
 // packages/mcp/src/files.ts
+import { createHash, randomBytes } from "node:crypto";
+import { homedir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import {
   closeSync,
@@ -3617,15 +3933,171 @@ var SKIP_DIRS = /* @__PURE__ */ new Set([
   ".cache",
   "target"
 ]);
+var outside = (root, abs) => {
+  const rel = path.relative(root, abs);
+  return rel === ".." || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel);
+};
+function realTarget(abs) {
+  let existing = abs;
+  const rest = [];
+  while (!existsSync(existing)) {
+    const parent = path.dirname(existing);
+    if (parent === existing) return abs;
+    rest.unshift(path.basename(existing));
+    existing = parent;
+  }
+  return path.join(realpathSync.native(existing), ...rest);
+}
+var realRoots = /* @__PURE__ */ new Map();
+function realRoot(root) {
+  let real = realRoots.get(root);
+  if (real === void 0) {
+    real = realTarget(root);
+    realRoots.set(root, real);
+  }
+  return real;
+}
+function resolveInRoot(root, p) {
+  const abs = path.resolve(root, p);
+  if (outside(root, abs) || outside(realRoot(root), realTarget(abs))) {
+    throw new Error(`Path is outside the allowed root (${root}): ${p}`);
+  }
+  return abs;
+}
+var sameFile = (a, b) => a.dev === b.dev && a.ino === b.ino;
+function openedPath(fd) {
+  if (process.platform !== "linux") return void 0;
+  try {
+    return readlinkSync(`/proc/self/fd/${fd}`);
+  } catch {
+    return void 0;
+  }
+}
+function linkFree(rootReal, real) {
+  let at = rootReal;
+  for (const part of path.relative(rootReal, real).split(path.sep).filter(Boolean)) {
+    at = path.join(at, part);
+    if (lstatSync(at).isSymbolicLink()) return false;
+  }
+  return true;
+}
+function removeCreated(created, paths) {
+  for (const candidate of paths) {
+    try {
+      const real = realpathSync.native(candidate);
+      if (sameFile(created, statSync(real, { bigint: true }))) {
+        rmSync(real);
+        return;
+      }
+    } catch {
+    }
+  }
+}
+function openChecked(root, p, abs, flags) {
+  const fd = openSync(abs, flags);
+  const opened = fstatSync(fd, { bigint: true });
+  try {
+    const rootReal = realRoot(root);
+    const viaFd = openedPath(fd);
+    let real;
+    let inside;
+    if (viaFd !== void 0) {
+      real = viaFd;
+      inside = !outside(rootReal, real);
+    } else {
+      real = realpathSync.native(abs);
+      inside = !outside(rootReal, real) && sameFile(opened, statSync(real, { bigint: true })) && linkFree(rootReal, real);
+    }
+    if (!inside) {
+      if (flags.includes("x")) removeCreated(opened, [real, abs]);
+      throw new Error(`Path is outside the allowed root (${root}): ${p}`);
+    }
+    if (opened.isFile() && opened.nlink > 1n) {
+      throw new Error(`${p} has more than one hard link, so it may be a file outside the root under a second name; it is not read or written.`);
+    }
+    return fd;
+  } catch (e) {
+    closeSync(fd);
+    throw e;
+  }
+}
+function writeInRoot(root, p, data, encoding = "utf8") {
+  const abs = resolveInRoot(root, p);
+  mkdirSync(path.dirname(abs), { recursive: true });
+  const tmp = path.join(path.dirname(abs), `.${path.basename(abs).slice(0, 200)}.${randomBytes(8).toString("hex")}.tmp`);
+  const fd = openChecked(root, p, tmp, "wx");
+  let written = false;
+  try {
+    writeSync(fd, encodeText(data, encoding));
+    closeSync(fd);
+    written = true;
+    renameSync(tmp, abs);
+  } catch (e) {
+    if (!written) closeSync(fd);
+    rmSync(tmp, { force: true });
+    throw e;
+  }
+  return abs;
+}
+var UTF8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
+function decodeText(buf, sample = false) {
+  const utf16 = utf16Of(buf.subarray(0, 8e3));
+  if (utf16) {
+    const whole = buf.subarray(0, buf.length & ~1);
+    return { text: new TextDecoder(utf16 === "utf16le" ? "utf-16le" : "utf-16be", { ignoreBOM: true }).decode(whole), encoding: utf16 };
+  }
+  for (let cut = 0; cut <= (sample ? 3 : 0) && cut < buf.length; cut++) {
+    if (cut && !unfinishedChar(buf.subarray(buf.length - cut))) continue;
+    try {
+      const text = UTF8.decode(buf.subarray(0, buf.length - cut));
+      return { text: cut ? text + buf.subarray(buf.length - cut).toString("utf8") : text };
+    } catch {
+    }
+  }
+  if (!buf.length) return { text: "" };
+  return { text: buf.toString("latin1"), encoding: "latin1" };
+}
+function unfinishedChar(tail) {
+  const lead = tail[0];
+  const need = lead >= 240 && lead <= 244 ? 4 : lead >= 224 && lead <= 239 ? 3 : lead >= 194 && lead <= 223 ? 2 : 0;
+  return need > tail.length && tail.subarray(1).every((b) => b >= 128 && b <= 191);
+}
+function encodeText(text, encoding = "utf8") {
+  if (encoding === "utf16le") return Buffer.from(text, "utf16le");
+  if (encoding === "utf16be") return Buffer.from(text, "utf16le").swap16();
+  if (encoding !== "latin1") return Buffer.from(text, "utf8");
+  for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) > 255) return Buffer.from(text, "utf8");
+  return Buffer.from(text, "latin1");
+}
 function toPosix(p) {
   return p.split(path.sep).join("/");
+}
+function utf16Of(head) {
+  if (head[0] === 255 && head[1] === 254) return "utf16le";
+  if (head[0] === 254 && head[1] === 255) return "utf16be";
+  const n = Math.min(head.length, 8e3) & ~1;
+  if (n < 8) return void 0;
+  let evenZero = 0;
+  let oddZero = 0;
+  for (let i = 0; i < n; i += 2) {
+    if (head[i] === 0) evenZero++;
+    if (head[i + 1] === 0) oddZero++;
+  }
+  const pairs = n / 2;
+  if (oddZero >= pairs * 0.9 && evenZero === 0) return "utf16le";
+  if (evenZero >= pairs * 0.9 && oddZero === 0) return "utf16be";
+  return void 0;
+}
+function looksBinary(buf) {
+  const head = buf.subarray(0, 8e3);
+  return head.includes(0) && !utf16Of(head);
 }
 function isTextFile(file) {
   const fd = openSync(file, "r");
   try {
     const buf = Buffer.alloc(8e3);
     const n = readSync(fd, buf, 0, buf.length, 0);
-    return !buf.subarray(0, n).includes(0);
+    return !looksBinary(buf.subarray(0, n));
   } finally {
     closeSync(fd);
   }
@@ -3677,12 +4149,15 @@ function policyFor(config2, m) {
   const policy = config2.policy ?? {};
   return (m.label !== void 0 ? policy[m.label] : void 0) ?? policy[m.type] ?? "mask";
 }
-function loadConfig(root) {
+function loadConfig(root, options = {}) {
   const file = path.join(root, ".samaran.json");
   if (!existsSync(file)) return { custom: [], allow: [] };
+  return parseConfig(readFileSync(file, "utf8"), root, options.trusted ?? trustedFiles(root).has(".samaran.json"));
+}
+function parseConfig(text, root, trusted) {
   let raw;
   try {
-    raw = JSON.parse(readFileSync(file, "utf8"));
+    raw = JSON.parse(text.replace(/^﻿/, ""));
   } catch (e) {
     throw new Error(`.samaran.json is not valid JSON: ${e.message}`);
   }
@@ -3737,6 +4212,7 @@ function loadConfig(root) {
     for (const [k, v] of Object.entries({ openai, anthropic })) {
       if (v === void 0) continue;
       if (typeof v !== "string" || !/^https?:\/\//.test(v)) fail(`route.${k} must be an http(s) URL`);
+      if (!localEndpoint(v)) fail(`route.${k} must be on this machine or the local network (localhost, 127.0.0.1, 10.x, 192.168.x, *.local), not ${v}`);
     }
     if (model !== void 0 && typeof model !== "string") fail("route.model must be a string");
     config2.route = { openai, anthropic, model };
@@ -3747,6 +4223,7 @@ function loadConfig(root) {
   if (audit !== void 0 && audit !== false) {
     if (audit !== true && (typeof audit !== "string" || !audit.trim())) fail('"audit" must be true or a file path');
     config2.audit = path.resolve(root, audit === true ? ".lokal/audit.jsonl" : audit);
+    if (outside(path.resolve(root), config2.audit)) fail('"audit" must be a file inside the project');
   }
   if (vaultTtlMinutes !== void 0) {
     if (typeof vaultTtlMinutes !== "number" || !(vaultTtlMinutes > 0)) fail('"vaultTtlMinutes" must be a positive number');
@@ -3760,7 +4237,78 @@ function loadConfig(root) {
     if (typeof ner !== "boolean") fail('"ner" must be true or false');
     if (ner) config2.ner = true;
   }
-  return config2;
+  return trusted ? config2 : withoutWeakening(config2);
+}
+var DEFAULT_VAULT_TTL_MINUTES = 60;
+function withoutWeakening(config2) {
+  const left = [];
+  const out = { ...config2 };
+  if (config2.allow.length) {
+    left.push('"allow"');
+    out.allow = [];
+  }
+  if (config2.policy) {
+    const weak = Object.entries(config2.policy).filter(([, action]) => action === "allow" || action === "route");
+    if (weak.length) {
+      left.push(...weak.map(([key, action]) => `policy ${key}: "${action}"`));
+      out.policy = Object.fromEntries(Object.entries(config2.policy).filter(([, action]) => action !== "allow" && action !== "route"));
+    }
+  }
+  if (config2.route) {
+    left.push('"route"');
+    delete out.route;
+  }
+  if (config2.vaultTtlMinutes !== void 0 && config2.vaultTtlMinutes > DEFAULT_VAULT_TTL_MINUTES) {
+    left.push(`"vaultTtlMinutes": ${config2.vaultTtlMinutes}`);
+    delete out.vaultTtlMinutes;
+  }
+  if (left.length) out.untrusted = left;
+  return out;
+}
+function localEndpoint(url) {
+  let host;
+  try {
+    host = new URL(url).hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  } catch {
+    return false;
+  }
+  return host === "localhost" || host === "::1" || host === "0.0.0.0" || !host.includes(".") || /\.(?:local|internal|localhost)$/.test(host) || /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(?:1[6-9]|2\d|3[01])\./.test(host) || /^f[cd][0-9a-f]{2}:/.test(host);
+}
+var TRUSTABLE = [".samaran.json", ".samaranignore"];
+function cacheDir() {
+  const base = process.env.LOKAL_CACHE_DIR ?? (process.platform === "win32" ? process.env.LOCALAPPDATA ?? path.join(homedir(), "AppData", "Local") : process.env.XDG_CACHE_HOME ?? path.join(homedir(), ".cache"));
+  return path.join(base, "lokal-id");
+}
+function projectKey(root) {
+  let real = root;
+  try {
+    real = realpathSync.native(root);
+  } catch {
+  }
+  return createHash("sha256").update(process.platform === "win32" ? real.toLowerCase() : real).digest("hex").slice(0, 32);
+}
+var trustStore = () => path.join(cacheDir(), "trust.json");
+function digest(root, name) {
+  try {
+    return createHash("sha256").update(readFileSync(path.join(root, name))).digest("hex");
+  } catch {
+    return void 0;
+  }
+}
+function readTrust() {
+  try {
+    const all2 = JSON.parse(readFileSync(trustStore(), "utf8"));
+    return all2 && typeof all2 === "object" && !Array.isArray(all2) ? all2 : {};
+  } catch {
+    return {};
+  }
+}
+function trustedFiles(root) {
+  const record = readTrust()[projectKey(root)] ?? {};
+  return new Set(TRUSTABLE.filter((name) => {
+    const now = digest(root, name);
+    return now !== void 0 && record[name] === now;
+  }));
 }
 function detectConfigured(text, options, config2) {
   const allowed = allowedTypes(config2);
@@ -3769,18 +4317,47 @@ function detectConfigured(text, options, config2) {
   return config2.allow.length ? found.filter((m) => !config2.allow.includes(m.value)) : found;
 }
 var UNMASKED_LIST = path.join(".lokal", "unmasked.json");
-function loadUnmasked(root) {
+function unmaskedCopy(root) {
+  return path.join(cacheDir(), "unmasked", `${projectKey(root)}.json`);
+}
+function readList(file, root) {
   try {
-    const list = JSON.parse(readFileSync(path.join(root, UNMASKED_LIST), "utf8"));
+    const list = JSON.parse(readFileSync(file, "utf8"));
     return Array.isArray(list.files) ? list.files.filter((f) => typeof f === "string").map((f) => path.resolve(root, f)) : [];
   } catch {
     return [];
   }
 }
-function loadIgnore(root) {
+function loadUnmasked(root) {
+  return [.../* @__PURE__ */ new Set([...readList(path.join(root, UNMASKED_LIST), root), ...readList(unmaskedCopy(root), root)])];
+}
+function recordUnmasked(root, file) {
+  try {
+    const rel = toPosix(path.relative(root, file));
+    const known = loadUnmasked(root).map((f) => toPosix(path.relative(root, f)));
+    const files = known.includes(rel) ? known : [...known, rel];
+    const text = `${JSON.stringify({ files }, null, 2)}
+`;
+    const dir = path.join(root, ".lokal");
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(path.join(dir, ".gitignore"), "*\n");
+    }
+    writeInRoot(root, UNMASKED_LIST, text);
+    const copy = unmaskedCopy(root);
+    mkdirSync(path.dirname(copy), { recursive: true });
+    writeFileSync(copy, text);
+  } catch (e) {
+    process.stderr.write(`lokal: could not record ${file} as holding real data: ${e.message}
+`);
+  }
+}
+function loadIgnore(root, options = {}) {
   const file = path.join(root, ".samaranignore");
-  if (!existsSync(file)) return () => false;
-  const rules = readFileSync(file, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#")).map((pattern) => {
+  const text = options.text ?? (existsSync(file) ? readFileSync(file, "utf8") : void 0);
+  if (text === void 0) return () => false;
+  if (!(options.trusted ?? trustedFiles(root).has(".samaranignore"))) return () => false;
+  const rules = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#")).map((pattern) => {
     const dirOnly = pattern.endsWith("/");
     const clean = pattern.replace(/^\/|\/$/g, "");
     return { re: globToRegExp(clean), dirOnly, anchored: pattern.replace(/\/$/, "").includes("/") };
@@ -3809,7 +4386,7 @@ function readHead(file, bytes) {
   try {
     const buf = Buffer.alloc(bytes);
     const n = readSync(fd, buf, 0, bytes, 0);
-    const text = buf.subarray(0, n).toString("utf8");
+    const text = decodeText(buf.subarray(0, n), true).text;
     const lastBreak = text.lastIndexOf("\n");
     return lastBreak > 0 ? text.slice(0, lastBreak) : text;
   } finally {
@@ -3887,11 +4464,11 @@ function gunzipText(buf, sampleBytes) {
   } catch (e) {
     return unsupported(/maxOutputLength|buffer length/i.test(e.message) ? `unpacks to more than ${mb(MAX_FILE_BYTES)}` : "damaged gzip file");
   }
-  if (text.subarray(0, 8e3).includes(0)) return unsupported("archive");
+  if (looksBinary(text)) return unsupported("archive");
   if (sampleBytes !== void 0 && text.length > sampleBytes) {
-    return { kind: "text", text: text.subarray(0, sampleBytes).toString("utf8").replace(/\n[^\n]*$/, "\n"), sampled: true };
+    return { kind: "text", text: decodeText(text.subarray(0, sampleBytes), true).text.replace(/\n[^\n]*$/, "\n"), sampled: true };
   }
-  return { kind: "text", text: text.toString("utf8") };
+  return { kind: "text", ...decodeText(text) };
 }
 var GZIPPED_TEXT = /\.gz$/i;
 var isGzippedText = (file) => GZIPPED_TEXT.test(file) && !/\.tar\.gz$/i.test(file);
@@ -3912,7 +4489,7 @@ function loadDocument(file, options = {}) {
   if (options.sampleBytes !== void 0 && st.size > options.sampleBytes) {
     return { kind: "text", text: readHead(file, options.sampleBytes), sampled: true };
   }
-  return { kind: "text", text: readFileSync(file, "utf8") };
+  return { kind: "text", ...decodeText(readFileSync(file)) };
 }
 
 // packages/mcp/src/audit.ts
@@ -3940,7 +4517,8 @@ function countMatches(matches) {
 }
 
 // packages/mcp/src/shell-reads.ts
-import { existsSync as existsSync3, readdirSync as readdirSync2, readFileSync as readFileSync3, statSync as statSync2 } from "node:fs";
+import { readdirSync as readdirSync2, readFileSync as readFileSync3, statSync as statSync2 } from "node:fs";
+import { spawnSync } from "node:child_process";
 import path3 from "node:path";
 var SHELL_DATA_FILE = /\.(csv|tsv|json|jsonl|ndjson|log|txt|sql|xml|ya?ml|dump|bak|out|pdf)(\.\d+)?(\.gz)?$/i;
 var ENV_FILE = /^\.env(?:\.[\w.-]+)?$/i;
@@ -3949,9 +4527,16 @@ function markDataFiles(files) {
   marked = new Set([...files].map((f) => path3.resolve(f)));
 }
 function isShellDataFile(file) {
-  const name = path3.basename(file);
-  return SHELL_DATA_FILE.test(name) || ENV_FILE.test(name) || !name.includes(".") && name.length > 0 || marked.has(path3.resolve(file));
+  const name = path3.basename(plainPath(file));
+  const stream = process.platform === "win32" && /^[^:]+:[^:$]/.test(path3.basename(file));
+  return SHELL_DATA_FILE.test(name) || ENV_FILE.test(name) || !name.includes(".") && name.length > 0 || stream || marked.has(path3.resolve(plainPath(file)));
 }
+function plainPath(p) {
+  if (process.platform !== "win32") return p;
+  return p.replace(/:{1,2}\$DATA$/i, "").replace(/[. ]+$/, (tail, at) => p[at - 1] === "\\" || p[at - 1] === "/" ? tail : "");
+}
+var SAMPLE_PATH = /(?:^|[\\/])(?:tests?|__tests__|spec|specs|fixtures?|__fixtures__|mocks?|__mocks__|examples?|testdata)[\\/]|\.(?:test|spec)\.[^\\/]+$/i;
+var isSampleFile = (file) => SAMPLE_PATH.test(file);
 var all = (t) => t;
 var READERS = /* @__PURE__ */ new Set([
   "cat",
@@ -4040,7 +4625,21 @@ var FILTERS = /* @__PURE__ */ new Set([
   "read"
 ]);
 var WRITE_SINKS = /* @__PURE__ */ new Set(["out-file", "set-content", "add-content", "export-csv", "out-null"]);
-var PREFIXES = /* @__PURE__ */ new Set(["sudo", "command", "env", "time", "nice", "nohup", "exec", "&"]);
+var PREFIXES = /* @__PURE__ */ new Set(["command", "time", "nohup", "exec", "&"]);
+var WRAPPERS = {
+  sudo: { valued: ["-u", "-g", "-C", "-D", "-h", "-p", "-r", "-t", "-U"], fixed: 0 },
+  doas: { valued: ["-u", "-C"], fixed: 0 },
+  env: { valued: ["-u", "-C", "-S", "--unset", "--chdir"], fixed: 0 },
+  nice: { valued: ["-n", "--adjustment"], fixed: 0 },
+  ionice: { valued: ["-c", "-n", "-p", "-P", "-u"], fixed: 0 },
+  timeout: { valued: ["-s", "-k", "--signal", "--kill-after"], fixed: 1 },
+  stdbuf: { valued: ["-i", "-o", "-e"], fixed: 0 },
+  taskset: { valued: [], fixed: 1 },
+  chrt: { valued: [], fixed: 1 },
+  setsid: { valued: [], fixed: 0 },
+  unbuffer: { valued: [], fixed: 0 },
+  caffeinate: { valued: [], fixed: 0 }
+};
 var KEYWORDS = /* @__PURE__ */ new Set(["if", "then", "else", "elif", "do", "while", "until", "!", "{", "("]);
 var CD = /* @__PURE__ */ new Set(["cd", "chdir", "pushd", "set-location", "sl", "push-location"]);
 var COPIES = /* @__PURE__ */ new Set(["cp", "copy", "copy-item", "cpi", "mv", "move", "move-item", "mi", "ln", "install", "rsync"]);
@@ -4136,10 +4735,23 @@ function lastLines(n, fromLine) {
     return (fromLine !== void 0 ? lines.slice(Math.max(0, fromLine - 1)) : lines.slice(-Math.max(1, n))).join("\n");
   };
 }
+function fromBasicRegex(pattern) {
+  let out = "";
+  for (let i = 0; i < pattern.length; i++) {
+    const c = pattern[i];
+    if (c === "\\" && i + 1 < pattern.length) {
+      const next = pattern[++i];
+      out += "{}()|+?".includes(next) ? next : `\\${next}`;
+    } else {
+      out += "{}()|+?".includes(c) ? `\\${c}` : c;
+    }
+  }
+  return out;
+}
 function matching(pattern, opts) {
   let re;
   try {
-    const source = opts.fixed ? pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : pattern.replace(/\\([<>])/g, "\\b");
+    const source = opts.fixed ? pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : (opts.basic ? fromBasicRegex(pattern) : pattern).replace(/\\([<>])/g, "\\b");
     re = new RegExp(source, opts.ignoreCase ? "gi" : "g");
   } catch {
     return all;
@@ -4194,7 +4806,8 @@ function unbracket(words) {
     let text = w.text;
     if (!w.quoted) {
       if (!out.length) text = text.replace(/^[({]+/, "");
-      if (!text.includes("(")) text = text.replace(/[)}]+$/, "");
+      if (!text.includes("(")) text = text.replace(/\)+$/, "");
+      if (!text.includes("{")) text = text.replace(/\}+$/, "");
     }
     if (text || w.quoted) out.push({ text, quoted: w.quoted });
   }
@@ -4205,8 +4818,17 @@ function toSegment(words) {
   for (; ; ) {
     const first = list[0];
     if (!first || first.quoted) break;
+    const word = programName(first.text);
     if (KEYWORDS.has(first.text.toLowerCase()) || PREFIXES.has(first.text.toLowerCase()) || /^[A-Za-z_]\w*=/.test(first.text)) {
       list.shift();
+    } else if (word in WRAPPERS) {
+      const { valued, fixed } = WRAPPERS[word];
+      list.shift();
+      while (list[0] && /^-/.test(list[0].text) && !list[0].quoted) {
+        const opt = list.shift().text;
+        if (valued.includes(opt)) list.shift();
+      }
+      for (let i = 0; i < fixed && list.length; i++) list.shift();
     } else {
       break;
     }
@@ -4265,7 +4887,9 @@ function selection(seg) {
         ignoreCase: has(args, "-i", "--ignore-case") || program === "findstr" && has(args, "/i"),
         invert: has(args, "-v", "--invert-match"),
         fixed: program === "fgrep" || has(args, "-F", "--fixed-strings"),
-        onlyMatching: has(args, "-o", "--only-matching")
+        onlyMatching: has(args, "-o", "--only-matching"),
+        // grep reads a basic regular expression unless told otherwise: "08[0-9]\{9\}".
+        basic: ["grep", "zgrep"].includes(program) && !has(args, "-E", "-P", "--extended-regexp", "--perl-regexp")
       });
     }
     case "cut": {
@@ -4327,21 +4951,46 @@ function asPath(raw, powershell) {
   if (/^\/[A-Za-z]:[\\/]/.test(word)) word = word.slice(1);
   if (process.platform === "win32") word = word.replace(/^\/([a-zA-Z])(?=\/|$)/, "$1:");
   else if (powershell) word = word.replace(/\\/g, "/");
-  return word;
+  return plainPath(word);
+}
+function braces(word) {
+  const m = /\{([^{}]*,[^{}]*)\}/.exec(word);
+  if (!m) return [word];
+  const out = m[1].split(",").flatMap((alt) => braces(word.slice(0, m.index) + alt + word.slice(m.index + m[0].length)));
+  return out.slice(0, 64);
+}
+function globPaths(word, cwd) {
+  const abs = path3.resolve(cwd, word);
+  if (!/[*?[]/.test(abs)) return [abs];
+  const { root } = path3.parse(abs);
+  let places = [root];
+  for (const part of abs.slice(root.length).split(/[\\/]/).filter(Boolean)) {
+    if (!/[*?[]/.test(part)) {
+      places = places.map((p) => path3.join(p, part));
+      continue;
+    }
+    const re = globToRegExp(part);
+    places = places.flatMap((p) => {
+      try {
+        return readdirSync2(p).filter((name) => re.test(name)).map((name) => path3.join(p, name));
+      } catch {
+        return [];
+      }
+    }).slice(0, 2e3);
+  }
+  return places;
 }
 function expand(raw, cwd, powershell) {
-  const word = asPath(raw, powershell);
-  if (!/[*?]/.test(word)) {
-    const file = path3.resolve(cwd, word);
-    return isShellDataFile(file) && existsSync3(file) && statSync2(file).isFile() ? [file] : [];
-  }
-  const dir = path3.resolve(cwd, path3.dirname(word));
-  const re = globToRegExp(path3.basename(word));
-  try {
-    return readdirSync2(dir).filter((name) => re.test(name) && isShellDataFile(path3.join(dir, name))).map((name) => path3.join(dir, name)).filter((f) => statSync2(f).isFile());
-  } catch {
-    return [];
-  }
+  return anyFiles(raw, cwd, powershell).filter(isShellDataFile);
+}
+function anyFiles(raw, cwd, powershell) {
+  return braces(asPath(raw, powershell)).flatMap((word) => globPaths(word, cwd)).filter((file) => {
+    try {
+      return statSync2(file).isFile();
+    } catch {
+      return false;
+    }
+  });
 }
 var isDir = (p) => {
   try {
@@ -4438,7 +5087,7 @@ function resolveWord(raw, w) {
   for (const dir of w.dirs) {
     const copied = w.copies.get(path3.resolve(dir, asPath(raw, w.powershell)));
     if (copied) out.push(...copied);
-    for (const file of expand(raw, dir, w.powershell)) out.push({ file, select: all });
+    for (const file of anyFiles(raw, dir, w.powershell)) out.push({ file, select: all, ...isShellDataFile(file) ? {} : { other: true } });
   }
   return out;
 }
@@ -4452,6 +5101,132 @@ function inFolders(places, w) {
     }
   }
   return out.slice(0, MAX_SEARCHED_FILES);
+}
+var REPLAY_MS = 3e3;
+var REPLAY_BYTES = 5 * 1024 * 1024;
+var GIT_READS = /* @__PURE__ */ new Set(["show", "log", "grep", "diff", "cat-file"]);
+function replayable(seg) {
+  const { program, args } = seg;
+  if (seg.writesToFile) return void 0;
+  if (program === "git") {
+    let i = 0;
+    const global = [];
+    while (args[i]?.startsWith("-")) {
+      if (args[i] !== "-C" || args[i + 1] === void 0) return void 0;
+      global.push("-C", args[i + 1]);
+      i += 2;
+    }
+    const sub = args[i];
+    const rest = args.slice(i + 1);
+    if (!sub || !GIT_READS.has(sub)) return void 0;
+    if (rest.some((a) => /^(?:--ext-diff|--textconv|--output|-O|--open-files-in-pager)(?:=|$)/.test(a))) return void 0;
+    if (sub === "log" && !rest.some((a) => /^(?:-p|-u|--patch|-L.*)$/.test(a))) return void 0;
+    if (sub === "diff" && !rest.some((a) => /^--(?:cached|staged)$/.test(a)) && rest.filter((a) => !a.startsWith("-")).length < 2) return void 0;
+    if (sub === "cat-file" && !rest.includes("-p")) return void 0;
+    const safe = ["show", "log", "diff"].includes(sub) ? ["--no-ext-diff", "--no-textconv", "--no-color"] : sub === "grep" ? ["--no-color"] : [];
+    return [
+      "git",
+      "--no-pager",
+      "-c",
+      "core.pager=cat",
+      "-c",
+      "core.fsmonitor=false",
+      "-c",
+      "diff.external=",
+      "-c",
+      "color.ui=false",
+      ...global,
+      sub,
+      ...safe,
+      ...rest
+    ];
+  }
+  if (program === "unzip" && has(args, "-p", "-c")) return ["unzip", ...args];
+  if (program === "zipgrep") return ["zipgrep", ...args];
+  if (program === "tar" || program === "bsdtar") {
+    const flags = args.filter((a) => /^-?[A-Za-z]+$/.test(a) && !a.startsWith("--")).join("");
+    const extract = /x/.test(flags.replace(/^-/, "")) || args.includes("--extract") || args.includes("--get");
+    const stdout = /O/.test(flags) || args.includes("--to-stdout");
+    return extract && stdout ? [program, ...args] : void 0;
+  }
+  return void 0;
+}
+function replay(argv, w) {
+  const env = { ...process.env, GIT_PAGER: "cat", PAGER: "cat", GIT_EXTERNAL_DIFF: "", GIT_TERMINAL_PROMPT: "0" };
+  const res = spawnSync(argv[0], argv.slice(1), { cwd: w.dirs.at(-1), env, timeout: REPLAY_MS, maxBuffer: REPLAY_BYTES, encoding: "utf8", windowsHide: true });
+  const out = typeof res.stdout === "string" ? res.stdout : "";
+  return out.length ? out : void 0;
+}
+function projectFile(names, w) {
+  for (const dir of w.dirs) {
+    for (const name of names) {
+      try {
+        const file = path3.join(dir, name);
+        if (statSync2(file).size <= MAX_SCRIPT_BYTES) return readFileSync3(file, "utf8");
+      } catch {
+      }
+    }
+  }
+  return void 0;
+}
+function makeRecipe(makefile, target) {
+  const lines = makefile.split(/\r?\n/);
+  const head = lines.findIndex((l) => {
+    const m = /^([A-Za-z0-9_.\/-][^:=\s]*(?:\s+[^:=\s]+)*)\s*:(?!=)/.exec(l);
+    return !!m && !m[1].startsWith(".") && (target === void 0 || m[1].split(/\s+/).includes(target));
+  });
+  if (head < 0) return void 0;
+  const recipe = [];
+  for (const line of lines.slice(head + 1)) {
+    if (!line.startsWith("	")) break;
+    recipe.push(line.slice(1).replace(/^[@+-]+/, ""));
+  }
+  return recipe.join("\n");
+}
+function indirectCode(seg, w) {
+  switch (seg.program) {
+    case "eval":
+      return seg.args.join(" ");
+    case "script": {
+      const at = seg.args.findIndex((a) => /^-[a-zA-Z]*c$/.test(a) || a === "--command");
+      return at >= 0 ? seg.args[at + 1] : option(seg.args, ["--command"]);
+    }
+    case "npm":
+    case "pnpm":
+    case "yarn":
+    case "bun": {
+      const [verb, name] = seg.positional;
+      const script = ["run", "run-script"].includes(verb ?? "") ? name : seg.program !== "npm" && seg.program !== "bun" ? verb : void 0;
+      if (!script) return void 0;
+      try {
+        const pkg = JSON.parse(projectFile(["package.json"], w) ?? "{}");
+        return pkg.scripts?.[script];
+      } catch {
+        return void 0;
+      }
+    }
+    case "make":
+    case "gmake": {
+      const makefile = projectFile(["GNUmakefile", "makefile", "Makefile"], w);
+      return makefile === void 0 ? void 0 : makeRecipe(makefile, seg.positional.find((a) => !a.includes("=")));
+    }
+    case "awk":
+    case "gawk": {
+      const code = seg.positional.filter((p) => p.includes("{")).join("\n");
+      const run = [...code.matchAll(/system\s*\(\s*(["'])(.*?)\1\s*\)/g)].map((m) => m[2]);
+      const read = [...code.matchAll(/getline[^<]*<\s*(["'])(.*?)\1/g)].map((m) => `cat '${m[2]}'`);
+      return run.length || read.length ? [...run, ...read].join("\n") : void 0;
+    }
+    default:
+      return void 0;
+  }
+}
+function shellPrintsFiles(inner) {
+  const shell = inner && SHELLS[inner.program];
+  if (!shell) return false;
+  const at = inner.args.findIndex((a) => shell.flags.includes(a.toLowerCase()));
+  const code = at >= 0 ? inner.args[at + 1] ?? "" : "";
+  return [...READERS].some((r) => new RegExp(`(?:^|[\\s;|&(])${r.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=\\s|$)`).test(code));
 }
 function readScript(raw, w) {
   for (const dir of w.dirs) {
@@ -4474,6 +5249,7 @@ function walk(command, w) {
   const text = takeSubstitutions(stripHeredocs(command), w.powershell, w.subs);
   for (const pipeline of parse(text, w.powershell)) {
     let flow = [];
+    let piped;
     const listed = [];
     for (const raw of pipeline) {
       for (const word of raw) {
@@ -4485,6 +5261,7 @@ function walk(command, w) {
       const seg = toSegment(kept ? words.slice(2) : words);
       if (!seg) continue;
       const reads = (word) => resolveWord(word, w);
+      for (const sent of uploadsIn(seg, flow, w)) w.uploads.push(sent);
       if (CD.has(seg.program)) {
         const to = seg.positional.find((a) => a.toLowerCase() !== "/d");
         if (to && to !== "-" && to !== "~") {
@@ -4513,13 +5290,23 @@ function walk(command, w) {
         flow = [];
         continue;
       }
+      const incoming = piped;
+      piped = ["echo", "printf"].includes(seg.program) ? seg.positional.join(" ") : seg.program === "base64" && incoming !== void 0 && has(seg.args, "-d", "--decode", "-D") ? Buffer.from(incoming, "base64").toString("utf8") : void 0;
+      const indirect = indirectCode(seg, w);
+      if (indirect !== void 0) {
+        if (w.depth < MAX_DEPTH2 && !seg.writesToFile) walk(indirect, { ...w, depth: w.depth + 1 });
+        if (!["awk", "gawk"].includes(seg.program)) {
+          flow = [];
+          continue;
+        }
+      }
       const shell = SHELLS[seg.program];
       const sourced = ["source", "."].includes(seg.program);
       if (shell || sourced || /\.(sh|bash|ps1)$/i.test(seg.program)) {
         const at = shell ? seg.args.findIndex((a) => shell.flags.includes(a.toLowerCase())) : -1;
         const powershell = shell ? shell.powershell : /\.ps1$/i.test(seg.program) || sourced && w.powershell;
         const script = shell || sourced ? option(seg.args, ["-file"]) ?? seg.positional[0] : raw[0].text;
-        const inner = at >= 0 ? seg.args.slice(at + 1).join(" ") : script !== void 0 ? readScript(script, w) : void 0;
+        const inner = at >= 0 ? seg.args.slice(at + 1).join(" ") : script !== void 0 ? readScript(script, w) : shell ? incoming : void 0;
         if (inner !== void 0 && w.depth < MAX_DEPTH2 && !seg.writesToFile) walk(inner, { ...w, powershell, depth: w.depth + 1 });
         flow = [];
         continue;
@@ -4528,12 +5315,18 @@ function walk(command, w) {
       let isReader = READERS.has(seg.program);
       let narrow = selection(seg);
       let files;
-      if (seg.program === "xargs") {
+      const replayed = replayable(seg);
+      if (replayed) {
+        const text2 = replay(replayed, w);
+        isReader = true;
+        narrow = all;
+        files = text2 === void 0 ? [] : [{ file: seg.args.length ? `${seg.program} ${seg.args.join(" ")}` : seg.program, select: all, text: text2 }];
+      } else if (seg.program === "xargs") {
         let i = 0;
         while (i < seg.args.length && seg.args[i].startsWith("-")) i += /^-[InLPdaEs]$/.test(seg.args[i]) ? 2 : 1;
         const inner = toSegment(seg.args.slice(i).map((text2) => ({ text: text2, quoted: false })));
-        isReader = !!inner && READERS.has(inner.program);
-        narrow = inner ? selection(inner) : void 0;
+        isReader = !!inner && (READERS.has(inner.program) || shellPrintsFiles(inner));
+        narrow = inner && shellPrintsFiles(inner) ? all : inner ? selection(inner) : void 0;
         files = isReader ? listed.flatMap((list) => list()) : [];
       } else if (["perl", "ruby"].includes(seg.program) && seg.args.some((a) => /^-[a-zA-Z]*[pn]/.test(a))) {
         isReader = true;
@@ -4545,6 +5338,11 @@ function walk(command, w) {
         isReader = true;
         narrow = all;
         files = seg.args.flatMap((a) => [...a.matchAll(NAMED_FILE)].flatMap((m) => reads(m[0])));
+      } else if (seg.program === "dd") {
+        const input = seg.args.find((a) => a.startsWith("if="))?.slice(3);
+        isReader = !!input && !seg.args.some((a) => a.startsWith("of="));
+        narrow = all;
+        files = isReader ? reads(input) : [];
       } else if (["gzip", "gunzip"].includes(seg.program) && seg.args.some((a) => /^-[a-zA-Z]*c[a-zA-Z]*$|^--(?:to-)?stdout$/.test(a))) {
         isReader = true;
         narrow = all;
@@ -4552,8 +5350,8 @@ function walk(command, w) {
         const at = seg.args.findIndex((a) => /^-exec(?:dir)?$/.test(a));
         const end = seg.args.findIndex((a, i) => i > at && (a === ";" || a === "+"));
         const inner = toSegment(seg.args.slice(at + 1, end < 0 ? void 0 : end).filter((a) => a !== "{}").map((text2) => ({ text: text2, quoted: false })));
-        isReader = !!inner && READERS.has(inner.program);
-        narrow = inner ? selection(inner) : void 0;
+        isReader = !!inner && (READERS.has(inner.program) || shellPrintsFiles(inner));
+        narrow = inner && shellPrintsFiles(inner) ? all : inner ? selection(inner) : void 0;
         const firstOption = seg.args.findIndex((a) => a.startsWith("-"));
         const places = seg.args.slice(0, firstOption < 0 ? seg.args.length : firstOption);
         files = isReader ? inFolders(places.length ? places : ["."], w) : [];
@@ -4589,8 +5387,9 @@ function walk(command, w) {
         continue;
       }
       if (isReader && files === void 0) files = [...seg.args, ...seg.inputFile ? [seg.inputFile] : []].flatMap(reads);
+      else if (files === void 0 && seg.inputFile) files = reads(seg.inputFile);
       const select = narrow;
-      flow = (files?.length ? files : seg.program === "xargs" ? [] : flow).map((r) => ({ file: r.file, select: (t) => select(r.select(t)) }));
+      flow = (files?.length ? files : seg.program === "xargs" ? [] : flow).map((r) => ({ ...r, select: (t) => select(r.select(t)) }));
       const targets = [...seg.writesTo ? [seg.writesTo] : [], ...seg.program === "tee" ? seg.positional : []];
       if (flow.length) for (const t of targets) for (const dir of w.dirs) w.copies.set(path3.resolve(dir, asPath(t, w.powershell)), flow);
       if (seg.writesToFile && seg.program !== "tee") flow = [];
@@ -4599,12 +5398,98 @@ function walk(command, w) {
   }
 }
 function newWalk(cwd, powershell, strict) {
-  return { dirs: [cwd], vars: /* @__PURE__ */ new Map(), copies: /* @__PURE__ */ new Map(), scripts: /* @__PURE__ */ new Map(), subs: [], powershell, strict, depth: 0, reads: [], inline: [] };
+  return { dirs: [cwd], vars: /* @__PURE__ */ new Map(), copies: /* @__PURE__ */ new Map(), scripts: /* @__PURE__ */ new Map(), subs: [], powershell, strict, depth: 0, reads: [], inline: [], uploads: [] };
 }
-function dataReadsInCommand(command, cwd, powershell = false) {
+var REMOTE = /^(?:[\w.-]+@)?[\w.-]{2,}:(?![\\/]{2}|[\\/]?$)|^[a-z][\w+.-]*:\/\//i;
+var URL_ARG = /^https?:\/\//i;
+function uploadsIn(seg, flow, w) {
+  const { program, args } = seg;
+  const out = [];
+  const send = (word, to) => {
+    if (!word) return;
+    if (word === "-" || word === "@-") {
+      for (const r of flow) out.push({ file: r.file, to });
+      return;
+    }
+    const name = word.replace(/^[\w.-]*=?[@<]/, "").replace(/;type=.*$/, "");
+    for (const r of resolveWord(name, w)) out.push({ file: r.file, to });
+  };
+  const urls = args.filter((a) => URL_ARG.test(a));
+  const remote = (to) => !URL_ARG.test(to) || !localEndpoint(to);
+  switch (program) {
+    case "curl": {
+      const to = urls[0] ?? "a server";
+      if (urls.length && urls.every((u) => !remote(u))) return out;
+      for (let i = 0; i < args.length; i++) {
+        const a = args[i];
+        const value = (flag) => flag.test(a) ? a.includes("=") && a.startsWith("--") ? a.slice(a.indexOf("=") + 1) : args[++i] : void 0;
+        const data = value(/^(?:-d|--data|--data-binary|--data-urlencode|--json|-F|--form|-T|--upload-file)(?:=|$)/);
+        if (data === void 0) continue;
+        if (/^-T$|^--upload-file/.test(a)) send(data, to);
+        else if (/[@<]/.test(data)) send(data.slice(data.search(/[@<]/)), to);
+      }
+      if (seg.inputFile && args.some((a) => /^(?:-d|--data(?:-binary)?|-T|--upload-file)$/.test(a))) send(seg.inputFile, to);
+      return out;
+    }
+    case "wget": {
+      const to = urls[0] ?? "a server";
+      if (urls.length && urls.every((u) => !remote(u))) return out;
+      send(option(args, ["--post-file", "--body-file"]), to);
+      return out;
+    }
+    case "scp":
+    case "rsync":
+    case "sftp":
+    case "rclone": {
+      const places = seg.positional.filter((p) => !["copy", "copyto", "move", "moveto", "sync"].includes(p));
+      const dest = places.at(-1);
+      if (!dest || !REMOTE.test(dest) || URL_ARG.test(dest) && localEndpoint(dest)) return out;
+      for (const p of places.slice(0, -1)) if (!REMOTE.test(p)) send(p, dest);
+      return out;
+    }
+    case "aws":
+    case "gsutil":
+    case "az":
+    case "gh": {
+      const cloud = seg.positional.find((p) => /^(?:s3|gs|az|https?):\/\//.test(p));
+      if (program === "az") send(option(args, ["-f", "--file"]), "Azure storage");
+      else if (program === "gh" && seg.positional[0] === "gist") for (const p of seg.positional.slice(2)) send(p, "a GitHub gist");
+      else if (program === "gh" && seg.positional[0] === "release") for (const p of seg.positional.slice(3)) send(p, "a GitHub release");
+      else if (cloud) {
+        for (const p of seg.positional) if (p !== cloud && !["s3", "cp", "mv", "sync", "rsync"].includes(p)) send(p, cloud);
+      }
+      return out;
+    }
+    case "nc":
+    case "ncat":
+    case "netcat":
+    case "socat":
+    case "telnet": {
+      const to = seg.positional[0] ?? "a network address";
+      if (localEndpoint(`http://${to}`)) return out;
+      if (seg.inputFile) send(seg.inputFile, to);
+      for (const r of flow) out.push({ file: r.file, to });
+      return out;
+    }
+    case "invoke-webrequest":
+    case "iwr":
+    case "invoke-restmethod":
+    case "irm":
+    case "send-mailmessage": {
+      const to = option(args, ["-uri"]) ?? urls[0] ?? (program === "send-mailmessage" ? "e-mail" : "a server");
+      if (URL_ARG.test(to) && localEndpoint(to)) return out;
+      send(option(args, ["-infile", "-attachments"]), to);
+      return out;
+    }
+    default:
+      return out;
+  }
+}
+function analyzeCommand(command, cwd, powershell = false) {
   const w = newWalk(cwd, powershell, false);
   walk(command, w);
-  return w.reads;
+  const copies = [...w.copies].map(([target, from]) => ({ target, from: [...new Set(from.filter((r) => !r.other && r.text === void 0).map((r) => r.file))] })).filter((c) => c.from.length);
+  return { reads: w.reads, copies, uploads: w.uploads };
 }
 var INLINE_CODE = {
   python: ["-c"],
@@ -4676,7 +5561,7 @@ var BYPASS = /#izinkan-pii\b/i;
 var DATA_FILE = /\.(csv|tsv|json|jsonl|ndjson|log|txt|sql|xml|ya?ml|dump|bak|out|xlsx|xlsm|docx|pdf)(\.\d+)?$/i;
 var GREP_MAX_FILES = 300;
 var READ_LINES = 2e3;
-var STRICT_BUDGET_MS = 7e3;
+var BUDGET_MS = 7e3;
 var IMAGE_FILE = /\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?)$/i;
 var PERSONAL_PATH = /(?:^|[^a-z])(?:e?ktp|kk|kartu[ _-]?keluarga|npwp|sim|paspor|passport|selfie|swafoto|identitas|identity|id[ _-]?card|akta|ijazah|slip[ _-]?gaji|rekening|tabungan|bpjs|kyc|verifikasi|verification|pelanggan|customers?|nasabah|pasien|patients?|karyawan|employees?|pegawai|pemohon|applicants?|debitur|peserta|siswa|students?)(?:[^a-z]|$)/i;
 var UPLOAD_PATH = /(?:^|[\\/])(?:media|uploads?|storage|attachments?|lampiran|berkas|dokumen|documents?|scans?|private|var)(?:[\\/]|$)/i;
@@ -4729,6 +5614,28 @@ ${shown}`;
 function verdict(texts) {
   return verdictOf(texts.flatMap((t) => detectConfigured(t, { minConfidence: "high" }, config)));
 }
+var IDENTITY2 = ["NIK", "KK", "NPWP", "PASSPORT", "SIM", "NIP", "NISN", "AKTA", "BANK_ACCOUNT", "CARD", "BPJS"];
+function identityValues(text, file) {
+  if (isSampleFile(file) || !text.trim()) return [];
+  const found = detectConfigured(text, { types: [...IDENTITY2, "PHONE", "EMAIL"], minConfidence: "high" }, config);
+  const ids = new Set(found.filter((m) => IDENTITY2.includes(m.type)).map((m) => m.value.replace(/\D/g, "")));
+  if (ids.size < 2) return [];
+  const starts = [0];
+  for (let i = text.indexOf("\n"); i !== -1; i = text.indexOf("\n", i + 1)) starts.push(i + 1);
+  const lineOf = (pos) => {
+    let lo = 0;
+    let hi = starts.length - 1;
+    while (lo < hi) {
+      const mid = lo + hi + 1 >> 1;
+      if (starts[mid] <= pos) lo = mid;
+      else hi = mid - 1;
+    }
+    return lo;
+  };
+  const withData = new Set(found.map((m) => lineOf(m.start))).size;
+  const lines = text.split("\n").filter((l) => l.trim()).length;
+  return withData / Math.max(1, lines) >= 0.25 ? found : [];
+}
 function verdictOf(found) {
   const strict = found.some((m) => STRICT.includes(m.type) || ["block", "route"].includes(policyFor(config, m)));
   return strict || found.length >= BULK_THRESHOLD ? found : void 0;
@@ -4748,17 +5655,39 @@ function shownPii(full, shown, file) {
   return inFile.length >= direct.length ? inFile : direct;
 }
 var PROCESS_HINT = "To process the data, run a script that reads the file and writes its results to a file (or prints only counts), or use `write_file_unmasked`.";
+var IGNORE_HINT = "If the user confirms the file only holds fake data, they can list it in .samaranignore and approve that with `npx @lokal-id/mcp trust` in their own terminal.";
 var strictMode = () => process.env.SAMARAN_GUARD === "strict" || !process.env.SAMARAN_GUARD && config.guard === "strict";
 var strictBy = () => process.env.SAMARAN_GUARD === "strict" ? "SAMARAN_GUARD=strict" : '"guard": "strict" in .samaran.json';
 var config = { custom: [], allow: [] };
 var deadline = Infinity;
-var outOfTime = () => strictMode() && Date.now() > deadline;
+var outOfTime = () => Date.now() > deadline;
+var timedOut = false;
+function unfinished(what, why) {
+  if (strictMode()) return uncheckedBlock(what, why);
+  return {
+    action: "ask",
+    message: [
+      `\u{1F6E1}\uFE0F  Samaran: ${what} membaca terlalu banyak data untuk diperiksa sebelum batas waktu hook (${why.join("; ")}).`,
+      "Izinkan hanya jika berkas-berkas itu tidak berisi data pribadi asli; atau persempit perintahnya."
+    ].join(" ")
+  };
+}
+function pastSample(what, why) {
+  if (strictMode()) return uncheckedBlock(what, why);
+  return {
+    action: "ask",
+    message: [
+      `\u{1F6E1}\uFE0F  Samaran: ${what} menampilkan bagian berkas besar yang tidak diperiksa (${why.join("; ")}), jadi data pribadi di bagian itu akan dikirim ke model AI apa adanya.`,
+      "Izinkan hanya jika berkas itu tidak berisi data pribadi asli; atau baca dengan read_file_masked dari server MCP lokal."
+    ].join(" ")
+  };
+}
 var block = (message, found) => ({ action: "block", message, ...found ? { counts: countMatches(found) } : {} });
 function uncheckedBlock(what, why) {
   return block([
     `Samaran blocked ${what}: ${why.join("; ")}, so it could not be checked for personal data, and ${strictBy()} blocks what it cannot check.`,
     "Use the `read_file_masked` tool from the lokal MCP server, or narrow the command to what you need (`head -n 50`).",
-    "If the user confirms the file holds no real personal data, they can add it to .samaranignore."
+    IGNORE_HINT
   ].join(" "));
 }
 function ask(shownAs, what) {
@@ -4767,7 +5696,7 @@ function ask(shownAs, what) {
     message: [
       `\u{1F6E1}\uFE0F  Samaran: ${shownAs} ${what}, jadi isinya tidak bisa diperiksa dan akan dikirim ke model AI apa adanya.`,
       "Izinkan hanya jika berkas ini tidak berisi data pribadi asli (KTP, selfie, formulir pelanggan).",
-      "Berkas contoh bisa dimasukkan ke .samaranignore supaya tidak ditanyakan lagi."
+      "Berkas contoh bisa dimasukkan ke .samaranignore (lalu disetujui dengan npx @lokal-id/mcp trust di terminal Anda) supaya tidak ditanyakan lagi."
     ].join(" ")
   };
 }
@@ -4779,12 +5708,22 @@ function personalImage(file, root) {
 function uncheckedRead(shownAs, what, why) {
   return strictMode() ? uncheckedBlock(`reading ${shownAs}`, [why]) : ask(shownAs, what);
 }
+function otherFile(file, shownAs) {
+  const { texts } = fileTexts(file);
+  const found = texts.flatMap((t) => identityValues(t, file));
+  if (!found.length) return void 0;
+  return block([
+    `Samaran blocked reading ${shownAs}: it holds ${new Set(found.map((m) => m.value)).size} identity numbers (${summarize(found, false)}), as an export would.`,
+    "Use the `read_file_masked` tool from the lokal MCP server instead.",
+    IGNORE_HINT
+  ].join(" "), found);
+}
 function readTool(file, shownAs, root, ignored, lines) {
   if (ignored(file)) return void 0;
   if (IMAGE_FILE.test(file)) {
     return personalImage(file, root) && existsSync4(file) ? uncheckedRead(shownAs, "mungkin foto KTP atau dokumen pribadi", "it is an image that may be a photo of an ID card or document") : void 0;
   }
-  if (!DATA_FILE.test(file) && !isShellDataFile(file)) return void 0;
+  if (!DATA_FILE.test(file) && !isShellDataFile(file)) return otherFile(file, shownAs);
   let doc;
   try {
     doc = loadDocument(file, { sampleBytes: GUARD_SAMPLE_BYTES, maxZipBytes: GUARD_MAX_ZIP_BYTES });
@@ -4801,7 +5740,7 @@ function readTool(file, shownAs, root, ignored, lines) {
         `Samaran blocked reading ${shownAs}: it contains personal data (${summarize(found, false)}).`,
         "Use the `read_file_masked` tool from the lokal MCP server instead: same content, with personal data replaced by stable placeholders.",
         "Write results that need the real values with `write_file_unmasked`.",
-        "If the user confirms the file only holds fake data, they can add it to .samaranignore."
+        IGNORE_HINT
       ].join(" "),
       found
     );
@@ -4817,23 +5756,84 @@ function readTool(file, shownAs, root, ignored, lines) {
   }
   return void 0;
 }
-function shellTool(command, cwd, powershell, ignored) {
-  const reads = [...dataReadsInCommand(command, cwd, powershell), ...strictMode() ? inlineCodeReads(command, cwd, powershell) : []].filter((r) => !ignored(r.file));
+var TAMPER_MESSAGE = [
+  "Samaran blocked this: it would change or delete the list of files write_file_unmasked wrote with real values",
+  "(.lokal/unmasked.json, or its copy in the user cache), after which they could be read like source code.",
+  "If those files no longer hold real data, the user can delete them and the list by hand."
+].join(" ");
+var REGISTRY_PATH = /\.lokal(?:[\\/]|\b)|unmasked\.json|lokal-id[\\/]unmasked/i;
+var CHANGES_FILES = /(?:^|[\s;&|(`])(?:rm|rmdir|unlink|del|erase|rd|remove-item|ri|mv|move|move-item|mi|cp|copy|copy-item|cpi|truncate|shred|set-content|sc|out-file|clear-content|clc|add-content|tee|sed|perl|python3?|node|chmod|chattr|ln|rename-item|ren|rsync|install|dd)\b|>/i;
+var TRUST_COMMAND = /(?:lokal-mcp|@lokal-id\/mcp(?:@[\w.-]+)?|mcp[\\/](?:dist|src)[\\/]cli\.[jt]s)\b[^\n;&|]*\btrust\b/i;
+var TRUST_MESSAGE = [
+  "Samaran blocked this: `lokal-mcp trust` approves what .samaran.json and .samaranignore relax (values the model may see,",
+  "files left out of every check), and only the user may approve that. Ask the user to run it in their own terminal."
+].join(" ");
+var TRUST_PATH = /lokal-id[\\/]trust\.json/i;
+var SETTINGS_PATH = /(?:^|[\s'"=\\/])(?:\.samaran\.json|\.samaranignore|\.claude[\\/]settings(?:\.local)?\.json|\.git[\\/]hooks[\\/])/i;
+function askSettings(what) {
+  return {
+    action: "ask",
+    message: [
+      `\u{1F6E1}\uFE0F  Samaran: ${what} mengubah pengaturan yang menentukan data apa yang dilindungi (.samaran.json, .samaranignore,`,
+      "pengaturan hook agent, atau git hook). Izinkan hanya jika Anda sendiri yang meminta perubahan ini."
+    ].join(" ")
+  };
+}
+function protectionTamper(command, root) {
+  const bare = command.replace(/["'`\\^]/g, "");
+  if (TRUST_COMMAND.test(command) || TRUST_COMMAND.test(bare)) return block(TRUST_MESSAGE);
+  const changes = CHANGES_FILES.test(command);
+  if ((TRUST_PATH.test(command) || TRUST_PATH.test(bare) || /lokal-id[\s\S]*trust\.json/i.test(bare)) && changes) return block(TRUST_MESSAGE);
+  const registry = REGISTRY_PATH.test(command) && changes || /\bgit\s+clean\b[^\n;&|]*\s-[a-zA-Z]*[xX]/.test(command);
+  if (registry && loadUnmasked(root).length) return block(TAMPER_MESSAGE);
+  if (SETTINGS_PATH.test(command) && changes) return askSettings("perintah ini");
+  return void 0;
+}
+function shellTool(command, cwd, powershell, ignored, root) {
+  const analyzed = analyzeCommand(command, cwd, powershell);
+  const reads = [...analyzed.reads, ...strictMode() ? inlineCodeReads(command, cwd, powershell) : []].filter((r) => !ignored(r.file));
+  for (const { target, from } of analyzed.copies) {
+    if (from.some((f) => !ignored(f) && verdict(fileTexts(f).texts))) recordUnmasked(root, target);
+  }
+  for (const { file, to } of analyzed.uploads) {
+    if (ignored(file)) continue;
+    const { texts } = fileTexts(file);
+    const found2 = isShellDataFile(file) ? verdict(texts) : texts.flatMap((t) => identityValues(t, file));
+    if (found2?.length) {
+      return block([
+        `Samaran blocked this command: it would send personal data from ${path4.relative(cwd, file) || file} to ${to} (${summarize(found2, false)}).`,
+        "Personal data stays on this machine: send a copy made with `anonymize_file` (made-up people), or only the counts or results the task needs."
+      ].join(" "), found2);
+    }
+  }
   const matches = [];
   const files = /* @__PURE__ */ new Set();
   const unchecked = [];
-  const nameOf = (f) => path4.relative(cwd, f) || f;
+  let past = false;
+  const nameOf = (f) => path4.isAbsolute(f) ? path4.relative(cwd, f) || f : f;
   for (const r of reads) {
+    if (verdictOf(matches)) break;
     if (outOfTime()) {
       unchecked.push(`checking ${nameOf(r.file)} took too long`);
+      timedOut = true;
       break;
     }
-    const loaded = fileTexts(r.file);
+    const loaded = r.text !== void 0 ? { texts: [r.text], sampled: r.text.length >= GUARD_SAMPLE_BYTES } : fileTexts(r.file);
+    if (r.other) {
+      for (const full of loaded.texts) {
+        if (!identityValues(full, r.file).length) continue;
+        const here = shownPii(full, r.select(full), r.file);
+        for (const m of here) matches.push(m);
+        if (verdictOf(here)) files.add(r.file);
+      }
+      continue;
+    }
     if (loaded.unchecked) unchecked.push(`${nameOf(r.file)}: ${loaded.unchecked}`);
     for (const full of loaded.texts) {
       const shown = r.select(full);
       if (loaded.sampled && !withinSample(r.select, full, shown)) {
         unchecked.push(`${nameOf(r.file)}: only its first ${GUARD_SAMPLE_BYTES / 1024 / 1024} MB were checked`);
+        past = true;
       }
       if (!shown.trim()) continue;
       const here = shownPii(full, shown, r.file);
@@ -4842,13 +5842,15 @@ function shellTool(command, cwd, powershell, ignored) {
     }
   }
   const found = verdictOf(matches);
+  if (!found && timedOut) return unfinished("this command", unchecked);
+  if (!found && past) return pastSample("this command", unchecked);
   if (!found) return strictMode() && unchecked.length ? uncheckedBlock("this command", unchecked) : void 0;
   const names = [...files.size ? files : new Set(reads.map((r) => r.file))].map(nameOf);
   return block([
     `Samaran blocked this command: it would print personal data from ${names.join(", ")} into the conversation (${summarize(found, false)}).`,
     "To look at the data, use the `read_file_masked` tool from the lokal MCP server (personal data replaced by stable placeholders).",
     PROCESS_HINT,
-    "If the user confirms the file only holds fake data, they can add it to .samaranignore."
+    IGNORE_HINT
   ].join(" "), found);
 }
 function grepTool(input, cwd, ignored) {
@@ -4863,13 +5865,15 @@ function grepTool(input, cwd, ignored) {
   const glob = input.glob ? globToRegExp(input.glob.includes("/") ? input.glob : `**/${input.glob}`) : void 0;
   const typeFilter = input.type ? GREP_TYPES[input.type.toLowerCase()] : void 0;
   if (input.type && !typeFilter) return void 0;
-  candidates = candidates.filter((f) => isShellDataFile(f) && !ignored(f)).filter((f) => !glob || glob.test(path4.relative(target, f).split(path4.sep).join("/")) || glob.test(path4.basename(f))).filter((f) => !typeFilter || typeFilter.test(f));
+  const named = !statSync3(target).isDirectory() || !!input.glob;
+  candidates = candidates.map((f) => plainPath(f)).filter((f) => (isShellDataFile(f) || named) && !ignored(f)).filter((f) => !glob || glob.test(path4.relative(target, f).split(path4.sep).join("/")) || glob.test(path4.basename(f))).filter((f) => !typeFilter || typeFilter.test(f));
   const unchecked = [];
   if (candidates.length > GREP_MAX_FILES) {
     unchecked.push(`only ${GREP_MAX_FILES} of the ${candidates.length} data files it searches were checked`);
     candidates = candidates.slice(0, GREP_MAX_FILES);
   }
-  const nameOf = (f) => path4.relative(cwd, f) || f;
+  const nameOf = (f) => path4.isAbsolute(f) ? path4.relative(cwd, f) || f : f;
+  let past = false;
   let re;
   try {
     re = new RegExp(input.pattern, input["-i"] ? "i" : "");
@@ -4881,13 +5885,18 @@ function grepTool(input, cwd, ignored) {
   const matches = [];
   const files = [];
   for (const file of candidates) {
+    if (verdictOf(matches)) break;
     if (outOfTime()) {
       unchecked.push(`checking the files took too long (stopped at ${nameOf(file)})`);
+      timedOut = true;
       break;
     }
     const loaded = fileTexts(file);
     if (loaded.unchecked) unchecked.push(`${nameOf(file)}: ${loaded.unchecked}`);
-    if (loaded.sampled) unchecked.push(`${nameOf(file)}: only its first ${GUARD_SAMPLE_BYTES / 1024 / 1024} MB were checked`);
+    if (loaded.sampled) {
+      unchecked.push(`${nameOf(file)}: only its first ${GUARD_SAMPLE_BYTES / 1024 / 1024} MB were checked`);
+      past = true;
+    }
     for (const full of loaded.texts) {
       const lines = full.split("\n");
       const keep = /* @__PURE__ */ new Set();
@@ -4897,12 +5906,14 @@ function grepTool(input, cwd, ignored) {
       });
       if (!keep.size) continue;
       const shown = [...keep].sort((a, b) => a - b).map((i) => lines[i]).join("\n");
-      const here = shownPii(full, shown, file);
+      const here = isShellDataFile(file) || identityValues(full, file).length ? shownPii(full, shown, file) : [];
       for (const m of here) matches.push(m);
       if (verdictOf(here)) files.push(file);
     }
   }
   const found = verdictOf(matches);
+  if (!found && timedOut) return unfinished("this search", unchecked);
+  if (!found && past) return pastSample("this search", unchecked);
   if (!found) return strictMode() && unchecked.length ? uncheckedBlock("this search", unchecked) : void 0;
   const names = (files.length ? files : candidates).slice(0, 5).map(nameOf);
   return block([
@@ -4914,9 +5925,17 @@ function grepTool(input, cwd, ignored) {
 function evaluate(input, projectRoot) {
   if (process.env.SAMARAN_GUARD === "off") return void 0;
   const root = projectRoot ?? process.env.CLAUDE_PROJECT_DIR ?? input.cwd ?? process.cwd();
-  const budget = Math.min(Number(process.env.SAMARAN_GUARD_BUDGET_MS) || STRICT_BUDGET_MS, STRICT_BUDGET_MS);
+  const budget = Math.min(Number(process.env.SAMARAN_GUARD_BUDGET_MS) || BUDGET_MS, BUDGET_MS);
   deadline = Date.now() + budget;
-  config = loadConfig(root);
+  timedOut = false;
+  try {
+    config = loadConfig(root);
+  } catch (e) {
+    if (process.env.SAMARAN_GUARD === "strict") throw e;
+    config = { custom: [], allow: [] };
+    process.stderr.write(`samaran-guard: ${e.message} The guard checks with its defaults until it is fixed.
+`);
+  }
   markDataFiles(loadUnmasked(root));
   if (input.hook_event_name === "UserPromptSubmit" && input.prompt) {
     if (BYPASS.test(input.prompt)) return void 0;
@@ -4941,7 +5960,7 @@ function evaluate(input, projectRoot) {
     case "Read":
       if (!tool.file_path) return void 0;
       {
-        const file = path4.resolve(root, tool.file_path);
+        const file = plainPath(path4.resolve(root, tool.file_path));
         const rel = path4.relative(root, file);
         const shownAs = rel && !rel.startsWith("..") && !path4.isAbsolute(rel) ? rel.split(path4.sep).join("/") : tool.file_path;
         return readTool(file, shownAs, root, ignored, tool);
@@ -4949,9 +5968,22 @@ function evaluate(input, projectRoot) {
     case "Grep":
       return grepTool(tool, cwd, ignored);
     case "Bash":
-      return tool.command ? shellTool(tool.command, cwd, false, ignored) : void 0;
+      return tool.command ? protectionTamper(tool.command, root) ?? shellTool(tool.command, cwd, false, ignored, root) : void 0;
     case "PowerShell":
-      return tool.command ? shellTool(tool.command, cwd, true, ignored) : void 0;
+      return tool.command ? protectionTamper(tool.command, root) ?? shellTool(tool.command, cwd, true, ignored, root) : void 0;
+    case "Write":
+    case "Edit":
+    case "MultiEdit":
+    case "NotebookEdit": {
+      const target = tool.file_path ?? tool.notebook_path;
+      if (!target) return void 0;
+      const file = path4.resolve(root, target);
+      if (TRUST_PATH.test(file.split(path4.sep).join("/"))) return block(TRUST_MESSAGE);
+      if (loadUnmasked(root).length && [path4.join(root, ".lokal", "unmasked.json"), unmaskedCopy(root)].some((f) => path4.resolve(f) === file)) {
+        return block(TAMPER_MESSAGE);
+      }
+      return SETTINGS_PATH.test(` ${file}`) ? askSettings(`${input.tool_name} ${path4.relative(root, file) || file}`) : void 0;
+    }
     default:
       return void 0;
   }

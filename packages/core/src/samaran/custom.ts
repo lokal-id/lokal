@@ -38,7 +38,54 @@ export function checkCustomRules(rules: readonly CustomRule[]): void {
         throw new RangeError(`Custom rule ${rule.label}: pattern does not compile (${(e as Error).message}).`);
       }
     }
+    const source = typeof rule.pattern === 'string' ? rule.pattern : rule.pattern?.source;
+    if (source !== undefined && source.length > MAX_PATTERN) {
+      throw new RangeError(`Custom rule ${rule.label}: pattern is longer than ${MAX_PATTERN} characters.`);
+    }
+    if (source !== undefined && nestedQuantifier(source)) {
+      throw new RangeError(
+        `Custom rule ${rule.label}: a repeated group that repeats inside, like (a+)+, can take exponential time on some text and stop the guard; write it without the nesting.`,
+      );
+    }
   }
+}
+
+const MAX_PATTERN = 1000;
+
+/**
+ * Whether a pattern repeats a group that itself holds a repetition: (a+)+, (\w*)*, (x+){2,}. Those can backtrack for
+ * minutes on a line that almost matches, and a guard that runs past its hook's time limit lets the call through.
+ */
+export function nestedQuantifier(source: string): boolean {
+  const inner: boolean[] = [];
+  let repeated = false; // whether the group just closed held a repetition
+  for (let i = 0; i < source.length; i++) {
+    const c = source[i]!;
+    if (c === '\\') {
+      i++;
+      repeated = false;
+    } else if (c === '[') {
+      // A character class: skip to its end.
+      for (i++; i < source.length && source[i] !== ']'; i++) if (source[i] === '\\') i++;
+      repeated = false;
+    } else if (c === '(') {
+      inner.push(false);
+      repeated = false;
+    } else if (c === ')') {
+      repeated = inner.pop() ?? false;
+      // A repetition inside counts for the group around this one too.
+      if (repeated && inner.length) inner[inner.length - 1] = true;
+      const next = source[i + 1];
+      const repeats = next === '*' || next === '+' || (next === '{' && /^\{\d*,\d*\}|^\{\d+\}/.test(source.slice(i + 1)) && !/^\{[01]\}/.test(source.slice(i + 1)));
+      if (repeated && repeats) return true;
+    } else if (c === '*' || c === '+' || (c === '{' && /^\{\d*,/.test(source.slice(i)))) {
+      if (inner.length) inner[inner.length - 1] = true;
+      repeated = false;
+    } else {
+      repeated = false;
+    }
+  }
+  return false;
 }
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

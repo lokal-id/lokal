@@ -7,7 +7,8 @@ import { appendFileSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { partialMask, PII_TYPES, UU_PDP_CATEGORY, type PiiType, type ScanStatus } from '@lokal-id/core';
 import {
-  detectConfigured, loadBuffer, loadConfig, loadDocument, loadIgnore, toPosix, walkFiles, type Document, type SamaranConfig,
+  detectConfigured, loadBuffer, loadConfig, loadDocument, loadIgnore, parseConfig, toPosix, walkFiles, type Document,
+  type SamaranConfig,
 } from './files.ts';
 
 /** A line containing this is never reported, like `// samaran-ignore` after a made-up NIK in a test. */
@@ -35,7 +36,16 @@ export interface ScanReport {
    * (.xls, archives), or `failed` (an encrypted or damaged file). A partial file is also counted in filesScanned.
    */
   notScanned: Array<{ file: string; status: Exclude<ScanStatus, 'scanned'>; reason: string }>;
+  /** Lines with personal data skipped because of a samaran-ignore comment: shown, so a reviewer sees them. */
+  skippedByMarker?: number;
+  /** Things a reviewer should know, such as a change to .samaranignore that this check did not use. */
+  notes?: string[];
 }
+
+// A samaran-ignore marker counts as a comment in code (`// samaran-ignore`, `# …`, `-- …`), never in a data file or
+// as a cell, where anyone adding the data could add the word next to it.
+const MARKER_COMMENT = /(?:\/\/|#|--|\/\*|<!--|;)\s*samaran-ignore\b/;
+const MARKER_DATA_FILE = /\.(csv|tsv|json|jsonl|ndjson|txt|log)(\.\d+)?$/i;
 
 /** A file to check, and which of its lines count: `all`, or the lines a change adds. */
 export interface Target {
@@ -97,7 +107,10 @@ export function scanTargets(targets: Target[], options: ScanOptions = {}): ScanR
         const line = lineAt(starts, m.start);
         if (target.lines !== 'all' && !target.lines.has(line)) continue;
         const end = starts[line] ?? doc.text.length;
-        if (doc.text.slice(starts[line - 1], end).includes(IGNORE_MARKER)) continue;
+        if (!MARKER_DATA_FILE.test(target.file) && MARKER_COMMENT.test(doc.text.slice(starts[line - 1], end))) {
+          report.skippedByMarker = (report.skippedByMarker ?? 0) + 1;
+          continue;
+        }
         report.findings.push({ file: target.file, line, type: m.type, ...(m.label ? { label: m.label } : {}), uuPdp: UU_PDP_CATEGORY[m.type], confidence: m.confidence, preview: partialMask(m.type, m.value) });
       }
     } else {
@@ -224,7 +237,7 @@ const where = (f: Finding) => (f.line ? `${f.file}:${f.line}` : f.sheet ? `${f.f
 
 const ADVICE = [
   'Replace real data with made-up data (lokal-mcp kembaran makes realistic stand-ins).',
-  `Files that only hold made-up data can be listed in .samaranignore; a single line can be skipped with a "${IGNORE_MARKER}" comment.`,
+  `Files that only hold made-up data can be listed in .samaranignore (merged on its own, so it is reviewed first); a single line of code can be skipped with a "// ${IGNORE_MARKER}" comment.`,
 ];
 
 const PER_FILE = 10;
@@ -244,6 +257,7 @@ export function formatText(report: ScanReport): string {
     if (findings.length > PER_FILE) out.push(`${findings[0]!.file}: … and ${findings.length - PER_FILE} more`);
   }
   for (const s of report.notScanned) out.push(`warning: ${s.file} ${NOT_SCANNED[s.status]} (${s.reason})`);
+  for (const note of report.notes ?? []) out.push(`note: ${note}`);
   if (report.findings.length) {
     out.push('', `Found ${report.findings.length} personal data value(s) in ${byFile.size} file(s).`, ...ADVICE);
   } else {
@@ -263,6 +277,7 @@ export function formatGithub(report: ScanReport): string {
     out.push(`::error ${props}::${escapeData(`${f.label ?? f.type} ${f.preview}${f.sheet ? ` in ${f.sheet}` : ''}. ${ADVICE[0]}`)}`);
   }
   for (const s of report.notScanned) out.push(`::warning file=${escapeProperty(s.file)},title=${s.status === 'partial' ? 'Partly scanned' : 'Not scanned'}::${escapeData(s.reason)}`);
+  for (const note of report.notes ?? []) out.push(`::warning title=Lokal scan::${escapeData(note)}`);
   return `${out.join('\n')}${out.length ? '\n' : ''}${formatText(report)}`;
 }
 
@@ -294,13 +309,15 @@ is not committed. Exits with 1 when it finds some. Values are shown partially ma
 
   --staged                 Check only the lines staged for commit (pre-commit hook)
   --diff <ref>             Check only the lines added since <ref> (pull requests)
+  --config-ref <ref>       Read .samaran.json and .samaranignore from <ref> (default: <ref> of --diff, HEAD for --staged)
   --min-confidence <level> high (default) or medium
   --types <types>          Only these types, e.g. NIK,PHONE,BANK_ACCOUNT
   --format <format>        text (default), github (annotations), or json
   --strict                 Also fail when files that may hold personal data could not be read
   --no-fail                Report, but exit with 0
 
-Files listed in .samaranignore at the repository root are skipped, and so is any line containing "${IGNORE_MARKER}".`;
+Files listed in .samaranignore at the repository root are skipped (the committed version with --diff and --staged,
+the version approved with lokal-mcp trust otherwise), and so is a line with a "// ${IGNORE_MARKER}" comment in code.`;
 
 function gitRoot(cwd: string): string | undefined {
   try {
@@ -311,7 +328,7 @@ function gitRoot(cwd: string): string | undefined {
 }
 
 export function runScan(args: string[]): void {
-  const valued = new Set(['--diff', '--min-confidence', '--types', '--format']);
+  const valued = new Set(['--diff', '--min-confidence', '--types', '--format', '--config-ref']);
   const opt = (name: string) => {
     const i = args.indexOf(name);
     return i >= 0 ? args[i + 1] : undefined;
@@ -353,12 +370,25 @@ export function runScan(args: string[]): void {
   }
 
   const ignoreRoot = root ?? process.cwd();
-  const isIgnoredAbs = loadIgnore(ignoreRoot);
+  // A change must not decide how it is checked: with --diff the .samaran.json and .samaranignore of the base are used,
+  // with --staged the committed ones, and --config-ref names another commit (the Action passes the pull request's
+  // base). Without any, the working tree's, as approved on this machine (lokal-mcp trust).
+  const configRef = opt('--config-ref') ?? base ?? (staged ? 'HEAD' : undefined);
+  if (configRef && !root) return usage('--config-ref needs a git repository.');
+  const atRef = (name: string): string | undefined => {
+    try {
+      return git(root!, ['show', `${configRef}:${name}`]).toString('utf8');
+    } catch {
+      return undefined; // not in that commit
+    }
+  };
+  let isIgnoredAbs: (abs: string) => boolean;
   let config: SamaranConfig;
   try {
     // The policy says what may reach a model; what may enter the repository does not change with it.
-    const { custom, allow } = loadConfig(ignoreRoot);
-    config = { custom, allow };
+    const loaded = configRef ? parseConfig(atRef('.samaran.json') ?? '{}', ignoreRoot, true) : loadConfig(ignoreRoot);
+    config = { custom: loaded.custom, allow: loaded.allow };
+    isIgnoredAbs = configRef ? loadIgnore(ignoreRoot, { trusted: true, text: atRef('.samaranignore') ?? '' }) : loadIgnore(ignoreRoot);
   } catch (e) {
     process.stderr.write(`${(e as Error).message}\n`);
     process.exitCode = 2;
@@ -370,6 +400,13 @@ export function runScan(args: string[]): void {
     isIgnored: (file) => isIgnoredAbs(path.resolve(ignoreRoot, file)),
     config,
   });
+  const edited = targets.map((t) => t.file).filter((f) => f === '.samaran.json' || f === '.samaranignore');
+  if (configRef && edited.length) {
+    report.notes = [...(report.notes ?? []), `This change edits ${edited.join(' and ')}; this check used the version in ${configRef}. Merge such a change on its own first, so it is reviewed before it applies.`];
+  }
+  if (report.skippedByMarker) {
+    report.notes = [...(report.notes ?? []), `${report.skippedByMarker} line(s) with personal data were skipped by a samaran-ignore comment.`];
+  }
 
   if (format === 'json') process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   else process.stdout.write(format === 'github' ? formatGithub(report) : formatText(report));

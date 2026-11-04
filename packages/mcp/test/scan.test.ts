@@ -95,6 +95,8 @@ test('--diff checks a branch against its base; renamed and ignored files stay qu
   try {
     writeFileSync(path.join(dir, 'seed.csv'), `nama,nik\n${OLD_ROW}\n`);
     writeFileSync(path.join(dir, 'app.ts'), 'export const x = 1;\n');
+    // The list of fake data is in the base: reviewed and merged before the change that uses it.
+    writeFileSync(path.join(dir, '.samaranignore'), 'fixture.csv\n');
     git('add', '.');
     git('commit', '-q', '-m', 'base');
     const base = git('rev-parse', 'HEAD').trim();
@@ -102,7 +104,6 @@ test('--diff checks a branch against its base; renamed and ignored files stay qu
     git('mv', 'seed.csv', 'seed-old.csv');
     writeFileSync(path.join(dir, 'app.ts'), `export const x = 1;\n// NIK pelanggan: 3276014503920002\nconst demo = '3201011508950001'; // samaran-ignore\n`);
     writeFileSync(path.join(dir, 'fixture.csv'), `${NEW_ROW}\n`);
-    writeFileSync(path.join(dir, '.samaranignore'), 'fixture.csv\n');
     git('add', '.');
     git('commit', '-q', '-m', 'change');
 
@@ -113,7 +114,21 @@ test('--diff checks a branch against its base; renamed and ignored files stay qu
     const result = cli(dir, '--diff', base, '--format', 'github');
     assert.equal(result.status, 1);
     assert.match(result.stdout, /^::error file=app\.ts,line=2,title=Personal data%3A NIK::NIK 3276\*{8}0002/m);
-    assert.doesNotMatch(result.stdout, /fixture\.csv|seed/);
+    assert.doesNotMatch(result.stdout, /::error file=(?:fixture\.csv|seed)/);
+    assert.match(result.stdout, /1 line\(s\) with personal data were skipped by a samaran-ignore comment/);
+
+    // A change that adds its own data to .samaranignore, or allows it in .samaran.json, is still checked by the base's.
+    writeFileSync(path.join(dir, 'users.csv'), `nama,nik\n${NEW_ROW}\n`);
+    writeFileSync(path.join(dir, '.samaranignore'), 'fixture.csv\nusers.csv\n');
+    writeFileSync(path.join(dir, '.samaran.json'), JSON.stringify({ policy: { NIK: 'allow' }, allow: ['3276014503920002'] }));
+    writeFileSync(path.join(dir, 'kontak.csv'), `nik,catatan\n3276014503920002,# samaran-ignore\n`);
+    git('add', '.');
+    git('commit', '-q', '-m', 'self-approval');
+    const self = cli(dir, '--diff', base);
+    assert.equal(self.status, 1);
+    assert.match(self.stdout, /users\.csv:2: NIK/);
+    assert.match(self.stdout, /kontak\.csv:2: NIK/, 'a marker in a data file is no comment');
+    assert.match(self.stdout, /This change edits \.samaran\.json and \.samaranignore; this check used the version in/);
   } finally {
     done();
   }

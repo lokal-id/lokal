@@ -30,7 +30,11 @@ const chunk = (delta: unknown, finish: string | null = null) => ({ id: 'c1', obj
 function answer(req: IncomingMessage, res: ServerResponse, body: string): void {
   const path = req.url ?? '';
   const json = body ? JSON.parse(body) : {};
-  if (path.endsWith('/chat/completions') && json.model === 'gpt-json') {
+  if (json.model === 'gpt-error') {
+    // A provider error that repeats the request back.
+    res.writeHead(400, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ error: { message: `Invalid request: ${body.slice(0, 300)}` } }));
+  } else if (path.endsWith('/chat/completions') && json.model === 'gpt-json') {
     // An answer in JSON, as response_format asks (or as the prompt asks, without it).
     const content = '{"nama":"[NAME_1]","catatan":"pelanggan lama"}';
     if (json.stream) {
@@ -169,6 +173,46 @@ test('proxy: Chat Completions dikirim tersamar, jawaban dan argumen tool kembali
   assert.equal(res.headers.get('x-samaran-unrestored'), '1', '[UNKNOWN_9] came from nowhere');
   assert.ok(!logs.join('\n').includes('3201011508950001'), 'the log has no values');
   assert.ok(!logs.join('\n').includes('UNKNOWN_9'), 'nor the placeholders');
+});
+
+test('proxy: query string dan header aplikasi disamarkan, error tidak dipulihkan, BOM dan UTF-16 diterima', async () => {
+  const NIK = '3201011508950001';
+  received = [];
+  await fetch(`${base}/v1/models?user_nik=${NIK}&limit=5`, { headers: { authorization: 'Bearer sk-test', 'x-customer-nik': NIK, 'x-api-key': 'kunci-rahasia', 'x-stainless-lang': 'js' } });
+  const sent = received[0]!;
+  assert.ok(!sent.path.includes(NIK) && /limit=5/.test(sent.path), sent.path);
+  assert.ok(!String(sent.headers['x-customer-nik']).includes(NIK));
+  assert.equal(sent.headers['x-api-key'], 'kunci-rahasia', 'the provider key passes as it is');
+  assert.equal(sent.headers['x-stainless-lang'], 'js');
+
+  const error = await post('/v1/chat/completions', { model: 'gpt-error', messages: [{ role: 'user', content: `NIK saya ${NIK}` }] });
+  assert.equal(error.status, 400);
+  const text = await error.text();
+  assert.ok(!text.includes(NIK) && /\[NIK_1\]/.test(text), 'an error repeating the request stays masked');
+
+  const msg = JSON.stringify({ model: 'gpt-test', messages: [{ role: 'user', content: `NIK saya ${NIK}` }] });
+  for (const [label, bodyBytes, type] of [
+    ['BOM', Buffer.from(`﻿${msg}`, 'utf8'), 'application/json'],
+    ['UTF-16', Buffer.from(msg, 'utf16le'), 'application/json; charset=utf-16le'],
+  ] as const) {
+    received = [];
+    const res = await fetch(`${base}/v1/chat/completions`, { method: 'POST', headers: { authorization: 'Bearer sk-test', 'content-type': type }, body: bodyBytes });
+    assert.equal(res.status, 200, label);
+    assert.ok(!received[0]!.body.includes(NIK) && received[0]!.body.includes('[NIK_1]'), label);
+    assert.doesNotMatch(String(received[0]!.headers['content-type']), /utf-16/, `${label}: sent on as UTF-8`);
+  }
+});
+
+test('proxy: messages[].name disamarkan dengan placeholder yang tetap sah untuk OpenAI', async () => {
+  received = [];
+  await post('/v1/chat/completions', {
+    model: 'gpt-test',
+    messages: [{ role: 'user', name: 'Budi_Santoso', content: 'halo, tolong cek pesanan saya' }],
+  });
+  const body = JSON.parse(received[0]!.body);
+  assert.ok(!received[0]!.body.includes('Budi'), received[0]!.body);
+  assert.match(body.messages[0].name, /^[A-Za-z0-9_-]+$/, 'OpenAI accepts only these characters in name');
+  assert.equal(body.messages[0].name, 'NAME_1');
 });
 
 test('proxy: jawaban JSON (response_format) tetap JSON valid saat nilai berisi tanda kutip', async () => {

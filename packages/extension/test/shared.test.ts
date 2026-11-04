@@ -38,3 +38,15 @@ test('every site is matched over HTTPS only, and the popup copy names them all',
   const popup = readFileSync(new URL('../src/popup.ts', import.meta.url), 'utf8');
   for (const site of SITES) assert.ok(popup.includes(site.name.replace('Microsoft ', '')), site.name);
 });
+
+test('siteOf: one vault per https origin; nothing for other pages', async () => {
+  const { siteOf } = await import('../src/shared.ts');
+  assert.equal(siteOf('https://chatgpt.com/c/123?x=1'), 'https://chatgpt.com');
+  assert.equal(siteOf('https://chat.openai.com/'), 'https://chat.openai.com');
+  assert.notEqual(siteOf('https://claude.ai/new'), siteOf('https://gemini.google.com/app'));
+  assert.equal(siteOf('http://chatgpt.com/'), undefined);
+  assert.equal(siteOf('chrome-extension://abc/popup.html'), undefined);
+  assert.equal(siteOf('about:blank'), undefined);
+  assert.equal(siteOf(''), undefined);
+  assert.equal(siteOf('http://127.0.0.1:5173/'), 'http://127.0.0.1:5173');
+});

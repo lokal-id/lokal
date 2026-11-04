@@ -192,6 +192,13 @@ try {
     await page('Input.dispatchKeyEvent', { type: 'keyDown', key: keyName, code, windowsVirtualKeyCode: keyName === 'Enter' ? 13 : 0, ...extra });
     await page('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName, code, windowsVirtualKeyCode: keyName === 'Enter' ? 13 : 0 });
   };
+  // A real click, as the user makes it: the browser marks it trusted, unlike element.click() from the page.
+  const clickOn = async (selector) => {
+    const box = await evaluate(`(() => { const b = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+      return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; })()`);
+    await page('Input.dispatchMouseEvent', { type: 'mousePressed', x: box.x, y: box.y, button: 'left', clickCount: 1 });
+    await page('Input.dispatchMouseEvent', { type: 'mouseReleased', x: box.x, y: box.y, button: 'left', clickCount: 1 });
+  };
   const pasteInto = (selector, text) =>
     evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); el.focus();
       const dt = new DataTransfer(); dt.setData('text/plain', ${JSON.stringify(text)});
@@ -279,12 +286,27 @@ try {
 
   await check("the site's copy button (navigator.clipboard.writeText) gets the real values too", async () => {
     await evaluate('navigator.clipboard.writeText("kosong")');
-    await evaluate('copy.click()');
+    await clickOn('#copy');
     const text = await until(async () => {
       const t = await evaluate('navigator.clipboard.readText()');
       return t.includes(NIK) && t;
     }, 'clipboard rewritten with the real NIK');
     assert.ok(text.includes('Budi Santoso'));
+  });
+
+  await check('a copy event the page makes up gets no real values', async () => {
+    const got = await evaluate(`(() => { getSelection().selectAllChildren(reply); const dt = new DataTransfer();
+      document.dispatchEvent(new ClipboardEvent('copy', { clipboardData: dt, bubbles: true, cancelable: true }));
+      return dt.getData('text/plain'); })()`);
+    assert.ok(!got.includes(NIK) && !got.includes(PHONE), `the page read back ${got}`);
+  });
+
+  await check("the page's own clipboard report, without a click, is not acted on", async () => {
+    await evaluate('navigator.clipboard.writeText("kosong")');
+    await sleep(5500);
+    await evaluate(`window.dispatchEvent(new CustomEvent('lokal:clipboard', { detail: JSON.stringify({ text: reply.innerText }) }))`);
+    await sleep(800);
+    assert.equal(await evaluate('navigator.clipboard.readText()'), 'kosong');
   });
 
   // Attachments, from files on disk the way a user picks them.
@@ -402,6 +424,23 @@ ${doc}`);
     // The attachments above added more phone numbers to the vault; the NIK is the same one.
     assert.match(text, /^NIK \[NIK_1\] dan HP \[PHONE_\d+\]$/);
     assert.notEqual(text, 'NIK [NIK_1] dan HP [PHONE_1]', 'a new number gets a new placeholder');
+  });
+
+  await check("another site has its own vault: it never gets this site's values", async () => {
+    const other = await send('Target.createTarget', { url: pageUrl.replace('127.0.0.1', 'localhost') });
+    const s3 = (await send('Target.attachToTarget', { targetId: other.targetId, flatten: true })).sessionId;
+    await sleep(800);
+    await send('Runtime.evaluate', {
+      expression: `(() => { editor.focus(); const dt = new DataTransfer(); dt.setData('text/plain', 'HP 0899-1111-2222');
+        editor.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true })); })()`,
+    }, s3);
+    const text = await until(async () => {
+      const { result } = await send('Runtime.evaluate', { expression: 'editor.innerText', returnByValue: true }, s3);
+      return result.value.includes('[PHONE_') && result.value;
+    }, 'masked text on the other site');
+    // Its vault starts empty: on 127.0.0.1 this number would have come after several others.
+    assert.equal(text, 'HP [PHONE_1]');
+    await send('Target.closeTarget', { targetId: other.targetId });
   });
 
   // Last, since it breaks the content script. When the extension is updated or reloaded while a page stays open, the

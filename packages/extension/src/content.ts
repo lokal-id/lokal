@@ -67,17 +67,19 @@ chrome.storage.local.get('disabled').then(({ disabled }) => applySettings(disabl
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.disabled) applySettings(changes.disabled.newValue);
 });
-chrome.runtime.onMessage.addListener((message) => {
-  if (message?.type === 'vault' && Array.isArray(message.vault)) {
-    vault = new Map(message.vault);
-    scheduleRefresh();
-  }
-});
-send<Array<[string, string]>>({ type: 'vault' })
-  .then((entries) => {
+// This site's vault only: the service worker answers with the vault of the page's own origin. A change elsewhere
+// says which site changed, and a tab of another site does not ask.
+const loadVault = () =>
+  send<Array<[string, string]>>({ type: 'vault' }).then((entries) => {
     vault = new Map(entries);
     scheduleRefresh();
-  })
+  });
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type === 'vault-changed' && (message.site === undefined || message.site === location.origin)) {
+    loadVault().catch(() => {});
+  }
+});
+loadVault()
   .catch(() => {});
 
 // --- our UI: toasts and the tooltip, in a closed shadow root the page cannot read ------------------------------
@@ -439,7 +441,8 @@ function selectedText(): { text: string; html?: string } | undefined {
 window.addEventListener(
   'copy',
   (event) => {
-    if (!enabled || !vault.size || !event.clipboardData) return;
+    // A copy event the page made up comes with a DataTransfer the page can read back: only the user's own copy.
+    if (!event.isTrusted || !enabled || !vault.size || !event.clipboardData) return;
     const selected = selectedText();
     if (!selected || !hasKnownPlaceholder(selected.text, vault)) return;
     event.clipboardData.setData('text/plain', restore(selected.text, vault));
@@ -452,8 +455,20 @@ window.addEventListener(
 
 // The site's own copy buttons write with navigator.clipboard in the page; page-clipboard.ts reports what they wrote
 // (placeholders only), and the clipboard is written again here with the real values.
+// The page can send that report itself, at any time: it is acted on only right after the user clicked or pressed a key
+// (a copy button), and only with this site's own values.
+let lastGesture = -Infinity;
+for (const type of ['pointerdown', 'pointerup', 'click', 'keydown', 'keyup']) {
+  window.addEventListener(type, (event) => {
+    if (event.isTrusted) lastGesture = performance.now();
+  }, true);
+}
+const GESTURE_MS = 5000;
+
 window.addEventListener('lokal:clipboard', (event) => {
   if (!enabled || !vault.size) return;
+  if (performance.now() - lastGesture > GESTURE_MS) return;
+  if ('userActivation' in navigator && !(navigator as Navigator & { userActivation: { hasBeenActive: boolean } }).userActivation.hasBeenActive) return;
   let written: { text?: string; html?: string };
   try {
     written = JSON.parse(String((event as CustomEvent).detail));

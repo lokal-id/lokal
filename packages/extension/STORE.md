@@ -15,7 +15,7 @@ The text and answers for publishing the extension in the Chrome Web Store, kept 
 > • Pasting, typing, and attachments: Indonesian personal data (NIK, KK, NPWP, phone numbers, bank accounts, BPJS, names, addresses, health, finances, religion, and the other UU PDP categories) becomes placeholders such as [NIK_1] before the site receives it.
 > • Answers: placeholders are highlighted, and pointing at one shows the real value. Copying an answer puts the real values back.
 > • Attachments: CSV, JSON, logs, Excel, Word, and PDFs with a text layer are checked before upload, and masked when they hold personal data.
-> • The same value gets the same placeholder in every tab, so the AI can still compare records.
+> • The same value gets the same placeholder in every tab of a site, so the AI can still compare records. Each site has its own mapping.
 >
 > Works on ChatGPT, Claude, Gemini, AI Studio, Microsoft Copilot, Perplexity, DeepSeek, Grok, and Le Chat.
 >
@@ -30,7 +30,7 @@ The text and answers for publishing the extension in the Chrome Web Store, kept 
 > • Tempel, ketik, dan lampiran: data pribadi Indonesia (NIK, KK, NPWP, nomor HP, rekening bank, BPJS, nama, alamat, kesehatan, keuangan, agama, dan kategori UU PDP lainnya) diganti placeholder seperti [NIK_1] sebelum sampai ke situs.
 > • Jawaban: placeholder disorot, dan nilai aslinya muncul saat kursor diarahkan ke sana. Saat jawaban disalin, nilai asli dikembalikan.
 > • Lampiran: CSV, JSON, log, Excel, Word, dan PDF yang punya lapisan teks diperiksa sebelum diunggah, lalu disamarkan kalau berisi data pribadi.
-> • Nilai yang sama mendapat placeholder yang sama di semua tab, jadi AI tetap bisa membandingkan data.
+> • Nilai yang sama mendapat placeholder yang sama di semua tab satu situs, jadi AI tetap bisa membandingkan data. Tiap situs punya pemetaannya sendiri.
 >
 > Bekerja di ChatGPT, Claude, Gemini, AI Studio, Microsoft Copilot, Perplexity, DeepSeek, Grok, dan Le Chat.
 >
@@ -62,7 +62,7 @@ Make the screenshots on a page you control that shows the extension at work: a m
 
 | Permission | Why |
 |---|---|
-| `storage` | `storage.session` holds the mapping from placeholders to real values, in memory only, so the same value gets the same placeholder in every tab and the user can see and copy the real values. `storage.local` holds the list of sites where the user paused the extension. |
+| `storage` | `storage.session` holds the mapping from placeholders to real values, in memory only, one mapping per site, so the same value gets the same placeholder in every tab of that site and the user can see and copy the real values. `storage.local` holds the list of sites where the user paused the extension. |
 | `activeTab` | When the user opens the popup, it reads the current tab's address to show whether the extension runs on that site and to let the user pause it there. |
 | Host permissions (content scripts on chatgpt.com, chat.openai.com, claude.ai, gemini.google.com, aistudio.google.com, copilot.microsoft.com, perplexity.ai, chat.deepseek.com, grok.com, chat.mistral.ai) | The extension has to read what the user pastes, types, and attaches on these AI chat sites to mask personal data before the site sends it. It runs on no other site. |
 

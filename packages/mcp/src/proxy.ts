@@ -150,6 +150,13 @@ function maskJson(
     if (typeof value.type === 'string' && OPAQUE_TYPES.has(value.type)) return value;
     const out: { [key: string]: Json } = {};
     for (const [k, v] of Object.entries(value)) {
+      if (key === undefined && k === 'name' && typeof value.role === 'string' && typeof v === 'string') {
+        // A message's `name` is the person who wrote it ("Budi_Santoso"): masked as a name field. OpenAI allows only
+        // letters, digits, _ and - there, so the placeholder goes without its brackets: NAME_1.
+        const masked = maskJson(v, samaran, counts, unchecked, names, 'name') as string;
+        out[k] = masked.replace(/\[([A-Z_]+_\d+)\]/g, '$1');
+        continue;
+      }
       out[k] = key === undefined && SKIP_KEYS.has(k) ? v : maskJson(v, samaran, counts, unchecked, names, key === undefined ? undefined : k);
     }
     return out;
@@ -345,6 +352,40 @@ function takeEvents(buffer: string): { events: Array<Event | { raw: string }>; r
   return { events, rest };
 }
 
+// The provider's own headers: keys, versions, beta flags, and SDK telemetry. Any other x- header is the app's, masked.
+const PROVIDER_HEADER = /^x-(?:api-key|goog-api-key|stainless-.*|request-id|client-request-id|ms-.*|amz-.*|portkey-.*|title|samaran-.*)$/;
+
+/**
+ * A JSON body as text: UTF-8 with or without a byte order mark, or UTF-16 when its mark or charset says so. It is sent
+ * on as UTF-8 (JSON.stringify), and its content-type says so.
+ */
+function jsonText(raw: Buffer, contentType: string): string {
+  const utf16 = /charset\s*=\s*"?utf-16/i.test(contentType) || (raw[0] === 0xff && raw[1] === 0xfe) || (raw[0] === 0xfe && raw[1] === 0xff);
+  if (!utf16) return raw.toString('utf8').replace(/^﻿/, '');
+  const big = (raw[0] === 0xfe && raw[1] === 0xff) || /utf-16be/i.test(contentType);
+  return new TextDecoder(big ? 'utf-16be' : 'utf-16le').decode(raw).replace(/^﻿/, '');
+}
+
+/** One text an app sent outside the JSON body, masked with its name as the label. */
+function maskText(samaran: Samaran, name: string, value: string, counts: Map<PiiType, number>, unchecked: Unchecked): string {
+  const { text, matches } = maskField(samaran, name.replace(/^x-/, '').replace(/-/g, '_'), value, undefined);
+  for (const m of matches) {
+    counts.set(m.type, (counts.get(m.type) ?? 0) + 1);
+    unchecked.found.push({ type: m.type, label: m.label });
+  }
+  return text;
+}
+
+/** A URL with the values of its query string masked, each with its parameter name as the label. */
+function maskQuery(target: string, samaran: Samaran, counts: Map<PiiType, number>, unchecked: Unchecked): string {
+  const at = target.indexOf('?');
+  if (at === -1) return target;
+  const params = new URLSearchParams(target.slice(at + 1));
+  const masked = new URLSearchParams();
+  for (const [key, value] of params) masked.append(key, maskText(samaran, key, value, counts, unchecked));
+  return `${target.slice(0, at)}?${masked.toString()}`;
+}
+
 const HOP_BY_HOP = new Set([
   'host', 'connection', 'keep-alive', 'transfer-encoding', 'content-length', 'accept-encoding', 'proxy-connection',
   'upgrade', 'te', 'trailer',
@@ -431,7 +472,7 @@ export function startProxy(options: ProxyOptions = {}): Promise<Server> {
     const toAnthropic = /^\/v1\/(messages|complete)\b/.test(path) || req.headers['anthropic-version'] !== undefined;
     const upstream = toAnthropic ? anthropic : openai;
     // An upstream base URL may end in /v1 already (OpenRouter, Groq, Ollama): do not repeat it.
-    const target = upstream.endsWith('/v1') && url.startsWith('/v1/') ? `${upstream}${url.slice(3)}` : `${upstream}${url}`;
+    let target = upstream.endsWith('/v1') && url.startsWith('/v1/') ? `${upstream}${url.slice(3)}` : `${upstream}${url}`;
     const samaran = new Samaran({ exclude, custom: options.custom, allow: options.allow });
     const counts = new Map<PiiType, number>();
     const unchecked: Unchecked = { parts: 0, found: [] };
@@ -443,7 +484,7 @@ export function startProxy(options: ProxyOptions = {}): Promise<Server> {
       if (raw.length) {
         if (req.headers['content-encoding']) return fail(res, 415, 'Samaran Proxy cannot mask a compressed request body; send it uncompressed.');
         if (contentType.includes('json')) {
-          const parsed = JSON.parse(raw.toString('utf8')) as Json;
+          const parsed = JSON.parse(jsonText(raw, contentType)) as Json;
           jsonAnswers = asksForJson(parsed);
           // Placeholder-like text anywhere in the request (an e-mail template in the system prompt) keeps its number.
           samaran.reserve(JSON.stringify(parsed));
@@ -501,8 +542,17 @@ export function startProxy(options: ProxyOptions = {}): Promise<Server> {
       }
       const headers: Record<string, string> = {};
       for (const [k, v] of Object.entries(req.headers)) {
-        if (!HOP_BY_HOP.has(k) && typeof v === 'string') headers[k] = v;
+        if (HOP_BY_HOP.has(k) || typeof v !== 'string') continue;
+        // The masked body is JSON.stringify's: UTF-8, whatever charset it came in.
+        if (k === 'content-type' && typeof body === 'string' && /charset/i.test(v)) {
+          headers[k] = v.replace(/;\s*charset\s*=\s*"?[\w-]+"?/i, '; charset=utf-8');
+          continue;
+        }
+        // An app's own headers (x-user-email, x-customer-nik) carry what its body does: masked the same way.
+        headers[k] = /^x-/.test(k) && !PROVIDER_HEADER.test(k) ? maskText(samaran, k, v, counts, unchecked) : v;
       }
+      // And the query string: GET /v1/files?user=…
+      target = maskQuery(target, samaran, counts, unchecked);
       const response = await fetch(target, { method: req.method, headers, body });
       const un = new Unmasker(samaran, jsonAnswers);
       const out: Record<string, string> = {};
@@ -531,16 +581,23 @@ export function startProxy(options: ProxyOptions = {}): Promise<Server> {
       } else {
         const text = await response.text();
         let payload = text;
-        if (type.includes('json')) {
+        // An error is the provider repeating what it was sent (`Invalid request: …`): left masked, so the real values
+        // do not land in the app's error logs.
+        if (!response.ok) {
+          res.writeHead(response.status, out);
+          res.end(payload);
+        } else if (type.includes('json')) {
           try {
             payload = JSON.stringify(un.json(JSON.parse(text) as Json));
           } catch {
             payload = un.text(text);
           }
         }
-        if (un.unknown.size) out['x-samaran-unrestored'] = String(un.unknown.size);
-        res.writeHead(response.status, out);
-        res.end(payload);
+        if (response.ok) {
+          if (un.unknown.size) out['x-samaran-unrestored'] = String(un.unknown.size);
+          res.writeHead(response.status, out);
+          res.end(payload);
+        }
       }
       // Not the placeholders themselves: a log line never says anything about the content.
       const unrestored = un.unknown.size ? `, ${un.unknown.size} placeholder(s) not restored` : '';
@@ -599,6 +656,10 @@ export async function runProxy(args: string[]): Promise<void> {
     process.stderr.write(`${(e as Error).message}\n`);
     process.exitCode = 1;
     return;
+  }
+  if (config.untrusted?.length) {
+    // A .samaran.json from a repository cannot send unmasked data anywhere until the user approves it.
+    process.stderr.write(`Not applied from .samaran.json until you approve it (lokal-mcp trust): ${config.untrusted.join(', ')}\n`);
   }
   const host = opt('host') ?? '127.0.0.1';
   const port = Number(opt('port') ?? process.env.LOKAL_PROXY_PORT ?? 8787);

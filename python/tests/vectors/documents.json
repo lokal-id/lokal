@@ -698,7 +698,44 @@
   "data": "bmlrPcMoMeKCCvCfmIDtoIAK",
   "out": {
    "kind": "text",
-   "text": "nik=�(1�\n😀���\n"
+   "text": "nik=Ã(1â\nðí \n",
+   "encoding": "latin1"
+  }
+ },
+ {
+  "name": "ps-le.csv",
+  "data": "//5uAGEAbQBhACwAbgBpAGsADQAKAEIAdQBkAGkAIABTAGEAbgB0AG8AcwBvACwAMwAyADAAMQAwADEAMQA1ADAAOAA5ADUAMAAwADAAMQANAAoASgBvAHMA6QAsADMAMgA3ADYAMAAxADQANQAwADEAOQA5ADAAMAAwADIADQAKAA==",
+  "out": {
+   "kind": "text",
+   "text": "﻿nama,nik\r\nBudi Santoso,3201011508950001\r\nJosé,3276014501990002\r\n",
+   "encoding": "utf16le"
+  }
+ },
+ {
+  "name": "ps-be.csv",
+  "data": "/v8AbgBhAG0AYQAsAG4AaQBrAA0ACgBCAHUAZABpACAAUwBhAG4AdABvAHMAbwAsADMAMgAwADEAMAAxADEANQAwADgAOQA1ADAAMAAwADEADQAKAEoAbwBzAOkALAAzADIANwA2ADAAMQA0ADUAMAAxADkAOQAwADAAMAAyAA0ACg==",
+  "out": {
+   "kind": "text",
+   "text": "﻿nama,nik\r\nBudi Santoso,3201011508950001\r\nJosé,3276014501990002\r\n",
+   "encoding": "utf16be"
+  }
+ },
+ {
+  "name": "ps-nobom.log",
+  "data": "bgBhAG0AYQAsAG4AaQBrAA0ACgBCAHUAZABpACAAUwBhAG4AdABvAHMAbwAsADMAMgAwADEAMAAxADEANQAwADgAOQA1ADAAMAAwADEADQAKAEoAbwBzAOkALAAzADIANwA2ADAAMQA0ADUAMAAxADkAOQAwADAAMAAyAA0ACgA=",
+  "out": {
+   "kind": "text",
+   "text": "nama,nik\r\nBudi Santoso,3201011508950001\r\nJosé,3276014501990002\r\n",
+   "encoding": "utf16le"
+  }
+ },
+ {
+  "name": "ps-odd.txt",
+  "data": "//5uAGEAbQBhACwAbgBpAGsADQAKAEIAdQBkAGkAIABTAGEAbgB0AG8AcwBvACwAMwAyADAAMQAwADEAMQA1ADAAOAA5ADUAMAAwADAAMQANAAoASgBvAHMA6QAsADMAMgA3ADYAMAAxADQANQAwADEAOQA5ADAAMAAwADIADQAKAEE=",
+  "out": {
+   "kind": "text",
+   "text": "﻿nama,nik\r\nBudi Santoso,3201011508950001\r\nJosé,3276014501990002\r\n",
+   "encoding": "utf16le"
   }
  },
  {

@@ -29,6 +29,10 @@ DocumentKind = Literal['text', 'spreadsheet', 'word', 'pdf', 'skipped']
 StrPath = Union[str, 'os.PathLike[str]']
 
 
+#: How a text file was read when it is not UTF-8.
+TextEncoding = Literal['latin1', 'utf16le', 'utf16be']
+
+
 @dataclass(slots=True, frozen=True)
 class Part(Result):
     #: A sheet name, "Dokumen" and "Tabel 1" in a Word file, "Halaman 2" in a PDF; None for a plain text file.
@@ -54,6 +58,9 @@ class Document(Result):
     #: For a skipped file: ``unsupported`` (a kind Lokal does not read) or ``failed`` (a kind it reads, but this one
     #: would not). Read :attr:`scan_status` for any document.
     skip_status: Optional[Literal['unsupported', 'failed']] = None
+    #: ``'latin1'`` for a text file that is not UTF-8 (an old export in Windows-1252 or ISO-8859-1), read byte for byte;
+    #: ``'utf16le'`` or ``'utf16be'`` for UTF-16 text (what Windows PowerShell 5.1 writes with ``>``).
+    encoding: Optional[TextEncoding] = None
 
     @property
     def scan_status(self) -> ScanStatus:
@@ -113,15 +120,80 @@ def _failed(reason: str) -> Document:
     return Document('skipped', reason=reason, data_bearing=True, skip_status='failed')
 
 
+def utf16_of(head: bytes) -> Optional[Literal['utf16le', 'utf16be']]:
+    """UTF-16 text: a byte order mark, or (without one) a zero in every other byte of mostly-ASCII text. What Windows
+    PowerShell 5.1 writes with ``>`` and Out-File; its zero bytes made it look binary."""
+    if head[:2] == b'\xff\xfe':
+        return 'utf16le'
+    if head[:2] == b'\xfe\xff':
+        return 'utf16be'
+    n = min(len(head), 8000) & ~1
+    if n < 8:
+        return None
+    even_zero = head[0:n:2].count(0)
+    odd_zero = head[1:n:2].count(0)
+    pairs = n // 2
+    if odd_zero >= pairs * 0.9 and even_zero == 0:
+        return 'utf16le'
+    if even_zero >= pairs * 0.9 and odd_zero == 0:
+        return 'utf16be'
+    return None
+
+
+def looks_binary(data: bytes) -> bool:
+    """Binary data: NUL bytes early on that are not UTF-16 text."""
+    head = data[:8000]
+    return b'\x00' in head and utf16_of(head) is None
+
+
 def is_text_file(file: StrPath) -> bool:
-    """Binary files have NUL bytes early on; text files do not."""
+    """Binary files have NUL bytes early on; text files (UTF-16 too) do not, apart from UTF-16's own."""
     with open(file, 'rb') as f:
-        return b'\x00' not in f.read(8000)
+        return not looks_binary(f.read(8000))
+
+
+def _unfinished_char(tail: bytes) -> bool:
+    """The start of a UTF-8 character that needs more bytes than ``tail`` has."""
+    lead = tail[0]
+    need = 4 if 0xF0 <= lead <= 0xF4 else 3 if 0xE0 <= lead <= 0xEF else 2 if 0xC2 <= lead <= 0xDF else 0
+    return need > len(tail) and all(0x80 <= b <= 0xBF for b in tail[1:])
+
+
+def decode_text(data: bytes, sample: bool = False) -> tuple[str, Optional[TextEncoding]]:
+    """A text file's text: UTF-16 (a BOM kept) when it is UTF-16, UTF-8 (a BOM kept) when it is valid UTF-8,
+    otherwise Latin-1 byte for byte, so an old export keeps its letters instead of turning them into U+FFFD. A sample
+    cut in the middle of a character is still UTF-8."""
+    utf16 = utf16_of(data[:8000])
+    if utf16:
+        whole = data[: len(data) & ~1]
+        return whole.decode('utf-16-le' if utf16 == 'utf16le' else 'utf-16-be', 'replace'), utf16
+    for cut in range(0, min(3 if sample else 0, len(data) - 1) + 1):
+        if cut and not _unfinished_char(data[len(data) - cut :]):
+            continue
+        try:
+            text = data[: len(data) - cut].decode('utf-8')
+        except UnicodeDecodeError:
+            continue
+        return (text + data[len(data) - cut :].decode('utf-8', 'replace') if cut else text), None
+    if not data:
+        return '', None
+    return data.decode('latin-1'), 'latin1'
+
+
+def encode_text(text: str, encoding: Optional[TextEncoding]) -> bytes:
+    """Text as bytes in ``encoding``; UTF-8 when it is Latin-1 and has a character Latin-1 cannot hold."""
+    if encoding == 'utf16le':
+        return text.encode('utf-16-le')
+    if encoding == 'utf16be':
+        return text.encode('utf-16-be')
+    if encoding == 'latin1' and all(ord(c) <= 0xFF for c in text):
+        return text.encode('latin-1')
+    return text.encode('utf-8')
 
 
 def _read_head(file: StrPath, size: int) -> str:
     with open(file, 'rb') as f:
-        text = f.read(size).decode('utf-8', 'replace')
+        text = decode_text(f.read(size), sample=True)[0]
     last_break = text.rfind('\n')
     return text[:last_break] if last_break > 0 else text
 
@@ -189,7 +261,8 @@ def load_document(
         return _skipped('binary file', data_bearing=False)
     if sample_bytes is not None and size > sample_bytes:
         return Document('text', (Part(None, _read_head(file, sample_bytes)),), sampled=True)
-    return Document('text', (Part(None, Path(file).read_bytes().decode('utf-8', 'replace')),))
+    text, encoding = decode_text(Path(file).read_bytes())
+    return Document('text', (Part(None, text),), encoding=encoding)
 
 
 # ------------------------------------------------------------------------------------------------ folders

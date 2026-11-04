@@ -192,6 +192,45 @@ _NAME_NOISE = re.compile(r"[^a-z0-9' ]+")
 _SPACES = re.compile(r'\s+', re.ASCII)
 
 
+# Common short and everyday names, by region code: "Jatim", "Jogja", "DKI", "Jaksel". Normalized (lowercase).
+WILAYAH_ALIASES: dict[str, tuple[str, ...]] = {
+    '11': ('nad', 'nanggroe aceh darussalam'),
+    '12': ('sumut', 'sumatra utara'),
+    '13': ('sumbar', 'sumatra barat'),
+    '16': ('sumsel', 'sumatra selatan'),
+    '19': ('babel', 'bangka belitung'),
+    '21': ('kepri',),
+    '31': ('dki', 'dki jakarta', 'jakarta', 'jkt'),
+    '32': ('jabar',),
+    '33': ('jateng',),
+    '34': ('diy', 'yogyakarta', 'jogja', 'jogjakarta', 'yogya', 'di yogyakarta'),
+    '35': ('jatim',),
+    '52': ('ntb',),
+    '53': ('ntt',),
+    '61': ('kalbar',),
+    '62': ('kalteng',),
+    '63': ('kalsel',),
+    '64': ('kaltim',),
+    '65': ('kaltara',),
+    '71': ('sulut',),
+    '72': ('sulteng',),
+    '73': ('sulsel',),
+    '74': ('sultra',),
+    '76': ('sulbar',),
+    '82': ('malut',),
+    '92': ('papua barat', 'pabar'),
+    '31.71': ('jakpus', 'jakarta pusat'),
+    '31.72': ('jakut', 'jakarta utara'),
+    '31.73': ('jakbar', 'jakarta barat'),
+    '31.74': ('jaksel', 'jakarta selatan'),
+    '31.75': ('jaktim', 'jakarta timur'),
+    '36.74': ('tangsel',),
+}
+
+# Spellings the official names write differently: "Sumatra" is "Sumatera" in Kepmendagri.
+_SPELLINGS = ((re.compile(r'\bsumatra\b'), 'sumatera'),)
+
+
 def _normalize_name(s: str) -> str:
     s = _NAME_NOISE.sub(' ', s.lower())
     s = _SPACES.sub(' ', s).strip()
@@ -210,9 +249,12 @@ def search_wilayah(
     Villages are only searched when ``level`` is 4 or ``within`` points at a kecamatan or lower, since many villages
     share names. ``within="32"`` keeps results inside Jawa Barat.
     """
-    q = _normalize_name(query)
-    if not q:
+    asked = _normalize_name(query)
+    if not asked:
         return []
+    q = asked
+    for spelling, official in _SPELLINGS:
+        q = spelling.sub(official, q)
     inside = normalize_wilayah_code(within) if within else None
     include_desa = level == 4 or (inside is not None and _level_of(inside) >= 3)
 
@@ -234,6 +276,14 @@ def search_wilayah(
             elif q in n:
                 score = 40
             else:
+                score = 0
+            # "Jatim", "Jogja": the everyday name counts as the name itself.
+            for alias in WILAYAH_ALIASES.get(code, ()):
+                if alias == asked:
+                    score = max(score, 100)
+                elif alias.startswith(asked):
+                    score = max(score, 80)
+            if not score:
                 continue
             # Prefer larger regions when names tie: "Bogor" the kabupaten before the kecamatan.
             scored.append((score - _level_of(code), code, name))

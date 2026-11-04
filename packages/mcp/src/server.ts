@@ -1,6 +1,7 @@
 import { existsSync, statSync } from 'node:fs';
 import { createServer as createHttpServer, type Server as HttpServer } from 'node:http';
 import path from 'node:path';
+import { Transform, type Readable } from 'node:stream';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -39,12 +40,11 @@ import {
 } from '@lokal-id/core/wilayah';
 import { countMatches, writeAudit } from './audit.ts';
 import {
-  allowedTypes, detectConfigured, loadConfig, loadIgnore, loadInRoot, previewForModel, realRoot, recordUnmasked, resolveInRoot,
-  toPosix, underPolicy,
-  walkFiles, writeInRoot,
+  allowedTypes, DEFAULT_VAULT_TTL_MINUTES, detectConfigured, loadConfig, loadIgnore, loadInRoot, previewForModel, protectedPath,
+  realRoot, recordUnmasked, reservedName, resolveInRoot, toPosix, underPolicy, untrustedIgnore, walkFiles, writeInRoot,
   type Document, type SamaranConfig,
 } from './files.ts';
-import { anonymizeFiles, KEMBARAN_NOTE, NOTHING_REPLACED } from './kembaran-files.ts';
+import { anonymizeFiles, KEMBARAN_NOTE, NOTHING_REPLACED, planOutputs } from './kembaran-files.ts';
 import { NerNames } from './ner.ts';
 import { VERSION } from './version.ts';
 
@@ -113,8 +113,9 @@ export function createServer(
   let samaran = newVault();
   const audit = (action: string, what: string, extra: { file?: string; counts?: Record<string, number>; reason?: string; values?: number } = {}) =>
     writeAudit(config.audit, { source: 'mcp', action, what, ...extra });
-  // A session that runs for days should not keep real values that long: forgotten after this many minutes unused.
-  const ttlMinutes = Number(process.env.LOKAL_VAULT_TTL_MINUTES) || config.vaultTtlMinutes;
+  // A session that runs for days should not keep real values that long: forgotten after this many minutes unused,
+  // an hour unless the project's approved config or LOKAL_VAULT_TTL_MINUTES says otherwise.
+  const ttlMinutes = Number(process.env.LOKAL_VAULT_TTL_MINUTES) || config.vaultTtlMinutes || DEFAULT_VAULT_TTL_MINUTES;
   let lastUse = Date.now();
   // Names without a label or cue, from the NER model, when .samaran.json turns it on. Its memory of texts already read
   // is forgotten with the vault.
@@ -535,8 +536,13 @@ export function createServer(
           ? `${notScanned.length} file(s) may hold personal data but were NOT scanned in full (${Object.entries(byStatus).map(([k, n]) => `${n} ${k}`).join(', ')}). Do not treat them as clean.`
           : undefined,
         next: withPii
-          ? 'Read these files with read_file_masked, not directly. Files that only hold fake data can be listed in .samaranignore.'
+          ? 'Read these files with read_file_masked, not directly. Files that only hold fake data can be listed in .samaranignore, which the user then approves with `npx @lokal-id/mcp trust` in their own terminal.'
           : undefined,
+        // What the project's files would relax but the user has not approved on this machine: tell the user.
+        notApplied: [
+          ...(config.untrusted ?? []).map((s) => `.samaran.json ${s}`),
+          ...(untrustedIgnore(root) ? ['.samaranignore'] : []),
+        ].join(', ') || undefined,
       });
     },
   );
@@ -562,7 +568,9 @@ export function createServer(
         // Opened once and checked as opened: the content read is the file inside the root, even if its path changes.
         ({ abs, doc } = loadInRoot(root, target));
       } catch (e) {
-        if ((e as NodeJS.ErrnoException).code === 'ENOENT') return fail(`Not found: ${target}`);
+        const code = (e as NodeJS.ErrnoException).code;
+        if (code === 'ENOENT') return fail(`Not found: ${target}`);
+        if (code === 'EISDIR' || code === 'EPERM') return fail(`Not a file: ${target || '(empty path)'}. read_file_masked reads one file; scan_pii lists the files in a folder.`);
         return fail((e as Error).message);
       }
       if (doc.kind === 'skipped') {
@@ -586,7 +594,9 @@ export function createServer(
         if (withHeader) masked = masked.slice(masked.indexOf('\n') + 1);
         for (const m of matches) all.push(m);
         const end = Math.min(lines.length, start_line - 1 + max_lines);
-        const range = `lines ${start_line}-${end} of ${lines.length}`;
+        const range = start_line > lines.length
+          ? `start_line ${start_line} is past the end (${lines.length} ${lines.length === 1 ? 'line' : 'lines'})`
+          : `lines ${start_line}-${end} of ${lines.length}`;
         if (part.sheet === undefined) {
           textRange = range;
           blocks.push(masked);
@@ -647,6 +657,9 @@ export function createServer(
       } catch (e) {
         return fail((e as Error).message);
       }
+      const refused = protectedPath(root, abs) ?? reservedName(abs);
+      if (refused) return fail(`${refused}: write_file_unmasked does not write there.`);
+      if (Buffer.byteLength(path.basename(abs)) > 255) return fail(`The file name is longer than 255 bytes, which file systems do not allow: ${target}`);
       if (existsSync(abs) && !overwrite) return fail(`${target} already exists. Pass overwrite: true to replace it.`);
 
       const placeholders = content.match(/\[[A-Z_]+_\d+\]/g) ?? [];
@@ -701,6 +714,10 @@ export function createServer(
       try {
         inputs = paths.map(inRoot);
         out = inRoot(output);
+        for (const target of planOutputs(inputs, out)) {
+          const refused = protectedPath(root, target) ?? reservedName(target);
+          if (refused) return fail(`${refused}: anonymize_file does not write there.`);
+        }
         const { files, leaked } = anonymizeFiles(inputs, out, { keep, keepBirthDate: keep_birth_date, secret, overwrite, dryRun: dry_run, custom: config.custom, root });
         if (dry_run) {
           return json({
@@ -759,9 +776,72 @@ export function createServer(
   return server;
 }
 
+/** The largest JSON-RPC message the server reads; a bigger one is answered with an error, not read. */
+export const MAX_MESSAGE_BYTES = 64 * 1024 * 1024;
+
+/**
+ * Stdin with every line longer than `limit` taken out. The MCP SDK closes its stdio transport when one message passes
+ * its buffer, which ended the server, and the session's vault with it, without a word. A line over the limit is dropped
+ * instead and answered with an error carrying its request's id, read from the start of the line.
+ */
+export function limitLines(input: NodeJS.ReadableStream, reply: (line: string) => void, limit = MAX_MESSAGE_BYTES): Readable {
+  // The id may come first or last in a message (the SDK writes it after "params"): keep both ends.
+  // A line is held until it ends, so a part of a dropped line never reaches the transport.
+  let held: Buffer[] = [];
+  let head = '';
+  let tail = '';
+  let size = 0;
+  let dropping = false;
+  const out = new Transform({
+    transform(chunk: Buffer, _enc, done) {
+      let start = 0;
+      for (let i = chunk.indexOf(10); i !== -1 || start < chunk.length; i = chunk.indexOf(10, start)) {
+        const end = i === -1 ? chunk.length : i + 1;
+        const piece = chunk.subarray(start, end);
+        if (head.length < 512) head += piece.subarray(0, 512 - head.length).toString('utf8');
+        tail = (tail + piece.subarray(Math.max(0, piece.length - 512)).toString('utf8')).slice(-512);
+        if (!dropping) {
+          size += piece.length;
+          if (size > limit) {
+            dropping = true;
+            held = [];
+          } else {
+            held.push(Buffer.from(piece));
+          }
+        }
+        if (i !== -1) {
+          if (!dropping) this.push(Buffer.concat(held));
+          held = [];
+          if (dropping) {
+            const ids = /"id"\s*:\s*(\d+|"(?:[^"\\]|\\.)*")/;
+            const id = (ids.exec(tail) ?? ids.exec(head))?.[1];
+            reply(JSON.stringify({
+              jsonrpc: '2.0',
+              id: id === undefined ? null : JSON.parse(id),
+              error: { code: -32600, message: `Request larger than ${limit / 1024 / 1024} MB: not read. Split the content into smaller writes.` },
+            }));
+          }
+          head = '';
+          tail = '';
+          size = 0;
+          dropping = false;
+        }
+        start = end;
+        if (i === -1) break;
+      }
+      done();
+    },
+  });
+  input.pipe(out);
+  return out;
+}
+
 export async function runServer(): Promise<void> {
   const server = createServer();
-  await server.connect(new StdioServerTransport());
+  // LOKAL_MAX_MESSAGE_MB can only lower the limit: tests use it.
+  const limit = Math.min(Number(process.env.LOKAL_MAX_MESSAGE_MB) * 1024 * 1024 || MAX_MESSAGE_BYTES, MAX_MESSAGE_BYTES);
+  const stdin = limitLines(process.stdin, (line) => process.stdout.write(`${line}\n`), limit);
+  await server.connect(new StdioServerTransport(stdin, process.stdout, { maxBufferSize: limit + 1024 * 1024 }));
 }
 
 /**

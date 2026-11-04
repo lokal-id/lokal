@@ -1,4 +1,4 @@
-import { pickLang, restore, type Request, type Stats } from './shared.ts';
+import { pickLang, restore, siteOf, type Request, type Stats } from './shared.ts';
 import { SITES } from './sites.ts';
 
 const lang = pickLang(chrome.i18n.getUILanguage());
@@ -42,8 +42,11 @@ for (const el of document.querySelectorAll<HTMLElement>('[data-t]')) el.textCont
 
 const send = <T>(request: Request) => chrome.runtime.sendMessage<T>(request);
 
+// The site of the tab the popup was opened on: its vault is the one shown and restored from.
+let site: string | undefined;
+
 async function showStats(): Promise<void> {
-  const stats = await send<Stats>({ type: 'stats' });
+  const stats = await send<Stats>({ type: 'stats', site });
   $('masked').textContent = String(stats.masked);
   $('known').textContent = String(stats.known);
 }
@@ -53,6 +56,7 @@ async function init(): Promise<void> {
   let hostname = '';
   try {
     hostname = new URL(tab?.url ?? '').hostname;
+    site = siteOf(tab?.url ?? '');
   } catch {
     // A tab without a URL we can read: chrome:// pages and the like.
   }
@@ -79,7 +83,7 @@ async function init(): Promise<void> {
 }
 
 $('restore').addEventListener('click', async () => {
-  const vault = new Map(await send<Array<[string, string]>>({ type: 'vault' }));
+  const vault = new Map(await send<Array<[string, string]>>({ type: 'vault', site }));
   const input = $<HTMLTextAreaElement>('restore-in');
   input.value = restore(input.value, vault);
   await navigator.clipboard.writeText(input.value);

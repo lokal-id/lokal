@@ -537,7 +537,14 @@ emit('samaran_partial.json', core.PII_TYPES.flatMap((type) =>
     "INSERT INTO pelanggan VALUES (1,'Kenanga Purbasari','3201014508950001','081377881290','kenanga.p@example.com');",
     "INSERT INTO pesanan VALUES (77,'081377881290','kenanga purbasari minta kirim sore, cc KENANGA.P@EXAMPLE.COM');",
   ].join('\n');
-  const groups = [[dump, 'kontak,catatan\n6281377881290,refund ke Kenanga Purbasari\n']];
+  const groups = [
+    [dump, 'kontak,catatan\n6281377881290,refund ke Kenanga Purbasari\n'],
+    // Family name first, and e-mail addresses made from a name ("budi.santoso", "siti" alone, digits kept as many).
+    [
+      'nama,email\n"Santoso, Budi",budi.santoso@gmail.com\nBudi Santoso,budi_santoso87@yahoo.co.id\nSiti Aminah,siti@mail.co.id\n',
+      'Nama: Budi Santoso, S.Kom; kontak info@toko.co.id atau siti.aminah [at] mail [dot] com\n',
+    ],
+  ];
   for (let i = 0; i < 400; i += 8) groups.push(docs.slice(i, i + 8));
   emit('kembaran_texts.json', variants.map((options) => {
     const k = new Kembaran(options);
@@ -602,6 +609,12 @@ emit('samaran_partial.json', core.PII_TYPES.flatMap((type) =>
   for (const cut of [0.5, 0.8]) docsIn.push([`formulir-cut${cut * 100}.pdf`, formulir.subarray(0, Math.floor(formulir.length * cut))]);
   docsIn.push(['pelanggan-bom.csv', Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('nama,nik\nBudi,3201011508950001\n')])]);
   docsIn.push(['rusak.log', Buffer.from([0x6e, 0x69, 0x6b, 0x3d, 0xc3, 0x28, 0x31, 0xe2, 0x82, 0x0a, 0xf0, 0x9f, 0x98, 0x80, 0xed, 0xa0, 0x80, 0x0a])]);
+  // UTF-16 (Windows PowerShell 5.1's `>`): with a BOM in both byte orders, without one, and cut in a character.
+  const u16 = Buffer.from('nama,nik\r\nBudi Santoso,3201011508950001\r\nJosé,3276014501990002\r\n', 'utf16le');
+  docsIn.push(['ps-le.csv', Buffer.concat([Buffer.from([0xff, 0xfe]), u16])]);
+  docsIn.push(['ps-be.csv', Buffer.concat([Buffer.from([0xfe, 0xff]), Buffer.from(u16).swap16()])]);
+  docsIn.push(['ps-nobom.log', u16]);
+  docsIn.push(['ps-odd.txt', Buffer.concat([Buffer.from([0xff, 0xfe]), u16, Buffer.from([0x41])])]);
   docsIn.push(['data.bin', Buffer.from([1, 2, 0, 3])]);
   docsIn.push(['ktp.jpg', Buffer.from([0xff, 0xd8, 0xff, 0x00])]);
   docsIn.push(['lama.xls', Buffer.from([0xd0, 0xcf, 0x11, 0xe0])]);

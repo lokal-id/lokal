@@ -1702,16 +1702,7 @@
    ],
    "confidence": "medium",
    "issues": [],
-   "alternatives": [
-    {
-     "code": "32.01.13.2002",
-     "name": "Cimanggis",
-     "level": 4,
-     "type": "desa",
-     "path": "Cimanggis, Bojonggede, Kabupaten Bogor, Jawa Barat",
-     "postalCode": "16920"
-    }
-   ],
+   "alternatives": [],
    "street": "Jl. Raya Bogor KM 30",
    "provinsi": {
     "code": "32",

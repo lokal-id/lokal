@@ -393,10 +393,7 @@
  },
  {
   "text": "10.5.3",
-  "out": {
-   "amount": 1053,
-   "approximate": false
-  }
+  "out": null
  },
  {
   "text": "1e5",
@@ -527,10 +524,7 @@
  },
  {
   "text": "aja-satu-100-2,5",
-  "out": {
-   "amount": 103.5,
-   "approximate": false
-  }
+  "out": null
  },
  {
   "text": "100-rp-m",
@@ -660,10 +654,7 @@
  },
  {
   "text": "100-jt-seribu-1.500-1.500",
-  "out": {
-   "amount": 100004000,
-   "approximate": false
-  }
+  "out": null
  },
  {
   "text": "1.500 goceng sejuta goceng",
@@ -737,10 +728,7 @@
  },
  {
   "text": "1.500-1.500-rp-an-k",
-  "out": {
-   "amount": 3000000,
-   "approximate": true
-  }
+  "out": null
  },
  {
   "text": "limarban",
@@ -1254,10 +1242,7 @@
  },
  {
   "text": "100-ribu-sekitar-100-1.500",
-  "out": {
-   "amount": 101600,
-   "approximate": true
-  }
+  "out": null
  },
  {
   "text": "1.500lebih100",
@@ -1558,10 +1543,7 @@
  },
  {
   "text": "2,5-1",
-  "out": {
-   "amount": 3.5,
-   "approximate": false
-  }
+  "out": null
  },
  {
   "text": "setengahk",
@@ -1626,10 +1608,7 @@
  },
  {
   "text": "dua-an-100-2,5",
-  "out": {
-   "amount": 104.5,
-   "approximate": true
-  }
+  "out": null
  },
  {
   "text": "m-100-sejuta-1-sekitar",
@@ -2006,10 +1985,7 @@
  },
  {
   "text": "lebih-2,5-1",
-  "out": {
-   "amount": 3.5,
-   "approximate": true
-  }
+  "out": null
  },
  {
   "text": "sepuluh1.500",

@@ -209,7 +209,7 @@
  },
  {
   "text": "No. Pesanan,Status Pesanan,No. Resi,Opsi Pengiriman,Waktu Pesanan Dibuat,Username (Pembeli),Nama Penerima,No. Telepon,Alamat Pengiriman,Kota/Kabupaten,Provinsi,Total Pembayaran,Catatan dari Pembeli\n2610014KQ7ZB2M,Perlu Dikirim,,SPX Standard,2026-10-01 08:12,sitirahayu88,Siti Rahayu,6281298765432,\"Jl. Margonda Raya No. 45, RT 03/RW 05, Kel. Depok, Kec. Pancoran Mas\",KOTA DEPOK,JAWA BARAT,Rp185.000,tolong a.n. Ibu Siti Rahayu ya kak\n2610015AB3XY9P,Dikirim,SPXID045123456789,SPX Standard,2026-10-01 09:40,budi_s,Budi Santoso,+62 857-1111-2222,\"Perum Griya Asri Blok C2 No. 7, Cibinong\",KAB. BOGOR,JAWA BARAT,Rp92.500,\n2610016CD4ZT1Q,Perlu Dikirim,,J&T Express,2026-10-02 10:05,mamah.yosef,Maria Yosefina Gebze,0878.1234.5678,\"Jl. Raya Mandala No. 12, Kel. Mandala, Distrik Merauke\",KAB. MERAUKE,PAPUA SELATAN,Rp310.000,kalau kurir nyasar hub suami saya Pak Yohanes 0813-1111-2233\n2610017EF5UV2R,Perlu Dikirim,,JNE REG,2026-10-02 13:22,andiwj,Andi Wijaya,081234560001,\"Jl. Basuki Rahmat No. 9, Kota Sorong\",KOTA SORONG,PAPUA BARAT DAYA,Rp1.250.000,NIK saya 9671 0125 1187 0004 untuk klaim garansi\n2610018GH6WX3S,Selesai,JX4417730215,J&T Express,2026-10-03 07:55,dewi.lestari,Dewi Lestari,0896-7777-8888,\"Jl. Gajah Mada No. 101, Denpasar\",KOTA DENPASAR,BALI,Rp75.000,\n2610019IJ7YZ4T,Perlu Dikirim,,SiCepat REG,2026-10-03 16:30,rina_kartika,Rina Kartika Sari,0881-2345-6789,\"Jl. Provinsi No. 3, Penajam\",KAB. PENAJAM PASER UTARA,KALIMANTAN TIMUR,Rp640.000,\"rumah cat hijau sebelah masjid, titip ke satpam\"\n2610020KL8AB5U,Perlu Dikirim,,SPX Hemat,2026-10-04 11:11,yuliana.n,Yuliana Nawipa,0821 9876 5432,\"Jl. Merdeka No. 5, Nabire\",KAB. NABIRE,PAPUA TENGAH,Rp230.000,\n2610021MN9CD6V,Perlu Dikirim,,JNE YES,2026-10-04 19:45,hendra88,Hendra Gunawan,(0751) 812345,\"Jl. Sudirman No. 20, Padang\",KOTA PADANG,SUMATERA BARAT,Rp415.000,bayar pake VA BCA 12345678901 sudah ya\n2610022OP1EF7W,Batal,,SPX Standard,2026-10-05 08:00,fitri_h,Fitri Handayani,0852-3456-7891,\"Jl. Ahmad Yani No. 8, Surabaya\",KOTA SURABAYA,JAWA TIMUR,Rp99.000,\n2610023QR2GH8X,Perlu Dikirim,,SiCepat BEST,2026-10-05 14:20,lukman.h,Lukman Hakim,6281377778888,\"Jl. Raya Tapos No. 1, Kel. Tapos\",KOTA DEPOK,JAWA BARAT,Rp150.000,\n2610024ST3IJ9Y,Perlu Dikirim,,J&T Express,2026-10-06 09:09,siti.aminah,Siti Aminah,0838-1234-5679,\"Jl. Raya Cinere No. 77, Kel. Cinere\",KOTA DEPOK,JAWA BARAT,Rp88.000,\"tolong jgn dibanting, isi obat insulin buat ibu saya (diabetes)\"\n2610025UV4KL1Z,Dikirim,CGK7700123456789,JNE REG,2026-10-06 10:10,agus_p,Agus Prasetyo,0819-1234-5678,\"Jl. Kaliurang Km 5, Sleman\",KAB. SLEMAN,DI YOGYAKARTA,Rp56.000,\n",
-  "placeholder": "No. Pesanan,Status Pesanan,No. Resi,Opsi Pengiriman,Waktu Pesanan Dibuat,Username (Pembeli),Nama Penerima,No. Telepon,Alamat Pengiriman,Kota/Kabupaten,Provinsi,Total Pembayaran,Catatan dari Pembeli\n2610014KQ7ZB2M,Perlu Dikirim,,SPX Standard,2026-10-01 08:12,sitirahayu88,[NAME_1],[PHONE_1],\"[ADDRESS_1]\",KOTA DEPOK,JAWA BARAT,Rp185.000,tolong a.n. Ibu [NAME_1] ya kak\n2610015AB3XY9P,Dikirim,SPXID045123456789,SPX Standard,2026-10-01 09:40,[NAME_2],[NAME_3],[PHONE_2],\"[ADDRESS_2]\",KAB. BOGOR,JAWA BARAT,Rp92.500,\n2610016CD4ZT1Q,Perlu Dikirim,,J&T Express,2026-10-02 10:05,mamah.yosef,[NAME_4],[PHONE_3],\"[ADDRESS_3]\",KAB. MERAUKE,PAPUA SELATAN,Rp310.000,kalau kurir nyasar hub suami saya Pak [NAME_5] [PHONE_4]\n2610017EF5UV2R,Perlu Dikirim,,JNE REG,2026-10-02 13:22,[NAME_6],[NAME_7],[PHONE_5],\"[ADDRESS_4]\",KOTA SORONG,PAPUA BARAT DAYA,Rp1.250.000,NIK saya [NIK_1] untuk klaim garansi\n2610018GH6WX3S,Selesai,JX4417730215,J&T Express,2026-10-03 07:55,dewi.lestari,[NAME_8],[PHONE_6],\"[ADDRESS_5]\",KOTA DENPASAR,BALI,Rp75.000,\n2610019IJ7YZ4T,Perlu Dikirim,,SiCepat REG,2026-10-03 16:30,[NAME_9],[NAME_10],[PHONE_7],\"[ADDRESS_6]\",KAB. PENAJAM PASER UTARA,KALIMANTAN TIMUR,Rp640.000,\"rumah cat hijau sebelah masjid, titip ke satpam\"\n2610020KL8AB5U,Perlu Dikirim,,SPX Hemat,2026-10-04 11:11,yuliana.n,[NAME_11],[PHONE_8],\"[ADDRESS_7]\",KAB. NABIRE,PAPUA TENGAH,Rp230.000,\n2610021MN9CD6V,Perlu Dikirim,,JNE YES,2026-10-04 19:45,hendra88,[NAME_12],[PHONE_9],\"[ADDRESS_8]\",KOTA PADANG,SUMATERA BARAT,Rp415.000,bayar pake VA BCA [BANK_ACCOUNT_1] sudah ya\n2610022OP1EF7W,Batal,,SPX Standard,2026-10-05 08:00,[NAME_13],[NAME_14],[PHONE_10],\"[ADDRESS_9]\",KOTA SURABAYA,JAWA TIMUR,Rp99.000,\n2610023QR2GH8X,Perlu Dikirim,,SiCepat BEST,2026-10-05 14:20,lukman.h,[NAME_15],[PHONE_11],\"[ADDRESS_10]\",KOTA DEPOK,JAWA BARAT,Rp150.000,\n2610024ST3IJ9Y,Perlu Dikirim,,J&T Express,2026-10-06 09:09,siti.aminah,[NAME_16],[PHONE_12],\"[ADDRESS_11]\",KOTA DEPOK,JAWA BARAT,Rp88.000,\"tolong jgn dibanting, isi obat [HEALTH_1] buat ibu saya ([HEALTH_2])\"\n2610025UV4KL1Z,Dikirim,CGK7700123456789,JNE REG,2026-10-06 10:10,[NAME_17],[NAME_18],[PHONE_13],\"[ADDRESS_12]\",KAB. SLEMAN,DI YOGYAKARTA,Rp56.000,\n",
+  "placeholder": "No. Pesanan,Status Pesanan,No. Resi,Opsi Pengiriman,Waktu Pesanan Dibuat,Username (Pembeli),Nama Penerima,No. Telepon,Alamat Pengiriman,Kota/Kabupaten,Provinsi,Total Pembayaran,Catatan dari Pembeli\n2610014KQ7ZB2M,Perlu Dikirim,,SPX Standard,2026-10-01 08:12,sitirahayu88,[NAME_1],[PHONE_1],\"[ADDRESS_1]\",KOTA DEPOK,JAWA BARAT,Rp185.000,tolong a.n. Ibu [NAME_1] ya kak\n2610015AB3XY9P,Dikirim,SPXID045123456789,SPX Standard,2026-10-01 09:40,[NAME_2],[NAME_3],[PHONE_2],\"[ADDRESS_2]\",KAB. BOGOR,JAWA BARAT,Rp92.500,\n2610016CD4ZT1Q,Perlu Dikirim,,J&T Express,2026-10-02 10:05,mamah.yosef,[NAME_4],[PHONE_3],\"[ADDRESS_3]\",KAB. MERAUKE,PAPUA SELATAN,Rp310.000,kalau kurir nyasar hub suami saya Pak Yohanes [PHONE_4]\n2610017EF5UV2R,Perlu Dikirim,,JNE REG,2026-10-02 13:22,[NAME_5],[NAME_6],[PHONE_5],\"[ADDRESS_4]\",KOTA SORONG,PAPUA BARAT DAYA,Rp1.250.000,NIK saya [NIK_1] untuk klaim garansi\n2610018GH6WX3S,Selesai,JX4417730215,J&T Express,2026-10-03 07:55,dewi.lestari,[NAME_7],[PHONE_6],\"[ADDRESS_5]\",KOTA DENPASAR,BALI,Rp75.000,\n2610019IJ7YZ4T,Perlu Dikirim,,SiCepat REG,2026-10-03 16:30,[NAME_8],[NAME_9],[PHONE_7],\"[ADDRESS_6]\",KAB. PENAJAM PASER UTARA,KALIMANTAN TIMUR,Rp640.000,\"rumah cat hijau sebelah masjid, titip ke satpam\"\n2610020KL8AB5U,Perlu Dikirim,,SPX Hemat,2026-10-04 11:11,yuliana.n,[NAME_10],[PHONE_8],\"[ADDRESS_7]\",KAB. NABIRE,PAPUA TENGAH,Rp230.000,\n2610021MN9CD6V,Perlu Dikirim,,JNE YES,2026-10-04 19:45,hendra88,[NAME_11],[PHONE_9],\"[ADDRESS_8]\",KOTA PADANG,SUMATERA BARAT,Rp415.000,bayar pake VA BCA [BANK_ACCOUNT_1] sudah ya\n2610022OP1EF7W,Batal,,SPX Standard,2026-10-05 08:00,[NAME_12],[NAME_13],[PHONE_10],\"[ADDRESS_9]\",KOTA SURABAYA,JAWA TIMUR,Rp99.000,\n2610023QR2GH8X,Perlu Dikirim,,SiCepat BEST,2026-10-05 14:20,lukman.h,[NAME_14],[PHONE_11],\"[ADDRESS_10]\",KOTA DEPOK,JAWA BARAT,Rp150.000,\n2610024ST3IJ9Y,Perlu Dikirim,,J&T Express,2026-10-06 09:09,siti.aminah,[NAME_15],[PHONE_12],\"[ADDRESS_11]\",KOTA DEPOK,JAWA BARAT,Rp88.000,\"tolong jgn dibanting, isi obat [HEALTH_1] buat ibu saya ([HEALTH_2])\"\n2610025UV4KL1Z,Dikirim,CGK7700123456789,JNE REG,2026-10-06 10:10,[NAME_16],[NAME_17],[PHONE_13],\"[ADDRESS_12]\",KAB. SLEMAN,DI YOGYAKARTA,Rp56.000,\n",
   "vault": [
    [
     "[NAME_1]",
@@ -252,19 +252,15 @@
     "Jl. Raya Mandala No. 12, Kel. Mandala, Distrik Merauke"
    ],
    [
-    "[NAME_5]",
-    "Yohanes"
-   ],
-   [
     "[PHONE_4]",
     "0813-1111-2233"
    ],
    [
-    "[NAME_6]",
+    "[NAME_5]",
     "andiwj"
    ],
    [
-    "[NAME_7]",
+    "[NAME_6]",
     "Andi Wijaya"
    ],
    [
@@ -280,7 +276,7 @@
     "9671 0125 1187 0004"
    ],
    [
-    "[NAME_8]",
+    "[NAME_7]",
     "Dewi Lestari"
    ],
    [
@@ -292,11 +288,11 @@
     "Jl. Gajah Mada No. 101, Denpasar"
    ],
    [
-    "[NAME_9]",
+    "[NAME_8]",
     "rina_kartika"
    ],
    [
-    "[NAME_10]",
+    "[NAME_9]",
     "Rina Kartika Sari"
    ],
    [
@@ -308,7 +304,7 @@
     "Jl. Provinsi No. 3, Penajam"
    ],
    [
-    "[NAME_11]",
+    "[NAME_10]",
     "Yuliana Nawipa"
    ],
    [
@@ -320,7 +316,7 @@
     "Jl. Merdeka No. 5, Nabire"
    ],
    [
-    "[NAME_12]",
+    "[NAME_11]",
     "Hendra Gunawan"
    ],
    [
@@ -336,11 +332,11 @@
     "12345678901"
    ],
    [
-    "[NAME_13]",
+    "[NAME_12]",
     "fitri_h"
    ],
    [
-    "[NAME_14]",
+    "[NAME_13]",
     "Fitri Handayani"
    ],
    [
@@ -352,7 +348,7 @@
     "Jl. Ahmad Yani No. 8, Surabaya"
    ],
    [
-    "[NAME_15]",
+    "[NAME_14]",
     "Lukman Hakim"
    ],
    [
@@ -364,7 +360,7 @@
     "Jl. Raya Tapos No. 1, Kel. Tapos"
    ],
    [
-    "[NAME_16]",
+    "[NAME_15]",
     "Siti Aminah"
    ],
    [
@@ -384,11 +380,11 @@
     "diabetes"
    ],
    [
-    "[NAME_17]",
+    "[NAME_16]",
     "agus_p"
    ],
    [
-    "[NAME_18]",
+    "[NAME_17]",
     "Agus Prasetyo"
    ],
    [
@@ -400,7 +396,7 @@
     "Jl. Kaliurang Km 5, Sleman"
    ]
   ],
-  "partial": "No. Pesanan,Status Pesanan,No. Resi,Opsi Pengiriman,Waktu Pesanan Dibuat,Username (Pembeli),Nama Penerima,No. Telepon,Alamat Pengiriman,Kota/Kabupaten,Provinsi,Total Pembayaran,Catatan dari Pembeli\n2610014KQ7ZB2M,Perlu Dikirim,,SPX Standard,2026-10-01 08:12,sitirahayu88,S*** R***,0812****5432,\"Jl. ***\",KOTA DEPOK,JAWA BARAT,Rp185.000,tolong a.n. Ibu S*** R*** ya kak\n2610015AB3XY9P,Dikirim,SPXID045123456789,SPX Standard,2026-10-01 09:40,b***,B*** S***,0857****2222,\"Perum ***\",KAB. BOGOR,JAWA BARAT,Rp92.500,\n2610016CD4ZT1Q,Perlu Dikirim,,J&T Express,2026-10-02 10:05,mamah.yosef,M*** Y*** G***,0878****5678,\"Jl. ***\",KAB. MERAUKE,PAPUA SELATAN,Rp310.000,kalau kurir nyasar hub suami saya Pak Y*** 0813****2233\n2610017EF5UV2R,Perlu Dikirim,,JNE REG,2026-10-02 13:22,a***,A*** W***,0812****0001,\"Jl. ***\",KOTA SORONG,PAPUA BARAT DAYA,Rp1.250.000,NIK saya 9671********0004 untuk klaim garansi\n2610018GH6WX3S,Selesai,JX4417730215,J&T Express,2026-10-03 07:55,dewi.lestari,D*** L***,0896****8888,\"Jl. ***\",KOTA DENPASAR,BALI,Rp75.000,\n2610019IJ7YZ4T,Perlu Dikirim,,SiCepat REG,2026-10-03 16:30,r***,R*** K*** S***,0881****6789,\"Jl. ***\",KAB. PENAJAM PASER UTARA,KALIMANTAN TIMUR,Rp640.000,\"rumah cat hijau sebelah masjid, titip ke satpam\"\n2610020KL8AB5U,Perlu Dikirim,,SPX Hemat,2026-10-04 11:11,yuliana.n,Y*** N***,0821****5432,\"Jl. ***\",KAB. NABIRE,PAPUA TENGAH,Rp230.000,\n2610021MN9CD6V,Perlu Dikirim,,JNE YES,2026-10-04 19:45,hendra88,H*** G***,0751***2345,\"Jl. ***\",KOTA PADANG,SUMATERA BARAT,Rp415.000,bayar pake VA BCA *******8901 sudah ya\n2610022OP1EF7W,Batal,,SPX Standard,2026-10-05 08:00,f***,F*** H***,0852****7891,\"Jl. ***\",KOTA SURABAYA,JAWA TIMUR,Rp99.000,\n2610023QR2GH8X,Perlu Dikirim,,SiCepat BEST,2026-10-05 14:20,lukman.h,L*** H***,0813****8888,\"Jl. ***\",KOTA DEPOK,JAWA BARAT,Rp150.000,\n2610024ST3IJ9Y,Perlu Dikirim,,J&T Express,2026-10-06 09:09,siti.aminah,S*** A***,0838****5679,\"Jl. ***\",KOTA DEPOK,JAWA BARAT,Rp88.000,\"tolong jgn dibanting, isi obat *** buat ibu saya (***)\"\n2610025UV4KL1Z,Dikirim,CGK7700123456789,JNE REG,2026-10-06 10:10,a***,A*** P***,0819****5678,\"Jl. ***\",KAB. SLEMAN,DI YOGYAKARTA,Rp56.000,\n",
+  "partial": "No. Pesanan,Status Pesanan,No. Resi,Opsi Pengiriman,Waktu Pesanan Dibuat,Username (Pembeli),Nama Penerima,No. Telepon,Alamat Pengiriman,Kota/Kabupaten,Provinsi,Total Pembayaran,Catatan dari Pembeli\n2610014KQ7ZB2M,Perlu Dikirim,,SPX Standard,2026-10-01 08:12,sitirahayu88,S*** R***,0812****5432,\"Jl. ***\",KOTA DEPOK,JAWA BARAT,Rp185.000,tolong a.n. Ibu S*** R*** ya kak\n2610015AB3XY9P,Dikirim,SPXID045123456789,SPX Standard,2026-10-01 09:40,b***,B*** S***,0857****2222,\"Perum ***\",KAB. BOGOR,JAWA BARAT,Rp92.500,\n2610016CD4ZT1Q,Perlu Dikirim,,J&T Express,2026-10-02 10:05,mamah.yosef,M*** Y*** G***,0878****5678,\"Jl. ***\",KAB. MERAUKE,PAPUA SELATAN,Rp310.000,kalau kurir nyasar hub suami saya Pak Yohanes 0813****2233\n2610017EF5UV2R,Perlu Dikirim,,JNE REG,2026-10-02 13:22,a***,A*** W***,0812****0001,\"Jl. ***\",KOTA SORONG,PAPUA BARAT DAYA,Rp1.250.000,NIK saya 9671********0004 untuk klaim garansi\n2610018GH6WX3S,Selesai,JX4417730215,J&T Express,2026-10-03 07:55,dewi.lestari,D*** L***,0896****8888,\"Jl. ***\",KOTA DENPASAR,BALI,Rp75.000,\n2610019IJ7YZ4T,Perlu Dikirim,,SiCepat REG,2026-10-03 16:30,r***,R*** K*** S***,0881****6789,\"Jl. ***\",KAB. PENAJAM PASER UTARA,KALIMANTAN TIMUR,Rp640.000,\"rumah cat hijau sebelah masjid, titip ke satpam\"\n2610020KL8AB5U,Perlu Dikirim,,SPX Hemat,2026-10-04 11:11,yuliana.n,Y*** N***,0821****5432,\"Jl. ***\",KAB. NABIRE,PAPUA TENGAH,Rp230.000,\n2610021MN9CD6V,Perlu Dikirim,,JNE YES,2026-10-04 19:45,hendra88,H*** G***,0751***2345,\"Jl. ***\",KOTA PADANG,SUMATERA BARAT,Rp415.000,bayar pake VA BCA *******8901 sudah ya\n2610022OP1EF7W,Batal,,SPX Standard,2026-10-05 08:00,f***,F*** H***,0852****7891,\"Jl. ***\",KOTA SURABAYA,JAWA TIMUR,Rp99.000,\n2610023QR2GH8X,Perlu Dikirim,,SiCepat BEST,2026-10-05 14:20,lukman.h,L*** H***,0813****8888,\"Jl. ***\",KOTA DEPOK,JAWA BARAT,Rp150.000,\n2610024ST3IJ9Y,Perlu Dikirim,,J&T Express,2026-10-06 09:09,siti.aminah,S*** A***,0838****5679,\"Jl. ***\",KOTA DEPOK,JAWA BARAT,Rp88.000,\"tolong jgn dibanting, isi obat *** buat ibu saya (***)\"\n2610025UV4KL1Z,Dikirim,CGK7700123456789,JNE REG,2026-10-06 10:10,a***,A*** P***,0819****5678,\"Jl. ***\",KAB. SLEMAN,DI YOGYAKARTA,Rp56.000,\n",
   "noFinanceNoName": "No. Pesanan,Status Pesanan,No. Resi,Opsi Pengiriman,Waktu Pesanan Dibuat,Username (Pembeli),Nama Penerima,No. Telepon,Alamat Pengiriman,Kota/Kabupaten,Provinsi,Total Pembayaran,Catatan dari Pembeli\n2610014KQ7ZB2M,Perlu Dikirim,,SPX Standard,2026-10-01 08:12,sitirahayu88,Siti Rahayu,[PHONE_1],\"[ADDRESS_1]\",KOTA DEPOK,JAWA BARAT,Rp185.000,tolong a.n. Ibu Siti Rahayu ya kak\n2610015AB3XY9P,Dikirim,SPXID045123456789,SPX Standard,2026-10-01 09:40,budi_s,Budi Santoso,[PHONE_2],\"[ADDRESS_2]\",KAB. BOGOR,JAWA BARAT,Rp92.500,\n2610016CD4ZT1Q,Perlu Dikirim,,J&T Express,2026-10-02 10:05,mamah.yosef,Maria Yosefina Gebze,[PHONE_3],\"[ADDRESS_3]\",KAB. MERAUKE,PAPUA SELATAN,Rp310.000,kalau kurir nyasar hub suami saya Pak Yohanes [PHONE_4]\n2610017EF5UV2R,Perlu Dikirim,,JNE REG,2026-10-02 13:22,andiwj,Andi Wijaya,[PHONE_5],\"[ADDRESS_4]\",KOTA SORONG,PAPUA BARAT DAYA,Rp1.250.000,NIK saya [NIK_1] untuk klaim garansi\n2610018GH6WX3S,Selesai,JX4417730215,J&T Express,2026-10-03 07:55,dewi.lestari,Dewi Lestari,[PHONE_6],\"[ADDRESS_5]\",KOTA DENPASAR,BALI,Rp75.000,\n2610019IJ7YZ4T,Perlu Dikirim,,SiCepat REG,2026-10-03 16:30,rina_kartika,Rina Kartika Sari,[PHONE_7],\"[ADDRESS_6]\",KAB. PENAJAM PASER UTARA,KALIMANTAN TIMUR,Rp640.000,\"rumah cat hijau sebelah masjid, titip ke satpam\"\n2610020KL8AB5U,Perlu Dikirim,,SPX Hemat,2026-10-04 11:11,yuliana.n,Yuliana Nawipa,[PHONE_8],\"[ADDRESS_7]\",KAB. NABIRE,PAPUA TENGAH,Rp230.000,\n2610021MN9CD6V,Perlu Dikirim,,JNE YES,2026-10-04 19:45,hendra88,Hendra Gunawan,[PHONE_9],\"[ADDRESS_8]\",KOTA PADANG,SUMATERA BARAT,Rp415.000,bayar pake VA BCA [BANK_ACCOUNT_1] sudah ya\n2610022OP1EF7W,Batal,,SPX Standard,2026-10-05 08:00,fitri_h,Fitri Handayani,[PHONE_10],\"[ADDRESS_9]\",KOTA SURABAYA,JAWA TIMUR,Rp99.000,\n2610023QR2GH8X,Perlu Dikirim,,SiCepat BEST,2026-10-05 14:20,lukman.h,Lukman Hakim,[PHONE_11],\"[ADDRESS_10]\",KOTA DEPOK,JAWA BARAT,Rp150.000,\n2610024ST3IJ9Y,Perlu Dikirim,,J&T Express,2026-10-06 09:09,siti.aminah,Siti Aminah,[PHONE_12],\"[ADDRESS_11]\",KOTA DEPOK,JAWA BARAT,Rp88.000,\"tolong jgn dibanting, isi obat [HEALTH_1] buat ibu saya ([HEALTH_2])\"\n2610025UV4KL1Z,Dikirim,CGK7700123456789,JNE REG,2026-10-06 10:10,agus_p,Agus Prasetyo,[PHONE_13],\"[ADDRESS_12]\",KAB. SLEMAN,DI YOGYAKARTA,Rp56.000,\n",
   "high": [
    "Siti Rahayu",
@@ -4943,14 +4939,18 @@
  },
  {
   "text": "yang hadir R. Ayu Kusumawardhani dan Budi",
-  "placeholder": "yang hadir [NAME_1] dan Budi",
+  "placeholder": "yang hadir [NAME_1] dan [NAME_2]",
   "vault": [
    [
     "[NAME_1]",
     "R. Ayu Kusumawardhani"
+   ],
+   [
+    "[NAME_2]",
+    "Budi"
    ]
   ],
-  "partial": "yang hadir R*** A*** K*** dan Budi",
+  "partial": "yang hadir R*** A*** K*** dan B***",
   "noFinanceNoName": "yang hadir R. Ayu Kusumawardhani dan Budi",
   "high": []
  },
@@ -4965,6 +4965,14 @@
   ],
   "partial": "NAME:R*** A*** K***",
   "noFinanceNoName": "NAME:R. Ayu Kusumawardhani",
+  "high": []
+ },
+ {
+  "text": "NAME:Budi",
+  "placeholder": "NAME:Budi",
+  "vault": [],
+  "partial": "NAME:Budi",
+  "noFinanceNoName": "NAME:Budi",
   "high": []
  },
  {
@@ -5108,11 +5116,11 @@
   "high": []
  },
  {
-  "text": "3276-0101.0180 0001",
-  "placeholder": "3276-0101.0180 0001",
+  "text": "3276/01/0101/800001",
+  "placeholder": "3276/01/0101/800001",
   "vault": [],
-  "partial": "3276-0101.0180 0001",
-  "noFinanceNoName": "3276-0101.0180 0001",
+  "partial": "3276/01/0101/800001",
+  "noFinanceNoName": "3276/01/0101/800001",
   "high": []
  },
  {
@@ -5308,19 +5316,398 @@
   "high": []
  },
  {
-  "text": "node:test",
-  "placeholder": "node:test",
+  "text": "audit: data yang disamarkan dengan Unicode, entity, ejaan, atau encoding tetap terdeteksi di posisi aslinya",
+  "placeholder": "audit: data yang disamarkan dengan Unicode, entity, ejaan, atau encoding tetap terdeteksi di posisi aslinya",
   "vault": [],
-  "partial": "node:test",
-  "noFinanceNoName": "node:test",
+  "partial": "audit: data yang disamarkan dengan Unicode, entity, ejaan, atau encoding tetap terdeteksi di posisi aslinya",
+  "noFinanceNoName": "audit: data yang disamarkan dengan Unicode, entity, ejaan, atau encoding tetap terdeteksi di posisi aslinya",
   "high": []
  },
  {
-  "text": "node:assert/strict",
-  "placeholder": "node:assert/strict",
+  "text": "3201011508950001",
+  "placeholder": "[NIK_1]",
+  "vault": [
+   [
+    "[NIK_1]",
+    "3201011508950001"
+   ]
+  ],
+  "partial": "3201********0001",
+  "noFinanceNoName": "[NIK_1]",
+  "high": [
+   "3201011508950001"
+  ]
+ },
+ {
+  "text": "",
+  "placeholder": "",
   "vault": [],
-  "partial": "node:assert/strict",
-  "noFinanceNoName": "node:assert/strict",
+  "partial": "",
+  "noFinanceNoName": "",
+  "high": []
+ },
+ {
+  "text": "NIK",
+  "placeholder": "NIK",
+  "vault": [],
+  "partial": "NIK",
+  "noFinanceNoName": "NIK",
+  "high": []
+ },
+ {
+  "text": "​",
+  "placeholder": "​",
+  "vault": [],
+  "partial": "​",
+  "noFinanceNoName": "​",
+  "high": []
+ },
+ {
+  "text": "NIK",
+  "placeholder": "NIK",
+  "vault": [],
+  "partial": "NIK",
+  "noFinanceNoName": "NIK",
+  "high": []
+ },
+ {
+  "text": "­",
+  "placeholder": "­",
+  "vault": [],
+  "partial": "­",
+  "noFinanceNoName": "­",
+  "high": []
+ },
+ {
+  "text": "NIK",
+  "placeholder": "NIK",
+  "vault": [],
+  "partial": "NIK",
+  "noFinanceNoName": "NIK",
+  "high": []
+ },
+ {
+  "text": "NIK 3201 0115 0895 0001",
+  "placeholder": "NIK [NIK_1]",
+  "vault": [
+   [
+    "[NIK_1]",
+    "3201 0115 0895 0001"
+   ]
+  ],
+  "partial": "NIK 3201********0001",
+  "noFinanceNoName": "NIK [NIK_1]",
+  "high": [
+   "3201 0115 0895 0001"
+  ]
+ },
+ {
+  "text": "NIK",
+  "placeholder": "NIK",
+  "vault": [],
+  "partial": "NIK",
+  "noFinanceNoName": "NIK",
+  "high": []
+ },
+ {
+  "text": "",
+  "placeholder": "",
+  "vault": [],
+  "partial": "",
+  "noFinanceNoName": "",
+  "high": []
+ },
+ {
+  "text": "NIK",
+  "placeholder": "NIK",
+  "vault": [],
+  "partial": "NIK",
+  "noFinanceNoName": "NIK",
+  "high": []
+ },
+ {
+  "text": "",
+  "placeholder": "",
+  "vault": [],
+  "partial": "",
+  "noFinanceNoName": "",
+  "high": []
+ },
+ {
+  "text": "NIK",
+  "placeholder": "NIK",
+  "vault": [],
+  "partial": "NIK",
+  "noFinanceNoName": "NIK",
+  "high": []
+ },
+ {
+  "text": "NIK 32010115\n08950001",
+  "placeholder": "NIK [NIK_1]",
+  "vault": [
+   [
+    "[NIK_1]",
+    "32010115\n08950001"
+   ]
+  ],
+  "partial": "NIK 3201********0001",
+  "noFinanceNoName": "NIK [NIK_1]",
+  "high": [
+   "32010115\n08950001"
+  ]
+ },
+ {
+  "text": "NIK",
+  "placeholder": "NIK",
+  "vault": [],
+  "partial": "NIK",
+  "noFinanceNoName": "NIK",
+  "high": []
+ },
+ {
+  "text": "NIK tiga dua nol satu nol satu satu lima nol delapan sembilan lima nol nol nol satu",
+  "placeholder": "NIK [NIK_1]",
+  "vault": [
+   [
+    "[NIK_1]",
+    "tiga dua nol satu nol satu satu lima nol delapan sembilan lima nol nol nol satu"
+   ]
+  ],
+  "partial": "NIK ********",
+  "noFinanceNoName": "NIK [NIK_1]",
+  "high": [
+   "tiga dua nol satu nol satu satu lima nol delapan sembilan lima nol nol nol satu"
+  ]
+ },
+ {
+  "text": "NIK",
+  "placeholder": "NIK",
+  "vault": [],
+  "partial": "NIK",
+  "noFinanceNoName": "NIK",
+  "high": []
+ },
+ {
+  "text": "081234567890",
+  "placeholder": "[PHONE_1]",
+  "vault": [
+   [
+    "[PHONE_1]",
+    "081234567890"
+   ]
+  ],
+  "partial": "0812****7890",
+  "noFinanceNoName": "[PHONE_1]",
+  "high": [
+   "081234567890"
+  ]
+ },
+ {
+  "text": "PHONE",
+  "placeholder": "PHONE",
+  "vault": [],
+  "partial": "PHONE",
+  "noFinanceNoName": "PHONE",
+  "high": []
+ },
+ {
+  "text": "hp 0812 3456 78 lapan sembilan nol",
+  "placeholder": "hp [PHONE_1]",
+  "vault": [
+   [
+    "[PHONE_1]",
+    "0812 3456 78 lapan sembilan nol"
+   ]
+  ],
+  "partial": "hp 0812***5678",
+  "noFinanceNoName": "hp [PHONE_1]",
+  "high": []
+ },
+ {
+  "text": "PHONE",
+  "placeholder": "PHONE",
+  "vault": [],
+  "partial": "PHONE",
+  "noFinanceNoName": "PHONE",
+  "high": []
+ },
+ {
+  "text": "hp +62 (0)812-3456-7890",
+  "placeholder": "hp [PHONE_1]",
+  "vault": [
+   [
+    "[PHONE_1]",
+    "+62 (0)812-3456-7890"
+   ]
+  ],
+  "partial": "hp 0812****7890",
+  "noFinanceNoName": "hp [PHONE_1]",
+  "high": [
+   "+62 (0)812-3456-7890"
+  ]
+ },
+ {
+  "text": "PHONE",
+  "placeholder": "PHONE",
+  "vault": [],
+  "partial": "PHONE",
+  "noFinanceNoName": "PHONE",
+  "high": []
+ },
+ {
+  "text": "siti.rahayu88＠gmail.com",
+  "placeholder": "[EMAIL_1]",
+  "vault": [
+   [
+    "[EMAIL_1]",
+    "siti.rahayu88＠gmail.com"
+   ]
+  ],
+  "partial": "s***@",
+  "noFinanceNoName": "[EMAIL_1]",
+  "high": [
+   "siti.rahayu88＠gmail.com"
+  ]
+ },
+ {
+  "text": "EMAIL",
+  "placeholder": "EMAIL",
+  "vault": [],
+  "partial": "EMAIL",
+  "noFinanceNoName": "EMAIL",
+  "high": []
+ },
+ {
+  "text": "siti . rahayu88 @ gmail . com",
+  "placeholder": "[EMAIL_1]",
+  "vault": [
+   [
+    "[EMAIL_1]",
+    "siti . rahayu88 @ gmail . com"
+   ]
+  ],
+  "partial": "s***@ gmail . com",
+  "noFinanceNoName": "[EMAIL_1]",
+  "high": [
+   "siti . rahayu88 @ gmail . com"
+  ]
+ },
+ {
+  "text": "EMAIL",
+  "placeholder": "EMAIL",
+  "vault": [],
+  "partial": "EMAIL",
+  "noFinanceNoName": "EMAIL",
+  "high": []
+ },
+ {
+  "text": "siti.rahayu88&#64;gmail.com",
+  "placeholder": "[EMAIL_1]",
+  "vault": [
+   [
+    "[EMAIL_1]",
+    "siti.rahayu88&#64;gmail.com"
+   ]
+  ],
+  "partial": "s***@",
+  "noFinanceNoName": "[EMAIL_1]",
+  "high": [
+   "siti.rahayu88&#64;gmail.com"
+  ]
+ },
+ {
+  "text": "EMAIL",
+  "placeholder": "EMAIL",
+  "vault": [],
+  "partial": "EMAIL",
+  "noFinanceNoName": "EMAIL",
+  "high": []
+ },
+ {
+  "text": "NIK",
+  "placeholder": "NIK",
+  "vault": [],
+  "partial": "NIK",
+  "noFinanceNoName": "NIK",
+  "high": []
+ },
+ {
+  "text": "From: =?UTF-8?B?QnVkaSBTYW50b3Nv?= <x@contoh.test>",
+  "placeholder": "From: [NAME_1] <x@contoh.test>",
+  "vault": [
+   [
+    "[NAME_1]",
+    "=?UTF-8?B?QnVkaSBTYW50b3Nv?="
+   ]
+  ],
+  "partial": "From: =*** <x@contoh.test>",
+  "noFinanceNoName": "From: =?UTF-8?B?QnVkaSBTYW50b3Nv?= <x@contoh.test>",
+  "high": [
+   "=?UTF-8?B?QnVkaSBTYW50b3Nv?="
+  ]
+ },
+ {
+  "text": "NAME",
+  "placeholder": "NAME",
+  "vault": [],
+  "partial": "NAME",
+  "noFinanceNoName": "NAME",
+  "high": []
+ },
+ {
+  "text": "offsets on the original text",
+  "placeholder": "offsets on the original text",
+  "vault": [],
+  "partial": "offsets on the original text",
+  "noFinanceNoName": "offsets on the original text",
+  "high": []
+ },
+ {
+  "text": "token eyJhbGciOiJIUzI1NiJ9 ok",
+  "placeholder": "token eyJhbGciOiJIUzI1NiJ9 ok",
+  "vault": [],
+  "partial": "token eyJhbGciOiJIUzI1NiJ9 ok",
+  "noFinanceNoName": "token eyJhbGciOiJIUzI1NiJ9 ok",
+  "high": []
+ },
+ {
+  "text": "jam 1 2 3 4 5 lalu",
+  "placeholder": "jam 1 2 3 4 5 lalu",
+  "vault": [],
+  "partial": "jam 1 2 3 4 5 lalu",
+  "noFinanceNoName": "jam 1 2 3 4 5 lalu",
+  "high": []
+ },
+ {
+  "text": "Senin satu dua tiga empat lima",
+  "placeholder": "Senin satu dua tiga empat lima",
+  "vault": [],
+  "partial": "Senin satu dua tiga empat lima",
+  "noFinanceNoName": "Senin satu dua tiga empat lima",
+  "high": []
+ },
+ {
+  "text": "&#9999999; dan &#xFFFFFF;",
+  "placeholder": "&#9999999; dan &#xFFFFFF;",
+  "vault": [],
+  "partial": "&#9999999; dan &#xFFFFFF;",
+  "noFinanceNoName": "&#9999999; dan &#xFFFFFF;",
+  "high": []
+ },
+ {
+  "text": "harga Rp 1.250.000",
+  "placeholder": "harga Rp 1.250.000",
+  "vault": [],
+  "partial": "harga Rp 1.250.000",
+  "noFinanceNoName": "harga Rp 1.250.000",
+  "high": []
+ },
+ {
+  "text": "audit: rupiah negatif dan rusak, rentang, awalan 0062, hari kerja dari Date di WIB",
+  "placeholder": "audit: rupiah negatif dan rusak, rentang, awalan 0062, hari kerja dari Date di WIB",
+  "vault": [],
+  "partial": "audit: rupiah negatif dan rusak, rentang, awalan 0062, hari kerja dari Date di WIB",
+  "noFinanceNoName": "audit: rupiah negatif dan rusak, rentang, awalan 0062, hari kerja dari Date di WIB",
   "high": []
  },
  {
@@ -5332,59 +5719,184 @@
   "high": []
  },
  {
-  "text": "Minggu",
-  "placeholder": "Minggu",
+  "text": "Rp -1.000",
+  "placeholder": "Rp -1.000",
   "vault": [],
-  "partial": "Minggu",
-  "noFinanceNoName": "Minggu",
+  "partial": "Rp -1.000",
+  "noFinanceNoName": "Rp -1.000",
   "high": []
  },
  {
-  "text": "Senin",
-  "placeholder": "Senin",
+  "text": "-Rp 1.000",
+  "placeholder": "-Rp 1.000",
   "vault": [],
-  "partial": "Senin",
-  "noFinanceNoName": "Senin",
+  "partial": "-Rp 1.000",
+  "noFinanceNoName": "-Rp 1.000",
   "high": []
  },
  {
-  "text": "Selasa",
-  "placeholder": "Selasa",
+  "text": "(Rp 1.000)",
+  "placeholder": "(Rp 1.000)",
   "vault": [],
-  "partial": "Selasa",
-  "noFinanceNoName": "Selasa",
+  "partial": "(Rp 1.000)",
+  "noFinanceNoName": "(Rp 1.000)",
   "high": []
  },
  {
-  "text": "Rabu",
-  "placeholder": "Rabu",
+  "text": "minus 2,5 juta",
+  "placeholder": "minus 2,5 juta",
   "vault": [],
-  "partial": "Rabu",
-  "noFinanceNoName": "Rabu",
+  "partial": "minus 2,5 juta",
+  "noFinanceNoName": "minus 2,5 juta",
   "high": []
  },
  {
-  "text": "Kamis",
-  "placeholder": "Kamis",
+  "text": "Rp 1.500.000,50",
+  "placeholder": "Rp 1.500.000,50",
   "vault": [],
-  "partial": "Kamis",
-  "noFinanceNoName": "Kamis",
+  "partial": "Rp 1.500.000,50",
+  "noFinanceNoName": "Rp 1.500.000,50",
   "high": []
  },
  {
-  "text": "Jumat",
-  "placeholder": "Jumat",
+  "text": "Rp 1.2.3",
+  "placeholder": "Rp 1.2.3",
   "vault": [],
-  "partial": "Jumat",
-  "noFinanceNoName": "Jumat",
+  "partial": "Rp 1.2.3",
+  "noFinanceNoName": "Rp 1.2.3",
   "high": []
  },
  {
-  "text": "Sabtu",
-  "placeholder": "Sabtu",
+  "text": "1.50.000,5",
+  "placeholder": "1.50.000,5",
   "vault": [],
-  "partial": "Sabtu",
-  "noFinanceNoName": "Sabtu",
+  "partial": "1.50.000,5",
+  "noFinanceNoName": "1.50.000,5",
+  "high": []
+ },
+ {
+  "text": "1-2 juta",
+  "placeholder": "1-2 juta",
+  "vault": [],
+  "partial": "1-2 juta",
+  "noFinanceNoName": "1-2 juta",
+  "high": []
+ },
+ {
+  "text": "1 sampai 2 juta",
+  "placeholder": "1 sampai 2 juta",
+  "vault": [],
+  "partial": "1 sampai 2 juta",
+  "noFinanceNoName": "1 sampai 2 juta",
+  "high": []
+ },
+ {
+  "text": "100rb - 200rb",
+  "placeholder": "100rb - 200rb",
+  "vault": [],
+  "partial": "100rb - 200rb",
+  "noFinanceNoName": "100rb - 200rb",
+  "high": []
+ },
+ {
+  "text": "Rp100rb–200rb",
+  "placeholder": "Rp100rb–200rb",
+  "vault": [],
+  "partial": "Rp100rb–200rb",
+  "noFinanceNoName": "Rp100rb–200rb",
+  "high": []
+ },
+ {
+  "text": "Rp 1jt s/d 2jt",
+  "placeholder": "Rp 1jt s/d 2jt",
+  "vault": [],
+  "partial": "Rp 1jt s/d 2jt",
+  "noFinanceNoName": "Rp 1jt s/d 2jt",
+  "high": []
+ },
+ {
+  "text": "0062 812 3456 7890",
+  "placeholder": "[PHONE_1]",
+  "vault": [
+   [
+    "[PHONE_1]",
+    "0062 812 3456 7890"
+   ]
+  ],
+  "partial": "0812****7890",
+  "noFinanceNoName": "[PHONE_1]",
+  "high": [
+   "0062 812 3456 7890"
+  ]
+ },
+ {
+  "text": "0062 812 3456 7890",
+  "placeholder": "[PHONE_1]",
+  "vault": [
+   [
+    "[PHONE_1]",
+    "0062 812 3456 7890"
+   ]
+  ],
+  "partial": "0812****7890",
+  "noFinanceNoName": "[PHONE_1]",
+  "high": [
+   "0062 812 3456 7890"
+  ]
+ },
+ {
+  "text": "+6281234567890",
+  "placeholder": "[PHONE_1]",
+  "vault": [
+   [
+    "[PHONE_1]",
+    "+6281234567890"
+   ]
+  ],
+  "partial": "0812****7890",
+  "noFinanceNoName": "[PHONE_1]",
+  "high": [
+   "+6281234567890"
+  ]
+ },
+ {
+  "text": "2026-11-02T06:00:00+07:00",
+  "placeholder": "2026-11-02T06:00:00+07:00",
+  "vault": [],
+  "partial": "2026-11-02T06:00:00+07:00",
+  "noFinanceNoName": "2026-11-02T06:00:00+07:00",
+  "high": []
+ },
+ {
+  "text": "2026-11-01T23:30:00+07:00",
+  "placeholder": "2026-11-01T23:30:00+07:00",
+  "vault": [],
+  "partial": "2026-11-01T23:30:00+07:00",
+  "noFinanceNoName": "2026-11-01T23:30:00+07:00",
+  "high": []
+ },
+ {
+  "text": "2026-08-18T05:00:00+09:00",
+  "placeholder": "2026-08-18T05:00:00+09:00",
+  "vault": [],
+  "partial": "2026-08-18T05:00:00+09:00",
+  "noFinanceNoName": "2026-08-18T05:00:00+09:00",
+  "high": []
+ },
+ {
+  "text": "Asia/Jayapura",
+  "placeholder": "Asia/Jayapura",
+  "vault": [],
+  "partial": "Asia/Jayapura",
+  "noFinanceNoName": "Asia/Jayapura",
+  "high": []
+ },
+ {
+  "text": "2026-12-31",
+  "placeholder": "2026-12-31",
+  "vault": [],
+  "partial": "2026-12-31",
+  "noFinanceNoName": "2026-12-31",
   "high": []
  },
  {
@@ -5396,835 +5908,581 @@
   "high": []
  },
  {
-  "text": "Kamis",
-  "placeholder": "Kamis",
+  "text": "2026-01-01",
+  "placeholder": "2026-01-01",
   "vault": [],
-  "partial": "Kamis",
-  "noFinanceNoName": "Kamis",
+  "partial": "2026-01-01",
+  "noFinanceNoName": "2026-01-01",
   "high": []
  },
  {
-  "text": "2026-01-16",
-  "placeholder": "2026-01-16",
+  "text": "2026-12-31",
+  "placeholder": "2026-12-31",
   "vault": [],
-  "partial": "2026-01-16",
-  "noFinanceNoName": "2026-01-16",
+  "partial": "2026-12-31",
+  "noFinanceNoName": "2026-12-31",
   "high": []
  },
  {
-  "text": "Jumat",
-  "placeholder": "Jumat",
+  "text": "audit: false positive — email peran, ayat Alkitab, tempat bernama orang, nominal dan ID 16 digit",
+  "placeholder": "audit: false positive — email peran, ayat Alkitab, tempat bernama orang, nominal dan ID 16 digit",
   "vault": [],
-  "partial": "Jumat",
-  "noFinanceNoName": "Jumat",
+  "partial": "audit: false positive — email peran, ayat Alkitab, tempat bernama orang, nominal dan ID 16 digit",
+  "noFinanceNoName": "audit: false positive — email peran, ayat Alkitab, tempat bernama orang, nominal dan ID 16 digit",
   "high": []
  },
  {
-  "text": "2026-02-16",
-  "placeholder": "2026-02-16",
+  "text": "noreply@github.com, support@tokopedia.com, info@toko-contoh.co.id",
+  "placeholder": "noreply@github.com, support@tokopedia.com, info@toko-contoh.co.id",
   "vault": [],
-  "partial": "2026-02-16",
-  "noFinanceNoName": "2026-02-16",
+  "partial": "noreply@github.com, support@tokopedia.com, info@toko-contoh.co.id",
+  "noFinanceNoName": "noreply@github.com, support@tokopedia.com, info@toko-contoh.co.id",
   "high": []
  },
  {
-  "text": "Senin",
-  "placeholder": "Senin",
+  "text": "Yohanes 3:16 dan Matius 5:9",
+  "placeholder": "Yohanes 3:16 dan Matius 5:9",
   "vault": [],
-  "partial": "Senin",
-  "noFinanceNoName": "Senin",
+  "partial": "Yohanes 3:16 dan Matius 5:9",
+  "noFinanceNoName": "Yohanes 3:16 dan Matius 5:9",
   "high": []
  },
  {
-  "text": "2026-02-17",
-  "placeholder": "2026-02-17",
+  "text": "Gedung Sate dan RSUD Dr. Soetomo",
+  "placeholder": "Gedung Sate dan RSUD Dr. Soetomo",
   "vault": [],
-  "partial": "2026-02-17",
-  "noFinanceNoName": "2026-02-17",
+  "partial": "Gedung Sate dan RSUD Dr. Soetomo",
+  "noFinanceNoName": "Gedung Sate dan RSUD Dr. Soetomo",
   "high": []
  },
  {
-  "text": "Selasa",
-  "placeholder": "Selasa",
+  "text": "Universitas Prof. Dr. Moestopo",
+  "placeholder": "Universitas Prof. Dr. Moestopo",
   "vault": [],
-  "partial": "Selasa",
-  "noFinanceNoName": "Selasa",
+  "partial": "Universitas Prof. Dr. Moestopo",
+  "noFinanceNoName": "Universitas Prof. Dr. Moestopo",
   "high": []
  },
  {
-  "text": "2026-03-18",
-  "placeholder": "2026-03-18",
+  "text": "Total aset Rp 3201011508950001",
+  "placeholder": "Total aset Rp 3201011508950001",
   "vault": [],
-  "partial": "2026-03-18",
-  "noFinanceNoName": "2026-03-18",
+  "partial": "Total aset Rp 3201011508950001",
+  "noFinanceNoName": "Total aset Rp 3201011508950001",
   "high": []
  },
  {
-  "text": "Rabu",
-  "placeholder": "Rabu",
+  "text": "order_id=3201011508950001",
+  "placeholder": "order_id=3201011508950001",
   "vault": [],
-  "partial": "Rabu",
-  "noFinanceNoName": "Rabu",
+  "partial": "order_id=3201011508950001",
+  "noFinanceNoName": "order_id=3201011508950001",
   "high": []
  },
  {
-  "text": "2026-03-19",
-  "placeholder": "2026-03-19",
-  "vault": [],
-  "partial": "2026-03-19",
-  "noFinanceNoName": "2026-03-19",
-  "high": []
- },
- {
-  "text": "Kamis",
-  "placeholder": "Kamis",
-  "vault": [],
-  "partial": "Kamis",
-  "noFinanceNoName": "Kamis",
-  "high": []
- },
- {
-  "text": "2026-03-20",
-  "placeholder": "2026-03-20",
-  "vault": [],
-  "partial": "2026-03-20",
-  "noFinanceNoName": "2026-03-20",
-  "high": []
- },
- {
-  "text": "Jumat",
-  "placeholder": "Jumat",
-  "vault": [],
-  "partial": "Jumat",
-  "noFinanceNoName": "Jumat",
-  "high": []
- },
- {
-  "text": "2026-03-21",
-  "placeholder": "2026-03-21",
-  "vault": [],
-  "partial": "2026-03-21",
-  "noFinanceNoName": "2026-03-21",
-  "high": []
- },
- {
-  "text": "Sabtu",
-  "placeholder": "Sabtu",
-  "vault": [],
-  "partial": "Sabtu",
-  "noFinanceNoName": "Sabtu",
-  "high": []
- },
- {
-  "text": "2026-03-22",
-  "placeholder": "2026-03-22",
-  "vault": [],
-  "partial": "2026-03-22",
-  "noFinanceNoName": "2026-03-22",
-  "high": []
- },
- {
-  "text": "Minggu",
-  "placeholder": "Minggu",
-  "vault": [],
-  "partial": "Minggu",
-  "noFinanceNoName": "Minggu",
-  "high": []
- },
- {
-  "text": "2026-03-23",
-  "placeholder": "2026-03-23",
-  "vault": [],
-  "partial": "2026-03-23",
-  "noFinanceNoName": "2026-03-23",
-  "high": []
- },
- {
-  "text": "Senin",
-  "placeholder": "Senin",
-  "vault": [],
-  "partial": "Senin",
-  "noFinanceNoName": "Senin",
-  "high": []
- },
- {
-  "text": "2026-03-24",
-  "placeholder": "2026-03-24",
-  "vault": [],
-  "partial": "2026-03-24",
-  "noFinanceNoName": "2026-03-24",
-  "high": []
- },
- {
-  "text": "Selasa",
-  "placeholder": "Selasa",
-  "vault": [],
-  "partial": "Selasa",
-  "noFinanceNoName": "Selasa",
-  "high": []
- },
- {
-  "text": "2026-04-03",
-  "placeholder": "2026-04-03",
-  "vault": [],
-  "partial": "2026-04-03",
-  "noFinanceNoName": "2026-04-03",
-  "high": []
- },
- {
-  "text": "Jumat",
-  "placeholder": "Jumat",
-  "vault": [],
-  "partial": "Jumat",
-  "noFinanceNoName": "Jumat",
-  "high": []
- },
- {
-  "text": "2026-04-05",
-  "placeholder": "2026-04-05",
-  "vault": [],
-  "partial": "2026-04-05",
-  "noFinanceNoName": "2026-04-05",
-  "high": []
- },
- {
-  "text": "Minggu",
-  "placeholder": "Minggu",
-  "vault": [],
-  "partial": "Minggu",
-  "noFinanceNoName": "Minggu",
-  "high": []
- },
- {
-  "text": "2026-05-01",
-  "placeholder": "2026-05-01",
-  "vault": [],
-  "partial": "2026-05-01",
-  "noFinanceNoName": "2026-05-01",
-  "high": []
- },
- {
-  "text": "Jumat",
-  "placeholder": "Jumat",
-  "vault": [],
-  "partial": "Jumat",
-  "noFinanceNoName": "Jumat",
-  "high": []
- },
- {
-  "text": "2026-05-14",
-  "placeholder": "2026-05-14",
-  "vault": [],
-  "partial": "2026-05-14",
-  "noFinanceNoName": "2026-05-14",
-  "high": []
- },
- {
-  "text": "Kamis",
-  "placeholder": "Kamis",
-  "vault": [],
-  "partial": "Kamis",
-  "noFinanceNoName": "Kamis",
-  "high": []
- },
- {
-  "text": "2026-05-15",
-  "placeholder": "2026-05-15",
-  "vault": [],
-  "partial": "2026-05-15",
-  "noFinanceNoName": "2026-05-15",
-  "high": []
- },
- {
-  "text": "Jumat",
-  "placeholder": "Jumat",
-  "vault": [],
-  "partial": "Jumat",
-  "noFinanceNoName": "Jumat",
-  "high": []
- },
- {
-  "text": "2026-05-27",
-  "placeholder": "2026-05-27",
-  "vault": [],
-  "partial": "2026-05-27",
-  "noFinanceNoName": "2026-05-27",
-  "high": []
- },
- {
-  "text": "Rabu",
-  "placeholder": "Rabu",
-  "vault": [],
-  "partial": "Rabu",
-  "noFinanceNoName": "Rabu",
-  "high": []
- },
- {
-  "text": "2026-05-28",
-  "placeholder": "2026-05-28",
-  "vault": [],
-  "partial": "2026-05-28",
-  "noFinanceNoName": "2026-05-28",
-  "high": []
- },
- {
-  "text": "Kamis",
-  "placeholder": "Kamis",
-  "vault": [],
-  "partial": "Kamis",
-  "noFinanceNoName": "Kamis",
-  "high": []
- },
- {
-  "text": "2026-05-31",
-  "placeholder": "2026-05-31",
-  "vault": [],
-  "partial": "2026-05-31",
-  "noFinanceNoName": "2026-05-31",
-  "high": []
- },
- {
-  "text": "Minggu",
-  "placeholder": "Minggu",
-  "vault": [],
-  "partial": "Minggu",
-  "noFinanceNoName": "Minggu",
-  "high": []
- },
- {
-  "text": "2026-06-01",
-  "placeholder": "2026-06-01",
-  "vault": [],
-  "partial": "2026-06-01",
-  "noFinanceNoName": "2026-06-01",
-  "high": []
- },
- {
-  "text": "Senin",
-  "placeholder": "Senin",
-  "vault": [],
-  "partial": "Senin",
-  "noFinanceNoName": "Senin",
-  "high": []
- },
- {
-  "text": "2026-06-16",
-  "placeholder": "2026-06-16",
-  "vault": [],
-  "partial": "2026-06-16",
-  "noFinanceNoName": "2026-06-16",
-  "high": []
- },
- {
-  "text": "Selasa",
-  "placeholder": "Selasa",
-  "vault": [],
-  "partial": "Selasa",
-  "noFinanceNoName": "Selasa",
-  "high": []
- },
- {
-  "text": "2026-08-17",
-  "placeholder": "2026-08-17",
-  "vault": [],
-  "partial": "2026-08-17",
-  "noFinanceNoName": "2026-08-17",
-  "high": []
- },
- {
-  "text": "Senin",
-  "placeholder": "Senin",
-  "vault": [],
-  "partial": "Senin",
-  "noFinanceNoName": "Senin",
-  "high": []
- },
- {
-  "text": "2026-08-25",
-  "placeholder": "2026-08-25",
-  "vault": [],
-  "partial": "2026-08-25",
-  "noFinanceNoName": "2026-08-25",
-  "high": []
- },
- {
-  "text": "Selasa",
-  "placeholder": "Selasa",
-  "vault": [],
-  "partial": "Selasa",
-  "noFinanceNoName": "Selasa",
-  "high": []
- },
- {
-  "text": "2026-12-24",
-  "placeholder": "2026-12-24",
-  "vault": [],
-  "partial": "2026-12-24",
-  "noFinanceNoName": "2026-12-24",
-  "high": []
- },
- {
-  "text": "Kamis",
-  "placeholder": "Kamis",
-  "vault": [],
-  "partial": "Kamis",
-  "noFinanceNoName": "Kamis",
-  "high": []
- },
- {
-  "text": "2026-12-25",
-  "placeholder": "2026-12-25",
-  "vault": [],
-  "partial": "2026-12-25",
-  "noFinanceNoName": "2026-12-25",
-  "high": []
- },
- {
-  "text": "Jumat",
-  "placeholder": "Jumat",
-  "vault": [],
-  "partial": "Jumat",
-  "noFinanceNoName": "Jumat",
-  "high": []
- },
- {
-  "text": "2027-01-01",
-  "placeholder": "2027-01-01",
-  "vault": [],
-  "partial": "2027-01-01",
-  "noFinanceNoName": "2027-01-01",
-  "high": []
- },
- {
-  "text": "Jumat",
-  "placeholder": "Jumat",
-  "vault": [],
-  "partial": "Jumat",
-  "noFinanceNoName": "Jumat",
-  "high": []
- },
- {
-  "text": "2027-01-05",
-  "placeholder": "2027-01-05",
-  "vault": [],
-  "partial": "2027-01-05",
-  "noFinanceNoName": "2027-01-05",
-  "high": []
- },
- {
-  "text": "Selasa",
-  "placeholder": "Selasa",
-  "vault": [],
-  "partial": "Selasa",
-  "noFinanceNoName": "Selasa",
-  "high": []
- },
- {
-  "text": "2027-02-05",
-  "placeholder": "2027-02-05",
-  "vault": [],
-  "partial": "2027-02-05",
-  "noFinanceNoName": "2027-02-05",
-  "high": []
- },
- {
-  "text": "Jumat",
-  "placeholder": "Jumat",
-  "vault": [],
-  "partial": "Jumat",
-  "noFinanceNoName": "Jumat",
-  "high": []
- },
- {
-  "text": "2027-02-06",
-  "placeholder": "2027-02-06",
-  "vault": [],
-  "partial": "2027-02-06",
-  "noFinanceNoName": "2027-02-06",
-  "high": []
- },
- {
-  "text": "Sabtu",
-  "placeholder": "Sabtu",
-  "vault": [],
-  "partial": "Sabtu",
-  "noFinanceNoName": "Sabtu",
-  "high": []
- },
- {
-  "text": "2027-03-08",
-  "placeholder": "2027-03-08",
-  "vault": [],
-  "partial": "2027-03-08",
-  "noFinanceNoName": "2027-03-08",
-  "high": []
- },
- {
-  "text": "Senin",
-  "placeholder": "Senin",
-  "vault": [],
-  "partial": "Senin",
-  "noFinanceNoName": "Senin",
-  "high": []
- },
- {
-  "text": "2027-03-09",
-  "placeholder": "2027-03-09",
-  "vault": [],
-  "partial": "2027-03-09",
-  "noFinanceNoName": "2027-03-09",
-  "high": []
- },
- {
-  "text": "Selasa",
-  "placeholder": "Selasa",
-  "vault": [],
-  "partial": "Selasa",
-  "noFinanceNoName": "Selasa",
-  "high": []
- },
- {
-  "text": "2027-03-10",
-  "placeholder": "2027-03-10",
-  "vault": [],
-  "partial": "2027-03-10",
-  "noFinanceNoName": "2027-03-10",
-  "high": []
- },
- {
-  "text": "Rabu",
-  "placeholder": "Rabu",
-  "vault": [],
-  "partial": "Rabu",
-  "noFinanceNoName": "Rabu",
-  "high": []
- },
- {
-  "text": "2027-03-11",
-  "placeholder": "2027-03-11",
-  "vault": [],
-  "partial": "2027-03-11",
-  "noFinanceNoName": "2027-03-11",
-  "high": []
- },
- {
-  "text": "Kamis",
-  "placeholder": "Kamis",
-  "vault": [],
-  "partial": "Kamis",
-  "noFinanceNoName": "Kamis",
-  "high": []
- },
- {
-  "text": "2027-03-12",
-  "placeholder": "2027-03-12",
-  "vault": [],
-  "partial": "2027-03-12",
-  "noFinanceNoName": "2027-03-12",
-  "high": []
- },
- {
-  "text": "Jumat",
-  "placeholder": "Jumat",
-  "vault": [],
-  "partial": "Jumat",
-  "noFinanceNoName": "Jumat",
-  "high": []
- },
- {
-  "text": "2027-03-15",
-  "placeholder": "2027-03-15",
-  "vault": [],
-  "partial": "2027-03-15",
-  "noFinanceNoName": "2027-03-15",
-  "high": []
- },
- {
-  "text": "Senin",
-  "placeholder": "Senin",
-  "vault": [],
-  "partial": "Senin",
-  "noFinanceNoName": "Senin",
-  "high": []
- },
- {
-  "text": "2027-03-25",
-  "placeholder": "2027-03-25",
-  "vault": [],
-  "partial": "2027-03-25",
-  "noFinanceNoName": "2027-03-25",
-  "high": []
- },
- {
-  "text": "Kamis",
-  "placeholder": "Kamis",
-  "vault": [],
-  "partial": "Kamis",
-  "noFinanceNoName": "Kamis",
-  "high": []
- },
- {
-  "text": "2027-03-26",
-  "placeholder": "2027-03-26",
-  "vault": [],
-  "partial": "2027-03-26",
-  "noFinanceNoName": "2027-03-26",
-  "high": []
- },
- {
-  "text": "Jumat",
-  "placeholder": "Jumat",
-  "vault": [],
-  "partial": "Jumat",
-  "noFinanceNoName": "Jumat",
-  "high": []
- },
- {
-  "text": "2027-03-28",
-  "placeholder": "2027-03-28",
-  "vault": [],
-  "partial": "2027-03-28",
-  "noFinanceNoName": "2027-03-28",
-  "high": []
- },
- {
-  "text": "Minggu",
-  "placeholder": "Minggu",
-  "vault": [],
-  "partial": "Minggu",
-  "noFinanceNoName": "Minggu",
-  "high": []
- },
- {
-  "text": "2027-05-01",
-  "placeholder": "2027-05-01",
-  "vault": [],
-  "partial": "2027-05-01",
-  "noFinanceNoName": "2027-05-01",
-  "high": []
+  "text": "budi.santoso@gmail.com",
+  "placeholder": "[EMAIL_1]",
+  "vault": [
+   [
+    "[EMAIL_1]",
+    "budi.santoso@gmail.com"
+   ]
+  ],
+  "partial": "b***@gmail.com",
+  "noFinanceNoName": "[EMAIL_1]",
+  "high": [
+   "budi.santoso@gmail.com"
+  ]
  },
  {
-  "text": "Sabtu",
-  "placeholder": "Sabtu",
-  "vault": [],
-  "partial": "Sabtu",
-  "noFinanceNoName": "Sabtu",
-  "high": []
+  "text": "EMAIL:budi.santoso@gmail.com",
+  "placeholder": "EMAIL:[EMAIL_1]",
+  "vault": [
+   [
+    "[EMAIL_1]",
+    "budi.santoso@gmail.com"
+   ]
+  ],
+  "partial": "EMAIL:b***@gmail.com",
+  "noFinanceNoName": "EMAIL:[EMAIL_1]",
+  "high": [
+   "budi.santoso@gmail.com"
+  ]
  },
  {
-  "text": "2027-05-06",
-  "placeholder": "2027-05-06",
-  "vault": [],
-  "partial": "2027-05-06",
-  "noFinanceNoName": "2027-05-06",
+  "text": "Matius tinggal di Bogor",
+  "placeholder": "[NAME_1] tinggal di Bogor",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Matius"
+   ]
+  ],
+  "partial": "M*** tinggal di Bogor",
+  "noFinanceNoName": "Matius tinggal di Bogor",
   "high": []
  },
  {
-  "text": "Kamis",
-  "placeholder": "Kamis",
+  "text": "NAME:Matius",
+  "placeholder": "NAME:Matius",
   "vault": [],
-  "partial": "Kamis",
-  "noFinanceNoName": "Kamis",
+  "partial": "NAME:Matius",
+  "noFinanceNoName": "NAME:Matius",
   "high": []
  },
  {
-  "text": "2027-05-17",
-  "placeholder": "2027-05-17",
-  "vault": [],
-  "partial": "2027-05-17",
-  "noFinanceNoName": "2027-05-17",
+  "text": "a man named Matius",
+  "placeholder": "a man named [NAME_1]",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Matius"
+   ]
+  ],
+  "partial": "a man named M***",
+  "noFinanceNoName": "a man named Matius",
   "high": []
  },
  {
-  "text": "Senin",
-  "placeholder": "Senin",
-  "vault": [],
-  "partial": "Senin",
-  "noFinanceNoName": "Senin",
+  "text": "dirawat Pak Budi Santoso",
+  "placeholder": "dirawat Pak [NAME_1]",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Budi Santoso"
+   ]
+  ],
+  "partial": "dirawat Pak B*** S***",
+  "noFinanceNoName": "dirawat Pak Budi Santoso",
   "high": []
  },
  {
-  "text": "2027-05-18",
-  "placeholder": "2027-05-18",
-  "vault": [],
-  "partial": "2027-05-18",
-  "noFinanceNoName": "2027-05-18",
+  "text": "NAME:Budi Santoso",
+  "placeholder": "NAME:[NAME_1]",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Budi Santoso"
+   ]
+  ],
+  "partial": "NAME:B*** S***",
+  "noFinanceNoName": "NAME:Budi Santoso",
   "high": []
  },
  {
-  "text": "Selasa",
-  "placeholder": "Selasa",
-  "vault": [],
-  "partial": "Selasa",
-  "noFinanceNoName": "Selasa",
-  "high": []
+  "text": "NIK pemesan, order 3201011508950001",
+  "placeholder": "NIK pemesan, order [NIK_1]",
+  "vault": [
+   [
+    "[NIK_1]",
+    "3201011508950001"
+   ]
+  ],
+  "partial": "NIK pemesan, order 3201********0001",
+  "noFinanceNoName": "NIK pemesan, order [NIK_1]",
+  "high": [
+   "3201011508950001"
+  ]
  },
  {
-  "text": "2027-05-19",
-  "placeholder": "2027-05-19",
-  "vault": [],
-  "partial": "2027-05-19",
-  "noFinanceNoName": "2027-05-19",
-  "high": []
+  "text": "NIK:3201011508950001",
+  "placeholder": "NIK:[NIK_1]",
+  "vault": [
+   [
+    "[NIK_1]",
+    "3201011508950001"
+   ]
+  ],
+  "partial": "NIK:3201********0001",
+  "noFinanceNoName": "NIK:[NIK_1]",
+  "high": [
+   "3201011508950001"
+  ]
  },
  {
-  "text": "Rabu",
-  "placeholder": "Rabu",
+  "text": "a NIK label wins",
+  "placeholder": "a NIK label wins",
   "vault": [],
-  "partial": "Rabu",
-  "noFinanceNoName": "Rabu",
+  "partial": "a NIK label wins",
+  "noFinanceNoName": "a NIK label wins",
   "high": []
  },
  {
-  "text": "2027-05-20",
-  "placeholder": "2027-05-20",
+  "text": "audit: obat dan disabilitas tanpa label, Acct dan IBAN, XML dan SQL, judul dokumen, nama berikutnya dalam daftar",
+  "placeholder": "audit: obat dan disabilitas tanpa label, Acct dan IBAN, XML dan SQL, judul dokumen, nama berikutnya dalam daftar",
   "vault": [],
-  "partial": "2027-05-20",
-  "noFinanceNoName": "2027-05-20",
-  "high": []
+  "partial": "audit: obat dan disabilitas tanpa label, Acct dan IBAN, XML dan SQL, judul dokumen, nama berikutnya dalam daftar",
+  "noFinanceNoName": "audit: obat dan disabilitas tanpa label, Acct dan IBAN, XML dan SQL, judul dokumen, nama berikutnya dalam daftar",
+  "high": []
+ },
+ {
+  "text": "Siti rutin minum Clozapine tiap malam",
+  "placeholder": "Siti rutin minum [HEALTH_1] tiap malam",
+  "vault": [
+   [
+    "[HEALTH_1]",
+    "Clozapine"
+   ]
+  ],
+  "partial": "Siti rutin minum *** tiap malam",
+  "noFinanceNoName": "Siti rutin minum [HEALTH_1] tiap malam",
+  "high": []
+ },
+ {
+  "text": "HEALTH:Clozapine",
+  "placeholder": "HEALTH:Clozapine",
+  "vault": [],
+  "partial": "HEALTH:Clozapine",
+  "noFinanceNoName": "HEALTH:Clozapine",
+  "high": []
+ },
+ {
+  "text": "pelamar atas nama Rina, disabilitas netra",
+  "placeholder": "pelamar atas nama [NAME_1], [HEALTH_1]",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Rina"
+   ],
+   [
+    "[HEALTH_1]",
+    "disabilitas netra"
+   ]
+  ],
+  "partial": "pelamar atas nama R***, ***",
+  "noFinanceNoName": "pelamar atas nama Rina, [HEALTH_1]",
+  "high": [
+   "Rina"
+  ]
+ },
+ {
+  "text": "NAME:Rina",
+  "placeholder": "NAME:Rina",
+  "vault": [],
+  "partial": "NAME:Rina",
+  "noFinanceNoName": "NAME:Rina",
+  "high": []
+ },
+ {
+  "text": "HEALTH:disabilitas netra",
+  "placeholder": "HEALTH:disabilitas netra",
+  "vault": [],
+  "partial": "HEALTH:disabilitas netra",
+  "noFinanceNoName": "HEALTH:disabilitas netra",
+  "high": []
+ },
+ {
+  "text": "Acct: 1234567890 (BCA)",
+  "placeholder": "Acct: [BANK_ACCOUNT_1] (BCA)",
+  "vault": [
+   [
+    "[BANK_ACCOUNT_1]",
+    "1234567890"
+   ]
+  ],
+  "partial": "Acct: ******7890 (BCA)",
+  "noFinanceNoName": "Acct: [BANK_ACCOUNT_1] (BCA)",
+  "high": [
+   "1234567890"
+  ]
+ },
+ {
+  "text": "BANK_ACCOUNT:1234567890",
+  "placeholder": "BANK_ACCOUNT:[BANK_ACCOUNT_1]",
+  "vault": [
+   [
+    "[BANK_ACCOUNT_1]",
+    "1234567890"
+   ]
+  ],
+  "partial": "BANK_ACCOUNT:******7890",
+  "noFinanceNoName": "BANK_ACCOUNT:[BANK_ACCOUNT_1]",
+  "high": [
+   "1234567890"
+  ]
+ },
+ {
+  "text": "IBAN DE89370400440532013000",
+  "placeholder": "IBAN [BANK_ACCOUNT_1]",
+  "vault": [
+   [
+    "[BANK_ACCOUNT_1]",
+    "DE89370400440532013000"
+   ]
+  ],
+  "partial": "IBAN ****************3000",
+  "noFinanceNoName": "IBAN [BANK_ACCOUNT_1]",
+  "high": [
+   "DE89370400440532013000"
+  ]
+ },
+ {
+  "text": "BANK_ACCOUNT:DE89370400440532013000",
+  "placeholder": "BANK_ACCOUNT:[BANK_ACCOUNT_1]",
+  "vault": [
+   [
+    "[BANK_ACCOUNT_1]",
+    "DE89370400440532013000"
+   ]
+  ],
+  "partial": "BANK_ACCOUNT:****************3000",
+  "noFinanceNoName": "BANK_ACCOUNT:[BANK_ACCOUNT_1]",
+  "high": [
+   "DE89370400440532013000"
+  ]
+ },
+ {
+  "text": "<pelanggan><nama>Kaleandra Wirasena</nama></pelanggan>",
+  "placeholder": "<pelanggan><nama>[NAME_1]</nama></pelanggan>",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Kaleandra Wirasena"
+   ]
+  ],
+  "partial": "<pelanggan><nama>K*** W***</nama></pelanggan>",
+  "noFinanceNoName": "<pelanggan><nama>Kaleandra Wirasena</nama></pelanggan>",
+  "high": [
+   "Kaleandra Wirasena"
+  ]
+ },
+ {
+  "text": "NAME:Kaleandra Wirasena",
+  "placeholder": "NAME:[NAME_1]",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Kaleandra Wirasena"
+   ]
+  ],
+  "partial": "NAME:K*** W***",
+  "noFinanceNoName": "NAME:Kaleandra Wirasena",
+  "high": []
+ },
+ {
+  "text": "%Darmaji%",
+  "placeholder": "%Darmaji%",
+  "vault": [],
+  "partial": "%Darmaji%",
+  "noFinanceNoName": "%Darmaji%",
+  "high": []
+ },
+ {
+  "text": "NAME:Darmaji",
+  "placeholder": "NAME:Darmaji",
+  "vault": [],
+  "partial": "NAME:Darmaji",
+  "noFinanceNoName": "NAME:Darmaji",
+  "high": []
+ },
+ {
+  "text": "KTP Bonifasius Mote",
+  "placeholder": "KTP [NAME_1]",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Bonifasius Mote"
+   ]
+  ],
+  "partial": "KTP B*** M***",
+  "noFinanceNoName": "KTP Bonifasius Mote",
+  "high": [
+   "Bonifasius Mote"
+  ]
  },
  {
-  "text": "Kamis",
-  "placeholder": "Kamis",
-  "vault": [],
-  "partial": "Kamis",
-  "noFinanceNoName": "Kamis",
+  "text": "NAME:Bonifasius Mote",
+  "placeholder": "NAME:[NAME_1]",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Bonifasius Mote"
+   ]
+  ],
+  "partial": "NAME:B*** M***",
+  "noFinanceNoName": "NAME:Bonifasius Mote",
   "high": []
  },
  {
-  "text": "2027-06-01",
-  "placeholder": "2027-06-01",
-  "vault": [],
-  "partial": "2027-06-01",
-  "noFinanceNoName": "2027-06-01",
-  "high": []
+  "text": "ktp_bonifasius_mote.jpg",
+  "placeholder": "ktp_[NAME_1].jpg",
+  "vault": [
+   [
+    "[NAME_1]",
+    "bonifasius_mote"
+   ]
+  ],
+  "partial": "ktp_b***.jpg",
+  "noFinanceNoName": "ktp_bonifasius_mote.jpg",
+  "high": [
+   "bonifasius_mote"
+  ]
  },
  {
-  "text": "Selasa",
-  "placeholder": "Selasa",
+  "text": "NAME:bonifasius_mote",
+  "placeholder": "NAME:bonifasius_mote",
   "vault": [],
-  "partial": "Selasa",
-  "noFinanceNoName": "Selasa",
+  "partial": "NAME:bonifasius_mote",
+  "noFinanceNoName": "NAME:bonifasius_mote",
   "high": []
  },
  {
-  "text": "2027-06-06",
-  "placeholder": "2027-06-06",
-  "vault": [],
-  "partial": "2027-06-06",
-  "noFinanceNoName": "2027-06-06",
+  "text": "Pelanggan Dewi Lestari dan Kaleandra Wirasena sudah bayar",
+  "placeholder": "Pelanggan [NAME_1] dan [NAME_2] sudah bayar",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Dewi Lestari"
+   ],
+   [
+    "[NAME_2]",
+    "Kaleandra Wirasena"
+   ]
+  ],
+  "partial": "Pelanggan D*** L*** dan K*** W*** sudah bayar",
+  "noFinanceNoName": "Pelanggan Dewi Lestari dan Kaleandra Wirasena sudah bayar",
   "high": []
  },
  {
-  "text": "Minggu",
-  "placeholder": "Minggu",
-  "vault": [],
-  "partial": "Minggu",
-  "noFinanceNoName": "Minggu",
+  "text": "NAME:Dewi Lestari",
+  "placeholder": "NAME:[NAME_1]",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Dewi Lestari"
+   ]
+  ],
+  "partial": "NAME:D*** L***",
+  "noFinanceNoName": "NAME:Dewi Lestari",
   "high": []
  },
  {
-  "text": "2027-08-15",
-  "placeholder": "2027-08-15",
-  "vault": [],
-  "partial": "2027-08-15",
-  "noFinanceNoName": "2027-08-15",
+  "text": "NAME:Kaleandra Wirasena",
+  "placeholder": "NAME:[NAME_1]",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Kaleandra Wirasena"
+   ]
+  ],
+  "partial": "NAME:K*** W***",
+  "noFinanceNoName": "NAME:Kaleandra Wirasena",
   "high": []
  },
  {
-  "text": "Minggu",
-  "placeholder": "Minggu",
+  "text": "Artikel: gejala tifus dan cara mencegah gastritis",
+  "placeholder": "Artikel: gejala tifus dan cara mencegah gastritis",
   "vault": [],
-  "partial": "Minggu",
-  "noFinanceNoName": "Minggu",
+  "partial": "Artikel: gejala tifus dan cara mencegah gastritis",
+  "noFinanceNoName": "Artikel: gejala tifus dan cara mencegah gastritis",
   "high": []
  },
  {
-  "text": "2027-08-17",
-  "placeholder": "2027-08-17",
+  "text": "fasilitas untuk penyandang disabilitas netra di stasiun",
+  "placeholder": "fasilitas untuk penyandang disabilitas netra di stasiun",
   "vault": [],
-  "partial": "2027-08-17",
-  "noFinanceNoName": "2027-08-17",
+  "partial": "fasilitas untuk penyandang disabilitas netra di stasiun",
+  "noFinanceNoName": "fasilitas untuk penyandang disabilitas netra di stasiun",
   "high": []
  },
  {
-  "text": "Selasa",
-  "placeholder": "Selasa",
+  "text": "IBAN DE00370400440532013000",
+  "placeholder": "IBAN DE00370400440532013000",
   "vault": [],
-  "partial": "Selasa",
-  "noFinanceNoName": "Selasa",
+  "partial": "IBAN DE00370400440532013000",
+  "noFinanceNoName": "IBAN DE00370400440532013000",
   "high": []
  },
  {
-  "text": "2027-12-24",
-  "placeholder": "2027-12-24",
-  "vault": [],
-  "partial": "2027-12-24",
-  "noFinanceNoName": "2027-12-24",
+  "text": "Guest: Mr. Robert Tanujaya, Room 1207",
+  "placeholder": "Guest: Mr. [NAME_1], Room 1207",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Robert Tanujaya"
+   ]
+  ],
+  "partial": "Guest: Mr. R*** T***, Room 1207",
+  "noFinanceNoName": "Guest: Mr. Robert Tanujaya, Room 1207",
   "high": []
  },
  {
-  "text": "Jumat",
-  "placeholder": "Jumat",
-  "vault": [],
-  "partial": "Jumat",
-  "noFinanceNoName": "Jumat",
+  "text": "Budi Santoso dan Kantor Pusat",
+  "placeholder": "[NAME_1] dan Kantor Pusat",
+  "vault": [
+   [
+    "[NAME_1]",
+    "Budi Santoso"
+   ]
+  ],
+  "partial": "B*** S*** dan Kantor Pusat",
+  "noFinanceNoName": "Budi Santoso dan Kantor Pusat",
   "high": []
  },
  {
-  "text": "2027-12-25",
-  "placeholder": "2027-12-25",
+  "text": "jalan bernama kota tujuannya tetap utuh; kota sesudah koma yang dipakai",
+  "placeholder": "jalan bernama kota tujuannya tetap utuh; kota sesudah koma yang dipakai",
   "vault": [],
-  "partial": "2027-12-25",
-  "noFinanceNoName": "2027-12-25",
+  "partial": "jalan bernama kota tujuannya tetap utuh; kota sesudah koma yang dipakai",
+  "noFinanceNoName": "jalan bernama kota tujuannya tetap utuh; kota sesudah koma yang dipakai",
   "high": []
  },
  {
-  "text": "Sabtu",
-  "placeholder": "Sabtu",
+  "text": "../src/wilayah.ts",
+  "placeholder": "../src/wilayah.ts",
   "vault": [],
-  "partial": "Sabtu",
-  "noFinanceNoName": "Sabtu",
+  "partial": "../src/wilayah.ts",
+  "noFinanceNoName": "../src/wilayah.ts",
   "high": []
  },
  {
-  "text": "2027-12-26",
-  "placeholder": "2027-12-26",
-  "vault": [],
-  "partial": "2027-12-26",
-  "noFinanceNoName": "2027-12-26",
+  "text": "Jl. Raya Bogor KM 30, Depok",
+  "placeholder": "[ADDRESS_1], Depok",
+  "vault": [
+   [
+    "[ADDRESS_1]",
+    "Jl. Raya Bogor KM 30"
+   ]
+  ],
+  "partial": "Jl. ***, Depok",
+  "noFinanceNoName": "[ADDRESS_1], Depok",
   "high": []
  },
  {
-  "text": "Minggu",
-  "placeholder": "Minggu",
-  "vault": [],
-  "partial": "Minggu",
-  "noFinanceNoName": "Minggu",
+  "text": "Jl. Raya Bogor KM 30",
+  "placeholder": "[ADDRESS_1]",
+  "vault": [
+   [
+    "[ADDRESS_1]",
+    "Jl. Raya Bogor KM 30"
+   ]
+  ],
+  "partial": "Jl. ***",
+  "noFinanceNoName": "[ADDRESS_1]",
   "high": []
  },
  {
-  "text": "setiap tanggal jatuh pada hari yang tertulis di pengumuman resmi",
-  "placeholder": "setiap tanggal jatuh pada hari yang tertulis di pengumuman resmi",
+  "text": "Kota Depok",
+  "placeholder": "Kota Depok",
   "vault": [],
-  "partial": "setiap tanggal jatuh pada hari yang tertulis di pengumuman resmi",
-  "noFinanceNoName": "setiap tanggal jatuh pada hari yang tertulis di pengumuman resmi",
+  "partial": "Kota Depok",
+  "noFinanceNoName": "Kota Depok",
   "high": []
  },
  {
-  "text": "jumlah sesuai SKB: 2026 = 17 libur + 8 cuti, 2027 = 18 libur + 8 cuti",
-  "placeholder": "jumlah sesuai SKB: 2026 = 17 libur + 8 cuti, 2027 = 18 libur + 8 cuti",
+  "text": "Jalan Lintas Sumatera KM 12, Lahat",
+  "placeholder": "Jalan Lintas Sumatera KM 12, Lahat",
   "vault": [],
-  "partial": "jumlah sesuai SKB: 2026 = 17 libur + 8 cuti, 2027 = 18 libur + 8 cuti",
-  "noFinanceNoName": "jumlah sesuai SKB: 2026 = 17 libur + 8 cuti, 2027 = 18 libur + 8 cuti",
+  "partial": "Jalan Lintas Sumatera KM 12, Lahat",
+  "noFinanceNoName": "Jalan Lintas Sumatera KM 12, Lahat",
   "high": []
  },
  {
-  "text": "libur_nasional",
-  "placeholder": "libur_nasional",
+  "text": "Jalan Lintas Sumatera KM 12",
+  "placeholder": "Jalan Lintas Sumatera KM 12",
   "vault": [],
-  "partial": "libur_nasional",
-  "noFinanceNoName": "libur_nasional",
+  "partial": "Jalan Lintas Sumatera KM 12",
+  "noFinanceNoName": "Jalan Lintas Sumatera KM 12",
   "high": []
  }
 ]

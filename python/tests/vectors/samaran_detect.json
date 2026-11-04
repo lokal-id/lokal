@@ -650,13 +650,6 @@
     "high"
    ],
    [
-    "NAME",
-    858,
-    865,
-    "Yohanes",
-    "medium"
-   ],
-   [
     "PHONE",
     866,
     880,
@@ -3954,6 +3947,13 @@
     32,
     "R. Ayu Kusumawardhani",
     "medium"
+   ],
+   [
+    "NAME",
+    37,
+    41,
+    "Budi",
+    "medium"
    ]
   ]
  },
@@ -3968,6 +3968,10 @@
     "medium"
    ]
   ]
+ },
+ {
+  "text": "NAME:Budi",
+  "matches": []
  },
  {
   "text": "Saksi melihat SUPRIYADI ALIAS UDIN TELAH MENGAMBIL motor",
@@ -4070,7 +4074,7 @@
   "matches": []
  },
  {
-  "text": "3276-0101.0180 0001",
+  "text": "3276/01/0101/800001",
   "matches": []
  },
  {
@@ -4210,6 +4214,1015 @@
  },
  {
   "text": "two Budis: no guess",
+  "matches": []
+ },
+ {
+  "text": "audit: data yang disamarkan dengan Unicode, entity, ejaan, atau encoding tetap terdeteksi di posisi aslinya",
+  "matches": []
+ },
+ {
+  "text": "3201011508950001",
+  "matches": [
+   [
+    "NIK",
+    0,
+    16,
+    "3201011508950001",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "",
+  "matches": []
+ },
+ {
+  "text": "NIK",
+  "matches": []
+ },
+ {
+  "text": "​",
+  "matches": []
+ },
+ {
+  "text": "NIK",
+  "matches": []
+ },
+ {
+  "text": "­",
+  "matches": []
+ },
+ {
+  "text": "NIK",
+  "matches": []
+ },
+ {
+  "text": "NIK 3201 0115 0895 0001",
+  "matches": [
+   [
+    "NIK",
+    4,
+    23,
+    "3201 0115 0895 0001",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "NIK",
+  "matches": []
+ },
+ {
+  "text": "",
+  "matches": []
+ },
+ {
+  "text": "NIK",
+  "matches": []
+ },
+ {
+  "text": "",
+  "matches": []
+ },
+ {
+  "text": "NIK",
+  "matches": []
+ },
+ {
+  "text": "NIK 32010115\n08950001",
+  "matches": [
+   [
+    "NIK",
+    4,
+    21,
+    "32010115\n08950001",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "NIK",
+  "matches": []
+ },
+ {
+  "text": "NIK tiga dua nol satu nol satu satu lima nol delapan sembilan lima nol nol nol satu",
+  "matches": [
+   [
+    "NIK",
+    4,
+    83,
+    "tiga dua nol satu nol satu satu lima nol delapan sembilan lima nol nol nol satu",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "NIK",
+  "matches": []
+ },
+ {
+  "text": "081234567890",
+  "matches": [
+   [
+    "PHONE",
+    0,
+    12,
+    "081234567890",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "PHONE",
+  "matches": []
+ },
+ {
+  "text": "hp 0812 3456 78 lapan sembilan nol",
+  "matches": [
+   [
+    "PHONE",
+    3,
+    34,
+    "0812 3456 78 lapan sembilan nol",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "PHONE",
+  "matches": []
+ },
+ {
+  "text": "hp +62 (0)812-3456-7890",
+  "matches": [
+   [
+    "PHONE",
+    3,
+    23,
+    "+62 (0)812-3456-7890",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "PHONE",
+  "matches": []
+ },
+ {
+  "text": "siti.rahayu88＠gmail.com",
+  "matches": [
+   [
+    "EMAIL",
+    0,
+    23,
+    "siti.rahayu88＠gmail.com",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "EMAIL",
+  "matches": []
+ },
+ {
+  "text": "siti . rahayu88 @ gmail . com",
+  "matches": [
+   [
+    "EMAIL",
+    0,
+    29,
+    "siti . rahayu88 @ gmail . com",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "EMAIL",
+  "matches": []
+ },
+ {
+  "text": "siti.rahayu88&#64;gmail.com",
+  "matches": [
+   [
+    "EMAIL",
+    0,
+    27,
+    "siti.rahayu88&#64;gmail.com",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "EMAIL",
+  "matches": []
+ },
+ {
+  "text": "NIK",
+  "matches": []
+ },
+ {
+  "text": "From: =?UTF-8?B?QnVkaSBTYW50b3Nv?= <x@contoh.test>",
+  "matches": [
+   [
+    "NAME",
+    6,
+    34,
+    "=?UTF-8?B?QnVkaSBTYW50b3Nv?=",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "NAME",
+  "matches": []
+ },
+ {
+  "text": "offsets on the original text",
+  "matches": []
+ },
+ {
+  "text": "token eyJhbGciOiJIUzI1NiJ9 ok",
+  "matches": []
+ },
+ {
+  "text": "jam 1 2 3 4 5 lalu",
+  "matches": []
+ },
+ {
+  "text": "Senin satu dua tiga empat lima",
+  "matches": []
+ },
+ {
+  "text": "&#9999999; dan &#xFFFFFF;",
+  "matches": []
+ },
+ {
+  "text": "harga Rp 1.250.000",
+  "matches": []
+ },
+ {
+  "text": "audit: rupiah negatif dan rusak, rentang, awalan 0062, hari kerja dari Date di WIB",
+  "matches": []
+ },
+ {
+  "text": "../src/index.ts",
+  "matches": []
+ },
+ {
+  "text": "Rp -1.000",
+  "matches": []
+ },
+ {
+  "text": "-Rp 1.000",
+  "matches": []
+ },
+ {
+  "text": "(Rp 1.000)",
+  "matches": []
+ },
+ {
+  "text": "minus 2,5 juta",
+  "matches": []
+ },
+ {
+  "text": "Rp 1.500.000,50",
+  "matches": []
+ },
+ {
+  "text": "Rp 1.2.3",
+  "matches": []
+ },
+ {
+  "text": "1.50.000,5",
+  "matches": []
+ },
+ {
+  "text": "1-2 juta",
+  "matches": []
+ },
+ {
+  "text": "1 sampai 2 juta",
+  "matches": []
+ },
+ {
+  "text": "100rb - 200rb",
+  "matches": []
+ },
+ {
+  "text": "Rp100rb–200rb",
+  "matches": []
+ },
+ {
+  "text": "Rp 1jt s/d 2jt",
+  "matches": []
+ },
+ {
+  "text": "0062 812 3456 7890",
+  "matches": [
+   [
+    "PHONE",
+    0,
+    18,
+    "0062 812 3456 7890",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "0062 812 3456 7890",
+  "matches": [
+   [
+    "PHONE",
+    0,
+    18,
+    "0062 812 3456 7890",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "+6281234567890",
+  "matches": [
+   [
+    "PHONE",
+    0,
+    14,
+    "+6281234567890",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "2026-11-02T06:00:00+07:00",
+  "matches": []
+ },
+ {
+  "text": "2026-11-01T23:30:00+07:00",
+  "matches": []
+ },
+ {
+  "text": "2026-08-18T05:00:00+09:00",
+  "matches": []
+ },
+ {
+  "text": "Asia/Jayapura",
+  "matches": []
+ },
+ {
+  "text": "2026-12-31",
+  "matches": []
+ },
+ {
+  "text": "2026-01-01",
+  "matches": []
+ },
+ {
+  "text": "2026-01-01",
+  "matches": []
+ },
+ {
+  "text": "2026-12-31",
+  "matches": []
+ },
+ {
+  "text": "audit: false positive — email peran, ayat Alkitab, tempat bernama orang, nominal dan ID 16 digit",
+  "matches": []
+ },
+ {
+  "text": "noreply@github.com, support@tokopedia.com, info@toko-contoh.co.id",
+  "matches": []
+ },
+ {
+  "text": "Yohanes 3:16 dan Matius 5:9",
+  "matches": []
+ },
+ {
+  "text": "Gedung Sate dan RSUD Dr. Soetomo",
+  "matches": []
+ },
+ {
+  "text": "Universitas Prof. Dr. Moestopo",
+  "matches": []
+ },
+ {
+  "text": "Total aset Rp 3201011508950001",
+  "matches": []
+ },
+ {
+  "text": "order_id=3201011508950001",
+  "matches": []
+ },
+ {
+  "text": "budi.santoso@gmail.com",
+  "matches": [
+   [
+    "EMAIL",
+    0,
+    22,
+    "budi.santoso@gmail.com",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "EMAIL:budi.santoso@gmail.com",
+  "matches": [
+   [
+    "EMAIL",
+    6,
+    28,
+    "budi.santoso@gmail.com",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "Matius tinggal di Bogor",
+  "matches": [
+   [
+    "NAME",
+    0,
+    6,
+    "Matius",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "NAME:Matius",
+  "matches": []
+ },
+ {
+  "text": "a man named Matius",
+  "matches": [
+   [
+    "NAME",
+    12,
+    18,
+    "Matius",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "dirawat Pak Budi Santoso",
+  "matches": [
+   [
+    "NAME",
+    12,
+    24,
+    "Budi Santoso",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "NAME:Budi Santoso",
+  "matches": [
+   [
+    "NAME",
+    5,
+    17,
+    "Budi Santoso",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "NIK pemesan, order 3201011508950001",
+  "matches": [
+   [
+    "NIK",
+    19,
+    35,
+    "3201011508950001",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "NIK:3201011508950001",
+  "matches": [
+   [
+    "NIK",
+    4,
+    20,
+    "3201011508950001",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "a NIK label wins",
+  "matches": []
+ },
+ {
+  "text": "audit: obat dan disabilitas tanpa label, Acct dan IBAN, XML dan SQL, judul dokumen, nama berikutnya dalam daftar",
+  "matches": []
+ },
+ {
+  "text": "Siti rutin minum Clozapine tiap malam",
+  "matches": [
+   [
+    "HEALTH",
+    17,
+    26,
+    "Clozapine",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "HEALTH:Clozapine",
+  "matches": []
+ },
+ {
+  "text": "pelamar atas nama Rina, disabilitas netra",
+  "matches": [
+   [
+    "NAME",
+    18,
+    22,
+    "Rina",
+    "high"
+   ],
+   [
+    "HEALTH",
+    24,
+    41,
+    "disabilitas netra",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "NAME:Rina",
+  "matches": []
+ },
+ {
+  "text": "HEALTH:disabilitas netra",
+  "matches": []
+ },
+ {
+  "text": "Acct: 1234567890 (BCA)",
+  "matches": [
+   [
+    "BANK_ACCOUNT",
+    6,
+    16,
+    "1234567890",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "BANK_ACCOUNT:1234567890",
+  "matches": [
+   [
+    "BANK_ACCOUNT",
+    13,
+    23,
+    "1234567890",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "IBAN DE89370400440532013000",
+  "matches": [
+   [
+    "BANK_ACCOUNT",
+    5,
+    27,
+    "DE89370400440532013000",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "BANK_ACCOUNT:DE89370400440532013000",
+  "matches": [
+   [
+    "BANK_ACCOUNT",
+    13,
+    35,
+    "DE89370400440532013000",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "<pelanggan><nama>Kaleandra Wirasena</nama></pelanggan>",
+  "matches": [
+   [
+    "NAME",
+    17,
+    35,
+    "Kaleandra Wirasena",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "NAME:Kaleandra Wirasena",
+  "matches": [
+   [
+    "NAME",
+    5,
+    23,
+    "Kaleandra Wirasena",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "%Darmaji%",
+  "matches": []
+ },
+ {
+  "text": "NAME:Darmaji",
+  "matches": []
+ },
+ {
+  "text": "KTP Bonifasius Mote",
+  "matches": [
+   [
+    "NAME",
+    4,
+    19,
+    "Bonifasius Mote",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "NAME:Bonifasius Mote",
+  "matches": [
+   [
+    "NAME",
+    5,
+    20,
+    "Bonifasius Mote",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "ktp_bonifasius_mote.jpg",
+  "matches": [
+   [
+    "NAME",
+    4,
+    19,
+    "bonifasius_mote",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "NAME:bonifasius_mote",
+  "matches": []
+ },
+ {
+  "text": "Pelanggan Dewi Lestari dan Kaleandra Wirasena sudah bayar",
+  "matches": [
+   [
+    "NAME",
+    10,
+    22,
+    "Dewi Lestari",
+    "medium"
+   ],
+   [
+    "NAME",
+    27,
+    45,
+    "Kaleandra Wirasena",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "NAME:Dewi Lestari",
+  "matches": [
+   [
+    "NAME",
+    5,
+    17,
+    "Dewi Lestari",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "NAME:Kaleandra Wirasena",
+  "matches": [
+   [
+    "NAME",
+    5,
+    23,
+    "Kaleandra Wirasena",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "Artikel: gejala tifus dan cara mencegah gastritis",
+  "matches": []
+ },
+ {
+  "text": "fasilitas untuk penyandang disabilitas netra di stasiun",
+  "matches": []
+ },
+ {
+  "text": "IBAN DE00370400440532013000",
+  "matches": []
+ },
+ {
+  "text": "Guest: Mr. Robert Tanujaya, Room 1207",
+  "matches": [
+   [
+    "NAME",
+    11,
+    26,
+    "Robert Tanujaya",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "Budi Santoso dan Kantor Pusat",
+  "matches": [
+   [
+    "NAME",
+    0,
+    12,
+    "Budi Santoso",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "jalan bernama kota tujuannya tetap utuh; kota sesudah koma yang dipakai",
+  "matches": []
+ },
+ {
+  "text": "../src/wilayah.ts",
+  "matches": []
+ },
+ {
+  "text": "Jl. Raya Bogor KM 30, Depok",
+  "matches": [
+   [
+    "ADDRESS",
+    0,
+    20,
+    "Jl. Raya Bogor KM 30",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "Jl. Raya Bogor KM 30",
+  "matches": [
+   [
+    "ADDRESS",
+    0,
+    20,
+    "Jl. Raya Bogor KM 30",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "Kota Depok",
+  "matches": []
+ },
+ {
+  "text": "Jalan Lintas Sumatera KM 12, Lahat",
+  "matches": []
+ },
+ {
+  "text": "Jalan Lintas Sumatera KM 12",
+  "matches": []
+ },
+ {
+  "text": "Kabupaten Lahat",
+  "matches": []
+ },
+ {
+  "text": "Jl. Melati 3 Bogor",
+  "matches": [
+   [
+    "ADDRESS",
+    0,
+    12,
+    "Jl. Melati 3",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "Jl. Melati 3",
+  "matches": [
+   [
+    "ADDRESS",
+    0,
+    12,
+    "Jl. Melati 3",
+    "medium"
+   ]
+  ]
+ },
+ {
+  "text": "search_wilayah mengenal nama sehari-hari dan ejaan Sumatra",
+  "matches": []
+ },
+ {
+  "text": "../src/wilayah.ts",
+  "matches": []
+ },
+ {
+  "text": "DKI",
+  "matches": []
+ },
+ {
+  "text": "Daerah Khusus Ibukota Jakarta",
+  "matches": []
+ },
+ {
+  "text": "Jogja",
+  "matches": []
+ },
+ {
+  "text": "Daerah Istimewa Yogyakarta",
+  "matches": []
+ },
+ {
+  "text": "DIY",
+  "matches": []
+ },
+ {
+  "text": "Daerah Istimewa Yogyakarta",
+  "matches": []
+ },
+ {
+  "text": "Jatim",
+  "matches": []
+ },
+ {
+  "text": "Jawa Timur",
+  "matches": []
+ },
+ {
+  "text": "Jaksel",
+  "matches": []
+ },
+ {
+  "text": "Kota Administrasi Jakarta Selatan",
+  "matches": []
+ },
+ {
+  "text": "Sumatra Utara",
+  "matches": []
+ },
+ {
+  "text": "Sumatera Utara",
+  "matches": []
+ },
+ {
+  "text": "sumatra",
+  "matches": []
+ },
+ {
+  "text": "Depok",
+  "matches": []
+ },
+ {
+  "text": "Kota Depok",
+  "matches": []
+ },
+ {
+  "text": "Kembaran: nama \"Belakang, Depan\" sama orangnya; e-mail mengikuti nama samarannya",
+  "matches": []
+ },
+ {
+  "text": "../src/kembaran.ts",
+  "matches": []
+ },
+ {
+  "text": "nama,email\n\"Santoso, Budi\",budi.santoso@gmail.com\nBudi Santoso,budi_santoso87@yahoo.co.id\nSiti Aminah,siti@mail.co.id\n",
+  "matches": [
+   [
+    "NAME",
+    12,
+    25,
+    "Santoso, Budi",
+    "high"
+   ],
+   [
+    "EMAIL",
+    27,
+    49,
+    "budi.santoso@gmail.com",
+    "high"
+   ],
+   [
+    "NAME",
+    50,
+    62,
+    "Budi Santoso",
+    "high"
+   ],
+   [
+    "EMAIL",
+    63,
+    89,
+    "budi_santoso87@yahoo.co.id",
+    "high"
+   ],
+   [
+    "NAME",
+    90,
+    101,
+    "Siti Aminah",
+    "high"
+   ],
+   [
+    "EMAIL",
+    102,
+    117,
+    "siti@mail.co.id",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "uji",
+  "matches": []
+ },
+ {
+  "text": "\n",
+  "matches": []
+ },
+ {
+  "text": ",",
+  "matches": []
+ },
+ {
+  "text": " ",
+  "matches": []
+ },
+ {
+  "text": "\",",
+  "matches": []
+ },
+ {
+  "text": "the same person, family name first",
+  "matches": []
+ },
+ {
+  "text": "\",",
+  "matches": []
+ },
+ {
+  "text": ",",
+  "matches": []
+ },
+ {
+  "text": " ",
+  "matches": []
+ },
+ {
+  "text": ",",
+  "matches": []
+ },
+ {
+  "text": "a given name alone follows that one person",
+  "matches": []
+ },
+ {
+  "text": "uji",
+  "matches": []
+ },
+ {
+  "text": "Nama: Budi Santoso, S.Kom",
+  "matches": [
+   [
+    "NAME",
+    6,
+    18,
+    "Budi Santoso",
+    "high"
+   ]
+  ]
+ },
+ {
+  "text": "Kontak: info@toko.co.id",
+  "matches": []
+ },
+ {
+  "text": "Kontak: info@toko.co.id",
   "matches": []
  },
  {
@@ -5122,7 +6135,15 @@
  },
  {
   "text": "+62 (0) 812 3456 7890",
-  "matches": []
+  "matches": [
+   [
+    "PHONE",
+    0,
+    21,
+    "+62 (0) 812 3456 7890",
+    "high"
+   ]
+  ]
  },
  {
   "text": "+6281234567890",
@@ -5326,6 +6347,14 @@
  },
  {
   "text": "0812-… and 0812… are one person",
+  "matches": []
+ },
+ {
+  "text": " ",
+  "matches": []
+ },
+ {
+  "text": ".",
   "matches": []
  },
  {
@@ -7846,15 +8875,7 @@
  },
  {
   "text": "cs@toko.id",
-  "matches": [
-   [
-    "EMAIL",
-    0,
-    10,
-    "cs@toko.id",
-    "high"
-   ]
-  ]
+  "matches": []
  },
  {
   "text": "EMAIL",
@@ -7863,13 +8884,6 @@
  {
   "text": "Hubungi cs@toko.id, bukan budi@gmail.com, HP 081234567890",
   "matches": [
-   [
-    "EMAIL",
-    8,
-    18,
-    "cs@toko.id",
-    "high"
-   ],
    [
     "EMAIL",
     26,
@@ -7889,13 +8903,6 @@
  {
   "text": "Hubungi cs@toko.id, bukan [EMAIL_1], HP 081234567890",
   "matches": [
-   [
-    "EMAIL",
-    8,
-    18,
-    "cs@toko.id",
-    "high"
-   ],
    [
     "PHONE",
     40,
@@ -14566,11 +15573,23 @@
   "matches": []
  },
  {
+  "text": "../src/files.ts",
+  "matches": []
+ },
+ {
   "text": "../src/cli.ts",
   "matches": []
  },
  {
   "text": "lokal-mcp-",
+  "matches": []
+ },
+ {
+  "text": "s cache: a folder of the test",
+  "matches": []
+ },
+ {
+  "text": "lokal-cache-",
   "matches": []
  },
  {
@@ -15817,7 +16836,15 @@
  },
  {
   "text": "var/media/kredit/ktp-budi.jpg",
-  "matches": []
+  "matches": [
+   [
+    "NAME",
+    21,
+    25,
+    "budi",
+    "high"
+   ]
+  ]
  },
  {
   "text": "storage/app/uploads/IMG_2041.HEIC",
@@ -15829,7 +16856,15 @@
  },
  {
   "text": "arsip/selfie_siti.png",
-  "matches": []
+  "matches": [
+   [
+    "NAME",
+    13,
+    17,
+    "siti",
+    "high"
+   ]
+  ]
  },
  {
   "text": "x",
@@ -15861,7 +16896,15 @@
  },
  {
   "text": "contoh/ktp-dummy.jpg",
-  "matches": []
+  "matches": [
+   [
+    "NAME",
+    11,
+    16,
+    "dummy",
+    "high"
+   ]
+  ]
  },
  {
   "text": "x",
@@ -15885,7 +16928,15 @@
  },
  {
   "text": "var/media/kredit/ktp-budi.jpg",
-  "matches": []
+  "matches": [
+   [
+    "NAME",
+    21,
+    25,
+    "budi",
+    "high"
+   ]
+  ]
  },
  {
   "text": "storage/app/uploads/IMG_2041.HEIC",
@@ -15893,7 +16944,15 @@
  },
  {
   "text": "arsip/selfie_siti.png",
-  "matches": []
+  "matches": [
+   [
+    "NAME",
+    13,
+    17,
+    "siti",
+    "high"
+   ]
+  ]
  },
  {
   "text": "ekspor/ktp.jpg",
@@ -15921,7 +16980,15 @@
  },
  {
   "text": "contoh/ktp-dummy.jpg",
-  "matches": []
+  "matches": [
+   [
+    "NAME",
+    11,
+    16,
+    "dummy",
+    "high"
+   ]
+  ]
  },
  {
   "text": "ktp/tidak-ada.jpg",
@@ -17664,6 +18731,86 @@
   "matches": []
  },
  {
+  "text": "rm .lokal/unmasked.json",
+  "matches": []
+ },
+ {
+  "text": "{}",
+  "matches": []
+ },
+ {
+  "text": "rm -rf .lokal",
+  "matches": []
+ },
+ {
+  "text": "git clean -fdX",
+  "matches": []
+ },
+ {
+  "text": "Remove-Item .lokal -Recurse",
+  "matches": []
+ },
+ {
+  "text": "PreToolUse",
+  "matches": []
+ },
+ {
+  "text": "Bash",
+  "matches": []
+ },
+ {
+  "text": "PreToolUse",
+  "matches": []
+ },
+ {
+  "text": "Write",
+  "matches": []
+ },
+ {
+  "text": ".lokal",
+  "matches": []
+ },
+ {
+  "text": "unmasked.json",
+  "matches": []
+ },
+ {
+  "text": "{}",
+  "matches": []
+ },
+ {
+  "text": "PreToolUse",
+  "matches": []
+ },
+ {
+  "text": "Bash",
+  "matches": []
+ },
+ {
+  "text": "cat .lokal/unmasked.json",
+  "matches": []
+ },
+ {
+  "text": "reading the list is fine",
+  "matches": []
+ },
+ {
+  "text": ".lokal",
+  "matches": []
+ },
+ {
+  "text": "PreToolUse",
+  "matches": []
+ },
+ {
+  "text": "Read",
+  "matches": []
+ },
+ {
+  "text": "the copy in the cache",
+  "matches": []
+ },
+ {
   "text": ".lokal",
   "matches": []
  },
@@ -19052,13 +20199,6 @@
     20,
     36,
     "budi.s@gmail.com",
-    "high"
-   ],
-   [
-    "EMAIL",
-    51,
-    65,
-    "cs@tokokopi.id",
     "high"
    ]
   ]
@@ -21455,7 +22595,15 @@
  },
  {
   "text": "v3.20.1 commit 3201011508950001abcd build 20261022",
-  "matches": []
+  "matches": [
+   [
+    "NIK",
+    15,
+    31,
+    "3201011508950001",
+    "high"
+   ]
+  ]
  },
  {
   "text": "v3.20.1",
@@ -22909,7 +24057,7 @@
   "matches": []
  },
  {
-  "text": "call me at +6281234567890 or 0062 812 3456 7890",
+  "text": "call me at +6281234567890 or 0062 812 3456 7891",
   "matches": [
    [
     "PHONE",
@@ -22922,7 +24070,7 @@
     "PHONE",
     29,
     47,
-    "0062 812 3456 7890",
+    "0062 812 3456 7891",
     "high"
    ]
   ]
@@ -22940,13 +24088,13 @@
   ]
  },
  {
-  "text": "0062 812 3456 7890",
+  "text": "0062 812 3456 7891",
   "matches": [
    [
     "PHONE",
     0,
     18,
-    "0062 812 3456 7890",
+    "0062 812 3456 7891",
     "high"
    ]
   ]
@@ -25876,7 +27024,15 @@
  },
  {
   "text": "Kartu keluarga OCR",
-  "matches": []
+  "matches": [
+   [
+    "NAME",
+    15,
+    18,
+    "OCR",
+    "high"
+   ]
+  ]
  },
  {
   "text": "No. KK 3201021503100012\nKepala Keluarga : HERU SANTOSO\nAlamat : KP. BABAKAN RT 003/RW 007",
@@ -28779,11 +29935,11 @@
   "text": "hey @ratna.dewi, bisa tolong share kontak vendor? nomornya 0811-2233-4455 kan?",
   "matches": [
    [
-    "NAME",
-    5,
+    "EMAIL",
+    0,
     15,
-    "ratna.dewi",
-    "medium"
+    "hey @ratna.dewi",
+    "high"
    ],
    [
     "PHONE",
@@ -31211,9 +32367,9 @@
   "matches": [
    [
     "NAME",
-    17,
+    7,
     35,
-    "Rini Kusumawardani",
+    "atas nama Rini Kusumawardani",
     "high"
    ],
    [
@@ -31243,7 +32399,15 @@
  },
  {
   "text": "Paspor JSON",
-  "matches": []
+  "matches": [
+   [
+    "NAME",
+    7,
+    11,
+    "JSON",
+    "high"
+   ]
+  ]
  },
  {
   "text": "{\"passenger\":{\"name\":\"Anton Halim\",\"passport\":\"C9876543\",\"dob\":\"1985-04-17\",\"nationality\":\"ID\"}}",
@@ -33410,15 +34574,8 @@
    [
     "HEALTH",
     89,
-    98,
-    "penisilin",
-    "medium"
-   ],
-   [
-    "HEALTH",
-    99,
-    123,
-    "dirawat di RSUD Cibinong",
+    106,
+    "penisilin﻿dirawat",
     "medium"
    ],
    [
@@ -34095,16 +35252,9 @@
    [
     "HEALTH",
     32,
-    41,
-    "penisilin",
+    44,
+    "penisilin﻿62",
     "medium"
-   ],
-   [
-    "PHONE",
-    42,
-    58,
-    "62 878 1234 5678",
-    "high"
    ]
   ]
  },
@@ -34430,13 +35580,6 @@
     47,
     "-6.200000, 106.816666",
     "high"
-   ],
-   [
-    "HEALTH",
-    55,
-    64,
-    "penisilin",
-    "medium"
    ],
    [
     "ADDRESS",
@@ -35297,13 +36440,6 @@
     "medium"
    ],
    [
-    "HEALTH",
-    45,
-    51,
-    "stroke",
-    "medium"
-   ],
-   [
     "NAME",
     60,
     72,
@@ -35455,8 +36591,8 @@
    [
     "NAME",
     5,
-    18,
-    "Lim Swie Hong",
+    22,
+    "Lim Swie Hong ORD",
     "medium"
    ],
    [
@@ -36237,9 +37373,9 @@
    ],
    [
     "EMAIL",
-    64,
+    58,
     86,
-    "budi.santoso@gmail.com",
+    "besok﻿budi.santoso@gmail.com",
     "high"
    ],
    [
@@ -36535,12 +37671,12 @@
    [
     "NAME",
     26,
-    37,
-    "Ahmad Fauzi",
+    40,
+    "Ahmad Fauzi﻿KK",
     "medium"
    ],
    [
-    "KK",
+    "NIK",
     41,
     57,
     "3201010101200001",
@@ -36681,8 +37817,8 @@
    [
     "PHONE",
     35,
-    99,
-    "nol delapan satu dua tiga empat lima enam tujuh delapan sembilan",
+    90,
+    "nol delapan satu dua tiga empat lima enam tujuh delapan",
     "medium"
    ],
    [
@@ -36851,13 +37987,6 @@
  {
   "text": " — saya muslim﻿No SIM 950812345678 Dear Mr. Hendra Gunawan,",
   "matches": [
-   [
-    "RELIGION",
-    8,
-    14,
-    "muslim",
-    "medium"
-   ],
    [
     "SIM",
     22,
@@ -37289,13 +38418,6 @@
   "text": ", Rp1.250.000\r\nINV-081234567890﻿utang pinjol 12 juta siti [at] gmail [dot] com",
   "matches": [
    [
-    "FINANCIAL",
-    45,
-    52,
-    "12 juta",
-    "medium"
-   ],
-   [
     "EMAIL",
     53,
     78,
@@ -37520,13 +38642,6 @@
     140,
     "0812-3456-7890",
     "high"
-   ],
-   [
-    "PHONE",
-    141,
-    205,
-    "nol delapan satu dua tiga empat lima enam tujuh delapan sembilan",
-    "medium"
    ]
   ]
  },
@@ -37567,13 +38682,6 @@
     141,
     "3 juta",
     "medium"
-   ],
-   [
-    "RELIGION",
-    183,
-    190,
-    "Katolik",
-    "high"
    ]
   ]
  },
@@ -38072,22 +39180,7 @@
  },
  {
   "text": "﻿62 878 1234 5678﻿rumah 0251 8321234. call 1500888",
-  "matches": [
-   [
-    "PHONE",
-    1,
-    17,
-    "62 878 1234 5678",
-    "high"
-   ],
-   [
-    "PHONE",
-    24,
-    36,
-    "0251 8321234",
-    "medium"
-   ]
-  ]
+  "matches": []
  },
  {
   "text": "﻿gaji saya 8 juta, mau ambil cicilan 3 juta per bulan, budget saya 300 juta Pelanggan Budi Santoso minta refund ORD/081234567890, From: Budi Santoso <budi.s@gmail.com>\nNama: Budi Santoso ya kak",
@@ -39027,13 +40120,6 @@
     "medium"
    ],
    [
-    "PHONE",
-    19,
-    35,
-    "62 878 1234 5678",
-    "high"
-   ],
-   [
     "NAME",
     49,
     53,
@@ -39057,8 +40143,8 @@
    [
     "CRIMINAL_RECORD",
     146,
-    160,
-    "pernah ditahan",
+    152,
+    "pernah",
     "high"
    ],
    [
@@ -39576,13 +40662,6 @@
     "medium"
    ],
    [
-    "HEALTH",
-    78,
-    81,
-    "DBD",
-    "medium"
-   ],
-   [
     "PHONE",
     88,
     101,
@@ -39862,11 +40941,11 @@
   "text": " — cek DM dari @siti.rahayu88. TTL Bogor, 17-08-1995. a.n. Dewi Lestari 😭 hp-081234567890",
   "matches": [
    [
-    "NAME",
-    16,
-    29,
-    "siti.rahayu88",
-    "medium"
+    "EMAIL",
+    10,
+    34,
+    "dari @siti.rahayu88. TTL",
+    "high"
    ],
    [
     "BIRTH_DATE",
@@ -39973,8 +41052,8 @@
    [
     "NAME",
     17,
-    24,
-    "Bambang",
+    31,
+    "Bambang﻿Alamat",
     "medium"
    ],
    [
@@ -40120,9 +41199,9 @@
    ],
    [
     "EMAIL",
-    90,
+    81,
     112,
-    "budi.santoso@gmail.com",
+    "75000.00﻿budi.santoso@gmail.com",
     "high"
    ],
    [
@@ -40272,13 +41351,6 @@
     "medium"
    ],
    [
-    "IP",
-    27,
-    39,
-    "192.168.2.10",
-    "medium"
-   ],
-   [
     "NAME",
     53,
     66,
@@ -40370,13 +41442,6 @@
     171,
     187,
     "3201011508950001",
-    "high"
-   ],
-   [
-    "PHONE",
-    188,
-    202,
-    "0812-3456-7890",
     "high"
    ],
    [
@@ -40820,8 +41885,8 @@
    [
     "ADDRESS",
     185,
-    215,
-    "Komplek Taman Asri blok B no 9",
+    217,
+    "Komplek Taman Asri blok B no 9﻿c",
     "high"
    ],
    [
@@ -41112,13 +42177,6 @@
     90,
     102,
     "Budi Santoso",
-    "medium"
-   ],
-   [
-    "HEALTH",
-    116,
-    140,
-    "dirawat di RSUD Cibinong",
     "medium"
    ],
    [
@@ -41961,13 +43019,6 @@
    ],
    [
     "HEALTH",
-    70,
-    77,
-    "insulin",
-    "medium"
-   ],
-   [
-    "HEALTH",
     79,
     87,
     "diabetes",
@@ -42142,20 +43193,6 @@
     188,
     "192.168.2.1",
     "medium"
-   ],
-   [
-    "IP",
-    189,
-    201,
-    "192.168.2.10",
-    "medium"
-   ],
-   [
-    "NAME",
-    215,
-    219,
-    "rina",
-    "medium"
    ]
   ]
  },
@@ -42245,8 +43282,8 @@
    [
     "ADDRESS",
     2,
-    32,
-    "Komplek Taman Asri blok B no 9",
+    34,
+    "Komplek Taman Asri blok B no 9﻿c",
     "high"
    ],
    [
@@ -42457,13 +43494,6 @@
     40,
     "15 Agustus 1995",
     "high"
-   ],
-   [
-    "HEALTH",
-    41,
-    65,
-    "dirawat di RSUD Cibinong",
-    "medium"
    ],
    [
     "HEALTH",
@@ -42904,9 +43934,16 @@
    ],
    [
     "NAME",
+    51,
+    55,
+    "Nama",
+    "medium"
+   ],
+   [
+    "NAME",
     66,
-    78,
-    "Budi Santoso",
+    83,
+    "Budi Santoso﻿Nama",
     "high"
    ],
    [
@@ -43106,20 +44143,6 @@
     67,
     "Rahayu",
     "high"
-   ],
-   [
-    "BPJS",
-    75,
-    88,
-    "0001234567890",
-    "high"
-   ],
-   [
-    "HEALTH",
-    94,
-    102,
-    "diabetes",
-    "medium"
    ],
    [
     "HEALTH",
@@ -43415,8 +44438,8 @@
    [
     "EMAIL",
     27,
-    49,
-    "budi.santoso@gmail.com",
+    56,
+    "budi.santoso@gmail.com. Range",
     "high"
    ],
    [
@@ -43850,15 +44873,7 @@
  },
  {
   "text": " — utang pinjol 12 juta﻿INSERT INTO produk (nama, harga) VALUES ('Kopi Gayo', 85000), ('Arabika', 90000);",
-  "matches": [
-   [
-    "FINANCIAL",
-    16,
-    23,
-    "12 juta",
-    "medium"
-   ]
-  ]
+  "matches": []
  },
  {
   "text": "\nplat B 1234 XYZ 🇮🇩 b***@gmail.com\t<tr><th>Nama</th></tr><tr><td>Siti Aminah</td></tr>; From: Budi Santoso <budi.s@gmail.com>",
@@ -44231,16 +45246,16 @@
    [
     "NAME",
     26,
-    38,
-    "Dewi Lestari",
+    57,
+    "Dewi Lestari﻿Komplek Taman Asri",
     "high"
    ],
    [
     "ADDRESS",
-    39,
+    58,
     69,
-    "Komplek Taman Asri blok B no 9",
-    "high"
+    "blok B no 9",
+    "medium"
    ],
    [
     "NIK",
@@ -44323,18 +45338,11 @@
   "text": "\nORD/081234567890; hp-081234567890﻿Nama Pelanggan\tBudi Santoso: nama,nik,hp\nBudi,3201011508950001,0812-3456-7890",
   "matches": [
    [
-    "PHONE",
-    22,
-    34,
-    "081234567890",
-    "high"
-   ],
-   [
     "NAME",
     50,
     62,
     "Budi Santoso",
-    "high"
+    "medium"
    ],
    [
     "NIK",
@@ -44422,18 +45430,11 @@
     "high"
    ],
    [
-    "HEALTH",
-    69,
-    75,
-    "stroke",
-    "medium"
-   ],
-   [
     "ADDRESS",
-    76,
+    95,
     106,
-    "Komplek Taman Asri blok B no 9",
-    "high"
+    "blok B no 9",
+    "medium"
    ]
   ]
  },
@@ -44708,13 +45709,6 @@
     "high"
    ],
    [
-    "FINANCIAL",
-    36,
-    43,
-    "12 juta",
-    "medium"
-   ],
-   [
     "PHONE",
     49,
     63,
@@ -44925,15 +45919,8 @@
    [
     "NAME",
     75,
-    86,
-    "Siti Aminah",
-    "medium"
-   ],
-   [
-    "HEALTH",
-    95,
-    126,
-    "hipertensi dan diabetes melitus",
+    94,
+    "Siti Aminah﻿riwayat",
     "medium"
    ],
    [
@@ -45449,17 +46436,10 @@
   "text": " no-0812 3456 7890﻿budi.santoso@gmail.com",
   "matches": [
    [
-    "PHONE",
-    4,
-    18,
-    "0812 3456 7890",
-    "high"
-   ],
-   [
     "EMAIL",
-    19,
+    14,
     41,
-    "budi.santoso@gmail.com",
+    "7890﻿budi.santoso@gmail.com",
     "high"
    ]
   ]
@@ -45763,8 +46743,8 @@
    [
     "NAME",
     69,
-    80,
-    "Ahmad Fauzi",
+    94,
+    "Ahmad Fauzi Chat WhatsApp",
     "medium"
    ],
    [
@@ -45835,13 +46815,6 @@
     98,
     109,
     "192.168.2.1",
-    "medium"
-   ],
-   [
-    "IP",
-    110,
-    122,
-    "192.168.2.10",
     "medium"
    ],
    [
@@ -46076,13 +47049,6 @@
     87,
     "0812-3456-7890",
     "high"
-   ],
-   [
-    "PHONE",
-    88,
-    105,
-    "+62 857-1111-2222",
-    "high"
    ]
   ]
  },
@@ -46108,13 +47074,6 @@
     49,
     73,
     "dirawat di RSUD Cibinong",
-    "medium"
-   ],
-   [
-    "HEALTH",
-    81,
-    84,
-    "DBD",
     "medium"
    ],
    [
@@ -46212,8 +47171,8 @@
    [
     "NAME",
     32,
-    45,
-    "siti.rahayu88",
+    57,
+    "siti.rahayu88﻿Rp1.250.000",
     "medium"
    ]
   ]
@@ -46363,17 +47322,10 @@
     "medium"
    ],
    [
-    "HEALTH",
-    165,
-    172,
-    "insulin",
-    "medium"
-   ],
-   [
     "NAME",
     182,
-    194,
-    "DEWI LESTARI",
+    197,
+    "DEWI LESTARI Rp",
     "medium"
    ]
   ]
@@ -46571,13 +47523,6 @@
    ],
    [
     "HEALTH",
-    196,
-    203,
-    "insulin",
-    "medium"
-   ],
-   [
-    "HEALTH",
     205,
     213,
     "diabetes",
@@ -46588,13 +47533,6 @@
  {
   "text": " rek BCA 1234567890﻿saya sudah cerai Alamat: Jl. Mawar No. 5 RT 03/RW 07 | Nama: Budi Santoso, dirawat di RSUD Cibinong karena DBD",
   "matches": [
-   [
-    "BANK_ACCOUNT",
-    9,
-    19,
-    "1234567890",
-    "high"
-   ],
    [
     "MARITAL_STATUS",
     31,
@@ -47006,8 +47944,8 @@
    [
     "RELIGION",
     92,
-    109,
-    "kristen protestan",
+    99,
+    "kristen",
     "medium"
    ],
    [
@@ -47073,10 +48011,10 @@
    ],
    [
     "ADDRESS",
-    83,
+    96,
     107,
-    "Dusun Krajan RT 02 RW 01",
-    "high"
+    "RT 02 RW 01",
+    "medium"
    ]
   ]
  },
@@ -47171,20 +48109,6 @@
     "medium"
    ],
    [
-    "NAME",
-    70,
-    74,
-    "budi",
-    "medium"
-   ],
-   [
-    "NAME",
-    140,
-    154,
-    "Hendra Gunawan",
-    "high"
-   ],
-   [
     "NIK",
     158,
     174,
@@ -47196,13 +48120,6 @@
     178,
     192,
     "0813-9999-0000",
-    "high"
-   ],
-   [
-    "NAME",
-    202,
-    218,
-    "O''Brien Siregar",
     "high"
    ],
    [
@@ -47492,13 +48409,6 @@
     76,
     "b3456xyz",
     "medium"
-   ],
-   [
-    "PHONE",
-    105,
-    121,
-    "62 878 1234 5678",
-    "high"
    ]
   ]
  },
@@ -47525,18 +48435,11 @@
     "medium"
    ],
    [
-    "HEALTH",
-    26,
-    32,
-    "stroke",
-    "medium"
-   ],
-   [
     "NAME",
     39,
-    56,
-    "Siti Aminah (Ami)",
-    "high"
+    50,
+    "Siti Aminah",
+    "medium"
    ],
    [
     "PHONE",
@@ -48346,9 +49249,9 @@
    ],
    [
     "NAME",
-    43,
+    37,
     60,
-    "Togar Simanjuntak",
+    "Setia﻿Togar Simanjuntak",
     "medium"
    ],
    [
@@ -48449,13 +49352,6 @@
   "text": " 😭 Rp1.250.000 😭 plat B 1234 XYZ﻿Bapak Dr. Ahmad Fauzi",
   "matches": [
    [
-    "PLATE",
-    22,
-    32,
-    "B 1234 XYZ",
-    "high"
-   ],
-   [
     "NAME",
     43,
     54,
@@ -48534,13 +49430,6 @@
     "medium"
    ],
    [
-    "BANK_ACCOUNT",
-    53,
-    63,
-    "1234567890",
-    "high"
-   ],
-   [
     "NAME",
     97,
     145,
@@ -48609,15 +49498,8 @@
    [
     "RELIGION",
     108,
-    125,
-    "kristen protestan",
-    "medium"
-   ],
-   [
-    "ADDRESS",
-    126,
-    136,
-    "jl mawar 5",
+    115,
+    "kristen",
     "medium"
    ]
   ]
@@ -48704,13 +49586,6 @@
     124,
     "62 878 1234 5678",
     "high"
-   ],
-   [
-    "NAME",
-    131,
-    135,
-    "budi",
-    "medium"
    ],
    [
     "PHONE",
@@ -49426,13 +50301,6 @@
   "text": "\nberagama Katolik﻿No SIM 950812345678: mantan napi kasus narkoba. /** @param options.abortSignal */\r\nHalo Budi,",
   "matches": [
    [
-    "RELIGION",
-    10,
-    17,
-    "Katolik",
-    "high"
-   ],
-   [
     "SIM",
     25,
     37,
@@ -49516,15 +50384,7 @@
  },
  {
   "text": " hp-081234567890﻿call 1500888",
-  "matches": [
-   [
-    "PHONE",
-    4,
-    16,
-    "081234567890",
-    "high"
-   ]
-  ]
+  "matches": []
  },
  {
   "text": "; koh Lim Swie Hong: Tamu: I Made Wirawan — +62 (812) 3456-7890 | INSERT INTO produk (nama, harga) VALUES ('Kopi Gayo', 85000), ('Arabika', 90000); nik: 3276 0145 0392 0003",
@@ -49998,13 +50858,6 @@
     "high"
    ],
    [
-    "NIP",
-    27,
-    48,
-    "19950815 202012 1 001",
-    "high"
-   ],
-   [
     "ADDRESS",
     57,
     84,
@@ -50151,8 +51004,8 @@
    [
     "HEALTH",
     24,
-    33,
-    "penisilin",
+    39,
+    "penisilin﻿suami",
     "medium"
    ],
    [
@@ -50363,13 +51216,6 @@
     5,
     21,
     "3201011508950001",
-    "high"
-   ],
-   [
-    "PASSPORT",
-    30,
-    38,
-    "A1234567",
     "high"
    ],
    [
@@ -50844,8 +51690,8 @@
    [
     "NAME",
     36,
-    53,
-    "Togar Simanjuntak",
+    58,
+    "Togar Simanjuntak Nama",
     "medium"
    ],
    [
@@ -51043,7 +51889,7 @@
   "text": " KK 3201010101200001﻿From: Budi Santoso <budi.s@gmail.com>\ngaji saya 8 juta, mau ambil cicilan 3 juta per bulan, budget saya 300 juta",
   "matches": [
    [
-    "KK",
+    "NIK",
     4,
     20,
     "3201010101200001",
@@ -51344,20 +52190,6 @@
     8,
     25,
     "Rina Kartika Sari",
-    "medium"
-   ],
-   [
-    "PHONE",
-    28,
-    44,
-    "62 878 1234 5678",
-    "high"
-   ],
-   [
-    "FINANCIAL",
-    55,
-    61,
-    "8 juta",
     "medium"
    ]
   ]
@@ -51707,7 +52539,7 @@
     79,
     92,
     "Siti   Aminah",
-    "high"
+    "medium"
    ],
    [
     "HEALTH",
@@ -51759,16 +52591,9 @@
    [
     "PHONE",
     2,
-    19,
-    "08 12 34 56 78 90",
+    16,
+    "08 12 34 56 78",
     "high"
-   ],
-   [
-    "ADDRESS",
-    20,
-    30,
-    "jl mawar 5",
-    "medium"
    ]
   ]
  },
@@ -51780,13 +52605,6 @@
     12,
     22,
     "17-08-1995",
-    "high"
-   ],
-   [
-    "NIP",
-    28,
-    49,
-    "19950815 202012 1 001",
     "high"
    ],
    [
@@ -52735,16 +53553,16 @@
    [
     "NAME",
     172,
-    184,
-    "Budi Santoso",
+    176,
+    "Budi",
     "high"
    ],
    [
     "NAME",
     191,
-    208,
-    "Siti Aminah (Ami)",
-    "high"
+    202,
+    "Siti Aminah",
+    "medium"
    ],
    [
     "PHONE",
@@ -53348,7 +54166,7 @@
     136,
     145,
     "Rina Wati",
-    "high"
+    "medium"
    ],
    [
     "NAME",
@@ -53518,15 +54336,8 @@
    [
     "NAME",
     89,
-    106,
-    "Rina Kartika Sari",
-    "medium"
-   ],
-   [
-    "HEALTH",
-    115,
-    120,
-    "demam",
+    114,
+    "Rina Kartika Sari﻿keluhan",
     "medium"
    ]
   ]
@@ -53561,20 +54372,6 @@
     110,
     "Togar Simanjuntak",
     "medium"
-   ],
-   [
-    "HEALTH",
-    116,
-    122,
-    "stroke",
-    "medium"
-   ],
-   [
-    "ADDRESS",
-    123,
-    133,
-    "jl mawar 5",
-    "medium"
    ]
   ]
  },
@@ -53601,7 +54398,7 @@
   "text": " | ORD/081234567890﻿KK 3201010101200001 | No SIM 950812345678\r\nutang pinjol 12 juta; Rp1.250.000\nNama\tNIK\tTelepon\nRina Wati\t3276014503920002\t0813-9999-0000",
   "matches": [
    [
-    "KK",
+    "NIK",
     23,
     39,
     "3201010101200001",
@@ -53671,8 +54468,8 @@
    [
     "PHONE",
     103,
-    167,
-    "nol delapan satu dua tiga empat lima enam tujuh delapan sembilan",
+    158,
+    "nol delapan satu dua tiga empat lima enam tujuh delapan",
     "medium"
    ],
    [
@@ -53978,22 +54775,7 @@
  },
  {
   "text": "; order 2610014KQ7ZB2M resi SPXID045123456789, tadi budi bilang﻿Halo Budi,, SK No. 100.3.3.1-6117",
-  "matches": [
-   [
-    "NAME",
-    52,
-    56,
-    "budi",
-    "medium"
-   ],
-   [
-    "NAME",
-    69,
-    73,
-    "Budi",
-    "medium"
-   ]
-  ]
+  "matches": []
  },
  {
   "text": " BI-FAST CR SITI RAHAYU 75000.00 cek DM dari @siti.rahayu88, plat B 1234 XYZ",
@@ -54148,11 +54930,11 @@
   "text": " — cek DM dari @siti.rahayu88. No SIM 950812345678",
   "matches": [
    [
-    "NAME",
-    16,
-    29,
-    "siti.rahayu88",
-    "medium"
+    "EMAIL",
+    10,
+    33,
+    "dari @siti.rahayu88. No",
+    "high"
    ],
    [
     "SIM",
@@ -55421,20 +56203,6 @@
   "text": " | Paspor: A1234567﻿riwayat hipertensi dan diabetes melitus\tINSERT INTO produk (nama, harga) VALUES ('Kopi Gayo', 85000), ('Arabika', 90000);\r\nFrom: Budi Santoso <budi.s@gmail.com>; From: Budi Santoso <budi.s@gmail.com> 😭 Pelanggan Setia",
   "matches": [
    [
-    "PASSPORT",
-    11,
-    19,
-    "A1234567",
-    "high"
-   ],
-   [
-    "HEALTH",
-    28,
-    59,
-    "hipertensi dan diabetes melitus",
-    "medium"
-   ],
-   [
     "NAME",
     149,
     161,
@@ -55601,13 +56369,6 @@
  {
   "text": ", +62 857-1111-2222﻿TRX-6281234567890\nHalo Bandung,\tSalam,\nRina Kartika Sari; wa.me/6281377778888",
   "matches": [
-   [
-    "PHONE",
-    2,
-    19,
-    "+62 857-1111-2222",
-    "high"
-   ],
    [
     "NAME",
     59,
@@ -55935,20 +56696,6 @@
   "text": " HP 0812-3456-7890﻿gaji saya 8 juta\tINSERT INTO `pelanggan` (`nama`,`nik`) VALUES\r\n('Siti Aminah','3276015508030002'),\r\n('Dewi', 3578014607910004);",
   "matches": [
    [
-    "PHONE",
-    4,
-    18,
-    "0812-3456-7890",
-    "high"
-   ],
-   [
-    "FINANCIAL",
-    29,
-    35,
-    "8 juta",
-    "medium"
-   ],
-   [
     "NAME",
     85,
     96,
@@ -56061,20 +56808,6 @@
  {
   "text": ": NIP 19950815 202012 1 001﻿ayah stroke 😭 HP 0812-3456-7890 {\"first_name\":\"Siti\",\"last_name\":\"Rahayu\"}. nik: 3276 0145 0392 0003 | Lumban Siregar",
   "matches": [
-   [
-    "NIP",
-    6,
-    27,
-    "19950815 202012 1 001",
-    "high"
-   ],
-   [
-    "HEALTH",
-    33,
-    39,
-    "stroke",
-    "medium"
-   ],
    [
     "PHONE",
     45,
@@ -56712,20 +57445,6 @@
     108,
     "Dewi Lestari",
     "medium"
-   ],
-   [
-    "PHONE",
-    121,
-    133,
-    "0251 8321234",
-    "medium"
-   ],
-   [
-    "NAME",
-    139,
-    143,
-    "budi",
-    "medium"
    ]
   ]
  },
@@ -56808,16 +57527,9 @@
    [
     "EMAIL",
     95,
-    109,
-    "budi@gmail.com",
+    117,
+    "budi@gmail.com﻿dirawat",
     "high"
-   ],
-   [
-    "HEALTH",
-    110,
-    134,
-    "dirawat di RSUD Cibinong",
-    "medium"
    ],
    [
     "HEALTH",
@@ -57068,8 +57780,8 @@
    [
     "NAME",
     7,
-    19,
-    "Dewi Lestari",
+    24,
+    "Dewi Lestari Nama",
     "high"
    ],
    [
@@ -57221,15 +57933,8 @@
    [
     "NAME",
     43,
-    55,
-    "Dewi Lestari",
-    "high"
-   ],
-   [
-    "NIP",
-    60,
-    81,
-    "19950815 202012 1 001",
+    59,
+    "Dewi Lestari NIP",
     "high"
    ],
    [
@@ -57266,8 +57971,8 @@
    [
     "PHONE",
     18,
-    82,
-    "nol delapan satu dua tiga empat lima enam tujuh delapan sembilan",
+    86,
+    "nol delapan satu dua tiga empat lima enam tujuh delapan sembilan, 12",
     "medium"
    ],
    [
@@ -58499,13 +59204,6 @@
   "text": ". Lumban Siregar: Togar Simanjuntak﻿suami saya kristen protestan 😭 motor b3456xyz — NIK 3201011508950001",
   "matches": [
    [
-    "NAME",
-    18,
-    35,
-    "Togar Simanjuntak",
-    "medium"
-   ],
-   [
     "RELIGION",
     47,
     64,
@@ -58694,20 +59392,6 @@
     45,
     "Penerima",
     "medium"
-   ],
-   [
-    "NAME",
-    46,
-    58,
-    "DEWI LESTARI",
-    "medium"
-   ],
-   [
-    "BIRTH_DATE",
-    70,
-    80,
-    "17-08-1995",
-    "high"
    ]
   ]
  },
@@ -58781,18 +59465,11 @@
     "medium"
    ],
    [
-    "PHONE",
-    19,
-    36,
-    "+62 857-1111-2222",
-    "high"
-   ],
-   [
     "NAME",
     47,
     51,
     "rina",
-    "high"
+    "medium"
    ],
    [
     "NAME",
@@ -58991,13 +59668,6 @@
     "medium"
    ],
    [
-    "CARD",
-    83,
-    102,
-    "4539 1488 0343 6467",
-    "high"
-   ],
-   [
     "PASSPORT",
     111,
     119,
@@ -59122,7 +59792,7 @@
     111,
     120,
     "Rina Wati",
-    "high"
+    "medium"
    ]
   ]
  },
@@ -59321,8 +59991,8 @@
    [
     "NAME",
     13,
-    24,
-    "Siti Aminah",
+    28,
+    "Siti Aminah TTL",
     "medium"
    ],
    [
@@ -59392,21 +60062,7 @@
     "medium"
    ],
    [
-    "HEALTH",
-    60,
-    68,
-    "diabetes",
-    "medium"
-   ],
-   [
-    "HEALTH",
-    81,
-    88,
-    "insulin",
-    "medium"
-   ],
-   [
-    "KK",
+    "NIK",
     92,
     108,
     "3201010101200001",
@@ -59476,20 +60132,6 @@
     15,
     26,
     "192.168.2.1",
-    "medium"
-   ],
-   [
-    "IP",
-    27,
-    39,
-    "192.168.2.10",
-    "medium"
-   ],
-   [
-    "FINANCIAL",
-    53,
-    60,
-    "12 juta",
     "medium"
    ],
    [
@@ -59893,7 +60535,7 @@
     "medium"
    ],
    [
-    "KK",
+    "NIK",
     155,
     171,
     "3201010101200001",
@@ -60200,20 +60842,6 @@
   "text": " ibu saya hipertensi﻿pernah dipenjara 3 tahun; suami saya kristen protestan\tSinar Pagi, Bogor\tNama: Budi Santoso ya kak",
   "matches": [
    [
-    "HEALTH",
-    10,
-    20,
-    "hipertensi",
-    "medium"
-   ],
-   [
-    "CRIMINAL_RECORD",
-    21,
-    45,
-    "pernah dipenjara 3 tahun",
-    "medium"
-   ],
-   [
     "RELIGION",
     58,
     75,
@@ -60330,20 +60958,6 @@
   "text": ", BPJS 0001234567890﻿jl mawar 5 cibinong\nhp-081234567890 | plat B 1234 XYZ",
   "matches": [
    [
-    "BPJS",
-    7,
-    20,
-    "0001234567890",
-    "high"
-   ],
-   [
-    "ADDRESS",
-    21,
-    31,
-    "jl mawar 5",
-    "medium"
-   ],
-   [
     "PHONE",
     44,
     56,
@@ -60445,13 +61059,6 @@
  {
   "text": "\nrek BCA 1234567890﻿Pelanggan Budi Santoso minta refund saya diabetes, rutin obat insulin",
   "matches": [
-   [
-    "BANK_ACCOUNT",
-    9,
-    19,
-    "1234567890",
-    "high"
-   ],
    [
     "NAME",
     30,
@@ -60656,7 +61263,7 @@
     63,
     76,
     "Siti   Aminah",
-    "high"
+    "medium"
    ],
    [
     "HEALTH",
@@ -60992,13 +61599,6 @@
     "high"
    ],
    [
-    "PHONE",
-    32,
-    49,
-    "+62 857-1111-2222",
-    "high"
-   ],
-   [
     "NAME",
     63,
     67,
@@ -61043,13 +61643,6 @@
  {
   "text": "\t62 878 1234 5678﻿Tamu: I Made Wirawan — Komplek Taman Asri blok B no 9 — suami saya kristen protestan\tNama: Siti Aminah (Ami)",
   "matches": [
-   [
-    "PHONE",
-    1,
-    17,
-    "62 878 1234 5678",
-    "high"
-   ],
    [
     "NAME",
     24,
@@ -61229,13 +61822,6 @@
     112,
     120,
     "diabetes",
-    "medium"
-   ],
-   [
-    "HEALTH",
-    133,
-    140,
-    "insulin",
     "medium"
    ],
    [
@@ -61609,8 +62195,8 @@
    [
     "NAME",
     6,
-    19,
-    "Lim Swie Hong",
+    26,
+    "Lim Swie Hong Pasien",
     "medium"
    ],
    [
@@ -61883,13 +62469,6 @@
    ],
    [
     "NAME",
-    61,
-    73,
-    "Lee Dong Hae",
-    "high"
-   ],
-   [
-    "NAME",
     118,
     132,
     "Hendra Gunawan",
@@ -61931,8 +62510,8 @@
    [
     "EMAIL",
     60,
-    74,
-    "budi@gmail.com",
+    78,
+    "budi@gmail.com﻿cek",
     "high"
    ],
    [
@@ -62061,8 +62640,8 @@
    [
     "NAME",
     126,
-    137,
-    "Siti Aminah",
+    144,
+    "Siti Aminah Pasien",
     "medium"
    ],
    [
@@ -62084,13 +62663,6 @@
  {
   "text": " saya sudah cerai﻿NIP 19950815 202012 1 001",
   "matches": [
-   [
-    "MARITAL_STATUS",
-    12,
-    17,
-    "cerai",
-    "medium"
-   ],
    [
     "NIP",
     22,
@@ -62236,18 +62808,11 @@
     "medium"
    ],
    [
-    "CARD",
-    66,
-    85,
-    "4539 1488 0343 6467",
-    "high"
-   ],
-   [
     "NAME",
     91,
     103,
     "Dewi Lestari",
-    "high"
+    "medium"
    ]
   ]
  },
@@ -62292,13 +62857,6 @@
  {
   "text": "\r\nberagama Katolik﻿TRX-6281234567890; NIK 3201011508950001 😭 plat B 1234 XYZ",
   "matches": [
-   [
-    "RELIGION",
-    11,
-    18,
-    "Katolik",
-    "high"
-   ],
    [
     "NIK",
     42,
@@ -62404,13 +62962,6 @@
     14,
     "(0751) 812345",
     "medium"
-   ],
-   [
-    "NIP",
-    19,
-    40,
-    "19950815 202012 1 001",
-    "high"
    ],
    [
     "CARD",
@@ -62690,8 +63241,8 @@
    [
     "EMAIL",
     100,
-    114,
-    "budi@gmail.com",
+    131,
+    "budi@gmail.com﻿ORD/081234567890",
     "high"
    ],
    [
@@ -63211,8 +63762,8 @@
    [
     "RELIGION",
     14,
-    31,
-    "kristen protestan",
+    21,
+    "kristen",
     "medium"
    ],
    [
@@ -63275,8 +63826,8 @@
    [
     "NAME",
     8,
-    25,
-    "Rina Kartika Sari",
+    42,
+    "Rina Kartika Sari Catatan Kriminal",
     "medium"
    ],
    [
@@ -63299,13 +63850,6 @@
     110,
     "0812-3456-7890",
     "high"
-   ],
-   [
-    "PHONE",
-    112,
-    176,
-    "nol delapan satu dua tiga empat lima enam tujuh delapan sembilan",
-    "medium"
    ],
    [
     "RELIGION",
@@ -63390,20 +63934,6 @@
  {
   "text": "; ibu saya hipertensi﻿dirawat di RSUD Cibinong karena DBD 😭 Nama: Budi Santoso",
   "matches": [
-   [
-    "HEALTH",
-    11,
-    21,
-    "hipertensi",
-    "medium"
-   ],
-   [
-    "HEALTH",
-    22,
-    46,
-    "dirawat di RSUD Cibinong",
-    "medium"
-   ],
    [
     "HEALTH",
     54,
@@ -63679,13 +64209,6 @@
     45,
     "15 Agustus 1995",
     "high"
-   ],
-   [
-    "PHONE",
-    46,
-    110,
-    "nol delapan satu dua tiga empat lima enam tujuh delapan sembilan",
-    "medium"
    ]
   ]
  },
@@ -63800,22 +64323,7 @@
  },
  {
   "text": ", saya sudah cerai﻿08 12 34 56 78 90",
-  "matches": [
-   [
-    "MARITAL_STATUS",
-    13,
-    18,
-    "cerai",
-    "medium"
-   ],
-   [
-    "PHONE",
-    19,
-    36,
-    "08 12 34 56 78 90",
-    "high"
-   ]
-  ]
+  "matches": []
  },
  {
   "text": "﻿koh Lim Swie Hong kartu 4539 1488 0343 6467",
@@ -63875,11 +64383,11 @@
     "medium"
    ],
    [
-    "PHONE",
+    "NAME",
+    144,
     153,
-    167,
-    "0812 3456 7890",
-    "high"
+    "Setia﻿no-",
+    "medium"
    ]
   ]
  },
@@ -64200,8 +64708,8 @@
    [
     "NAME",
     43,
-    57,
-    "I Made Wirawan",
+    62,
+    "I Made Wirawan﻿Nama",
     "medium"
    ],
    [
@@ -64209,7 +64717,7 @@
     64,
     76,
     "Budi Santoso",
-    "high"
+    "medium"
    ],
    [
     "NAME",
@@ -64722,17 +65230,10 @@
     "medium"
    ],
    [
-    "NAME",
-    25,
-    36,
-    "Ahmad Fauzi",
-    "medium"
-   ],
-   [
     "EMAIL",
-    37,
+    31,
     62,
-    "siti [at] gmail [dot] com",
+    "Fauzi﻿siti [at] gmail [dot] com",
     "high"
    ],
    [
@@ -64800,6 +65301,13 @@
     63,
     "A1234567",
     "high"
+   ],
+   [
+    "NAME",
+    159,
+    169,
+    "Setia﻿udah",
+    "medium"
    ],
    [
     "FINANCIAL",
@@ -65092,13 +65600,6 @@
     72,
     "budi@gmail.com",
     "high"
-   ],
-   [
-    "FINANCIAL",
-    127,
-    133,
-    "8 juta",
-    "medium"
    ],
    [
     "FINANCIAL",
@@ -65585,9 +66086,9 @@
    ],
    [
     "CRIMINAL_RECORD",
-    90,
+    97,
     115,
-    "mantan napi kasus narkoba",
+    "napi kasus narkoba",
     "medium"
    ],
    [
@@ -65610,17 +66111,10 @@
   "text": " Tamu: I Made Wirawan﻿siti [at] gmail [dot] com",
   "matches": [
    [
-    "NAME",
-    7,
-    21,
-    "I Made Wirawan",
-    "medium"
-   ],
-   [
     "EMAIL",
-    22,
+    14,
     47,
-    "siti [at] gmail [dot] com",
+    "Wirawan﻿siti [at] gmail [dot] com",
     "high"
    ]
   ]
@@ -65714,13 +66208,6 @@
     84,
     "galbay",
     "medium"
-   ],
-   [
-    "RELIGION",
-    102,
-    109,
-    "Katolik",
-    "high"
    ],
    [
     "ADDRESS",
@@ -65869,22 +66356,7 @@
  },
  {
   "text": " — motor b3456xyz﻿jl mawar 5 cibinong",
-  "matches": [
-   [
-    "PLATE",
-    9,
-    17,
-    "b3456xyz",
-    "medium"
-   ],
-   [
-    "ADDRESS",
-    18,
-    28,
-    "jl mawar 5",
-    "medium"
-   ]
-  ]
+  "matches": []
  },
  {
   "text": "\r\ncustomer:\n  first_name: Siti\n  last_name: Rahayu\n  phone: \"+6281298765432\" | login 182.253.10.15﻿INSERT INTO `pelanggan` (`nama`,`nik`) VALUES\r\n('Siti Aminah','3276015508030002'),\r\n('Dewi', 3578014607910004); — lokasi -6.200000, 106.816666 Catatan Kriminal: pernah ditahan﻿koh Lim Swie Hong",
@@ -65911,31 +66383,10 @@
     "high"
    ],
    [
-    "IP",
-    85,
-    98,
-    "182.253.10.15",
-    "high"
-   ],
-   [
-    "NAME",
-    148,
-    159,
-    "Siti Aminah",
-    "high"
-   ],
-   [
     "NIK",
     162,
     178,
     "3276015508030002",
-    "high"
-   ],
-   [
-    "NAME",
-    185,
-    189,
-    "Dewi",
     "high"
    ],
    [
@@ -66257,17 +66708,10 @@
   "text": " kepala keluarga Bambang. budi.santoso@gmail.com Komplek Taman Asri blok B no 9",
   "matches": [
    [
-    "NAME",
-    17,
-    24,
-    "Bambang",
-    "medium"
-   ],
-   [
     "EMAIL",
-    26,
+    17,
     48,
-    "budi.santoso@gmail.com",
+    "Bambang. budi.santoso@gmail.com",
     "high"
    ],
    [
@@ -66353,13 +66797,6 @@
     13,
     24,
     "SITI RAHAYU",
-    "medium"
-   ],
-   [
-    "NAME",
-    39,
-    43,
-    "Budi",
     "medium"
    ],
    [
@@ -66518,13 +66955,6 @@
  {
   "text": " — kepala keluarga Bambang﻿Dear Mr. Hendra Gunawan, KK 3201010101200001: mantan napi kasus narkoba 😭 wa.me/6281377778888. TTL Bogor, 17-08-1995",
   "matches": [
-   [
-    "NAME",
-    19,
-    26,
-    "Bambang",
-    "medium"
-   ],
    [
     "NAME",
     36,
@@ -66739,8 +67169,8 @@
    [
     "NAME",
     7,
-    20,
-    "Lim Swie Hong",
+    25,
+    "Lim Swie Hong INV-",
     "medium"
    ],
    [
@@ -67542,7 +67972,7 @@
     22,
     34,
     "Budi Santoso",
-    "high"
+    "medium"
    ]
   ]
  },
@@ -67715,15 +68145,8 @@
    [
     "NAME",
     175,
-    186,
-    "Ahmad Fauzi",
-    "medium"
-   ],
-   [
-    "FINANCIAL",
-    197,
-    203,
-    "8 juta",
+    191,
+    "Ahmad Fauzi﻿gaji",
     "medium"
    ],
    [
@@ -69357,10 +69780,10 @@
    ],
    [
     "ADDRESS",
-    76,
+    89,
     100,
-    "Dusun Krajan RT 02 RW 01",
-    "high"
+    "RT 02 RW 01",
+    "medium"
    ],
    [
     "NAME",
@@ -69460,17 +69883,10 @@
     "high"
    ],
    [
-    "CARD",
-    54,
-    57,
-    "123",
-    "high"
-   ],
-   [
     "EMAIL",
-    58,
+    54,
     80,
-    "budi.santoso@gmail.com",
+    "123﻿budi.santoso@gmail.com",
     "high"
    ]
   ]
@@ -70130,13 +70546,6 @@
   "text": " | no-0812 3456 7890﻿Nama: Lee Dong Hae!; INSERT INTO pelanggan (id, nama, nik, no_hp) VALUES (17, 'Hendra Gunawan', '1371011010850008', '0813-9999-0000'),\n(18, 'O''Brien Siregar', 3201011508950001, NULL);",
   "matches": [
    [
-    "PHONE",
-    6,
-    20,
-    "0812 3456 7890",
-    "high"
-   ],
-   [
     "NAME",
     27,
     39,
@@ -70356,20 +70765,6 @@
     "medium"
    ],
    [
-    "HEALTH",
-    46,
-    51,
-    "demam",
-    "medium"
-   ],
-   [
-    "SIM",
-    59,
-    71,
-    "950812345678",
-    "high"
-   ],
-   [
     "NIK",
     75,
     91,
@@ -70435,13 +70830,6 @@
  {
   "text": " 🇮🇩 HP 0812-3456-7890﻿wa.me/6281377778888",
   "matches": [
-   [
-    "PHONE",
-    7,
-    21,
-    "0812-3456-7890",
-    "high"
-   ],
    [
     "PHONE",
     28,
@@ -70689,8 +71077,8 @@
    [
     "NAME",
     53,
-    64,
-    "Siti Aminah",
+    69,
+    "Siti Aminah NPWP",
     "medium"
    ],
    [
@@ -70748,18 +71136,11 @@
     "medium"
    ],
    [
-    "NAME",
-    79,
-    96,
-    "Togar Simanjuntak",
-    "medium"
-   ],
-   [
     "ADDRESS",
-    97,
+    110,
     121,
-    "Dusun Krajan RT 02 RW 01",
-    "high"
+    "RT 02 RW 01",
+    "medium"
    ]
   ]
  },
@@ -71173,20 +71554,6 @@
   "text": " 😭 rek BCA 1234567890﻿INSERT INTO pelanggan (id, nama, nik, no_hp) VALUES (17, 'Hendra Gunawan', '1371011010850008', '0813-9999-0000'),\n(18, 'O''Brien Siregar', 3201011508950001, NULL);\nNama: Budi Santoso 😭 order 2610014KQ7ZB2M resi SPXID045123456789\r\njl mawar 5 cibinong",
   "matches": [
    [
-    "BANK_ACCOUNT",
-    11,
-    21,
-    "1234567890",
-    "high"
-   ],
-   [
-    "NAME",
-    80,
-    94,
-    "Hendra Gunawan",
-    "high"
-   ],
-   [
     "NIK",
     98,
     114,
@@ -71198,13 +71565,6 @@
     118,
     132,
     "0813-9999-0000",
-    "high"
-   ],
-   [
-    "NAME",
-    142,
-    158,
-    "O''Brien Siregar",
     "high"
    ],
    [
@@ -71345,11 +71705,11 @@
     "high"
    ],
    [
-    "NAME",
-    63,
-    76,
-    "siti.rahayu88",
-    "medium"
+    "EMAIL",
+    57,
+    84,
+    "dari @siti.rahayu88. INSERT",
+    "high"
    ],
    [
     "NAME",
@@ -71628,16 +71988,9 @@
    [
     "EMAIL",
     58,
-    72,
-    "budi@gmail.com",
+    81,
+    "budi@gmail.com. dirawat",
     "high"
-   ],
-   [
-    "HEALTH",
-    74,
-    98,
-    "dirawat di RSUD Cibinong",
-    "medium"
    ],
    [
     "HEALTH",
@@ -71649,8 +72002,8 @@
    [
     "NAME",
     125,
-    137,
-    "Budi Santoso",
+    142,
+    "Budi Santoso﻿saya",
     "high"
    ],
    [
@@ -71767,13 +72120,6 @@
     20,
     "Budi Santoso",
     "high"
-   ],
-   [
-    "HEALTH",
-    33,
-    39,
-    "stroke",
-    "medium"
    ]
   ]
  },
@@ -71783,8 +72129,8 @@
    [
     "EMAIL",
     1,
-    26,
-    "siti [at] gmail [dot] com",
+    31,
+    "siti [at] gmail [dot] com﻿udah",
     "high"
    ],
    [
@@ -71852,17 +72198,10 @@
     "medium"
    ],
    [
-    "FINANCIAL",
-    49,
-    56,
-    "12 juta",
-    "medium"
-   ],
-   [
     "EMAIL",
-    57,
-    79,
-    "budi.santoso@gmail.com",
+    52,
+    84,
+    "juta﻿budi.santoso@gmail.com﻿Dear",
     "high"
    ],
    [
@@ -72153,13 +72492,6 @@
     73,
     85,
     "Budi Santoso",
-    "high"
-   ],
-   [
-    "HEALTH",
-    93,
-    117,
-    "dirawat di RSUD Cibinong",
     "medium"
    ],
    [
@@ -72285,13 +72617,6 @@
     94,
     124,
     "Komplek Taman Asri blok B no 9",
-    "high"
-   ],
-   [
-    "PLATE",
-    131,
-    141,
-    "B 1234 XYZ",
     "high"
    ],
    [
@@ -72437,13 +72762,6 @@
     26,
     "Dusun Krajan RT 02 RW 01",
     "high"
-   ],
-   [
-    "HEALTH",
-    32,
-    38,
-    "stroke",
-    "medium"
    ]
   ]
  },
@@ -72462,20 +72780,6 @@
  {
   "text": "\tsaya muslim﻿wa081234567890 😭 saya muslim alergi penisilin\r\nlogin 182.253.10.15",
   "matches": [
-   [
-    "RELIGION",
-    6,
-    12,
-    "muslim",
-    "medium"
-   ],
-   [
-    "PHONE",
-    15,
-    27,
-    "081234567890",
-    "high"
-   ],
    [
     "RELIGION",
     35,
@@ -72707,13 +73011,6 @@
  {
   "text": "\r\nHP 0812-3456-7890﻿Ibu Kota Nusantara NIP 19950815 202012 1 001 login 182.253.10.15",
   "matches": [
-   [
-    "PHONE",
-    5,
-    19,
-    "0812-3456-7890",
-    "high"
-   ],
    [
     "NIP",
     43,
@@ -73060,15 +73357,7 @@
  },
  {
   "text": " | gaji saya 8 juta﻿Halo Bandung,",
-  "matches": [
-   [
-    "FINANCIAL",
-    13,
-    19,
-    "8 juta",
-    "medium"
-   ]
-  ]
+  "matches": []
  },
  {
   "text": ", INSERT INTO `pelanggan` (`nama`,`nik`) VALUES\r\n('Siti Aminah','3276015508030002'),\r\n('Dewi', 3578014607910004); 😭 login 182.253.10.15",
@@ -73395,13 +73684,6 @@
     27,
     "mantan napi kasus narkoba",
     "medium"
-   ],
-   [
-    "PHONE",
-    30,
-    42,
-    "081234567890",
-    "high"
    ],
    [
     "NAME",
@@ -73899,7 +74181,7 @@
   "text": " — KK 3201010101200001﻿order 2610014KQ7ZB2M resi SPXID045123456789",
   "matches": [
    [
-    "KK",
+    "NIK",
     6,
     22,
     "3201010101200001",
@@ -74072,20 +74354,6 @@
   "text": "; +62 857-1111-2222﻿TTL Bogor, 17-08-1995﻿Bapak Dr. Ahmad Fauzi 😭 Tamu: I Made Wirawan",
   "matches": [
    [
-    "PHONE",
-    2,
-    19,
-    "+62 857-1111-2222",
-    "high"
-   ],
-   [
-    "BIRTH_DATE",
-    31,
-    41,
-    "17-08-1995",
-    "high"
-   ],
-   [
     "NAME",
     52,
     63,
@@ -74110,13 +74378,6 @@
     19,
     "Lim Swie Hong",
     "medium"
-   ],
-   [
-    "PHONE",
-    27,
-    40,
-    "6281377778888",
-    "high"
    ],
    [
     "IP",
@@ -74171,24 +74432,17 @@
     "medium"
    ],
    [
-    "CARD",
-    27,
-    46,
-    "4539 1488 0343 6467",
-    "high"
-   ],
-   [
     "CRIMINAL_RECORD",
-    47,
+    54,
     72,
-    "mantan napi kasus narkoba",
+    "napi kasus narkoba",
     "medium"
    ],
    [
     "ADDRESS",
     74,
-    104,
-    "Komplek Taman Asri blok B no 9",
+    106,
+    "Komplek Taman Asri blok B no 9﻿F",
     "high"
    ],
    [
@@ -74336,13 +74590,6 @@
     23,
     "SITI RAHAYU",
     "medium"
-   ],
-   [
-    "PLATE",
-    39,
-    49,
-    "B 1234 XYZ",
-    "high"
    ],
    [
     "IP",
@@ -74578,20 +74825,6 @@
     89,
     "19950815 202012 1 001",
     "high"
-   ],
-   [
-    "BPJS",
-    96,
-    109,
-    "0001234567890",
-    "high"
-   ],
-   [
-    "HEALTH",
-    117,
-    126,
-    "penisilin",
-    "medium"
    ]
   ]
  },
@@ -74819,13 +75052,6 @@
     53,
     "galbay",
     "medium"
-   ],
-   [
-    "BIRTH_DATE",
-    83,
-    98,
-    "15 Agustus 1995",
-    "high"
    ]
   ]
  },
@@ -75097,15 +75323,7 @@
  },
  {
   "text": ". login 182.253.10.15﻿Universitas Ahmad Dahlan",
-  "matches": [
-   [
-    "IP",
-    8,
-    21,
-    "182.253.10.15",
-    "high"
-   ]
-  ]
+  "matches": []
  },
  {
   "text": "﻿BI-FAST CR SITI RAHAYU 75000.00 | SK No. 100.3.3.1-6117: budi.santoso@gmail.com",
@@ -75285,13 +75503,6 @@
     58,
     66,
     "diabetes",
-    "medium"
-   ],
-   [
-    "HEALTH",
-    79,
-    86,
-    "insulin",
     "medium"
    ],
    [
@@ -75604,13 +75815,6 @@
     "medium"
    ],
    [
-    "PLATE",
-    27,
-    37,
-    "B 1234 XYZ",
-    "high"
-   ],
-   [
     "NAME",
     49,
     60,
@@ -75658,8 +75862,8 @@
    [
     "NAME",
     7,
-    20,
-    "Lim Swie Hong",
+    24,
+    "Lim Swie Hong﻿nik",
     "medium"
    ],
    [
@@ -76319,11 +76523,11 @@
   "text": " 😭 cek DM dari @siti.rahayu88. Salam,\nRina Kartika Sari | hp-081234567890",
   "matches": [
    [
-    "NAME",
-    16,
-    29,
-    "siti.rahayu88",
-    "medium"
+    "EMAIL",
+    10,
+    36,
+    "dari @siti.rahayu88. Salam",
+    "high"
    ],
    [
     "NAME",
@@ -76748,13 +76952,6 @@
    ],
    [
     "PHONE",
-    27,
-    39,
-    "0251 8321234",
-    "medium"
-   ],
-   [
-    "PHONE",
     41,
     60,
     "+62 (812) 3456-7890",
@@ -77082,11 +77279,11 @@
   "text": " cek DM dari @siti.rahayu88. saya diabetes, rutin obat insulin; INSERT INTO produk (nama, harga) VALUES ('Kopi Gayo', 85000), ('Arabika', 90000);\r\nNo\tNama\n1\tSiti Aminah 😭 HP 0812-3456-7890\trumah 0251 8321234",
   "matches": [
    [
-    "NAME",
-    14,
-    27,
-    "siti.rahayu88",
-    "medium"
+    "EMAIL",
+    8,
+    33,
+    "dari @siti.rahayu88. saya",
+    "high"
    ],
    [
     "HEALTH",
@@ -77223,8 +77420,8 @@
    [
     "NAME",
     14,
-    18,
-    "rina",
+    24,
+    "rina kartu",
     "high"
    ],
    [
@@ -77429,20 +77626,6 @@
   "text": " call 1500888, kartu 4539 1488 0343 6467﻿jl mawar 5 cibinong GET /cari?nama=Budi%20Santoso&nik=3201011508950001&email=budi@gmail.com\nTTL Bogor, 17-08-1995 🇮🇩 <input name=\"nama\" value=\"Budi Santoso\">",
   "matches": [
    [
-    "CARD",
-    21,
-    40,
-    "4539 1488 0343 6467",
-    "high"
-   ],
-   [
-    "ADDRESS",
-    41,
-    51,
-    "jl mawar 5",
-    "medium"
-   ],
-   [
     "NAME",
     76,
     90,
@@ -77579,8 +77762,8 @@
    [
     "EMAIL",
     2,
-    24,
-    "budi.santoso@gmail.com",
+    31,
+    "budi.santoso@gmail.com﻿Alamat",
     "high"
    ],
    [
@@ -77901,13 +78084,6 @@
  {
   "text": " 🇮🇩 Penerima\nDEWI LESTARI﻿Sinar Pagi, Bogor; tadi budi bilang",
   "matches": [
-   [
-    "NAME",
-    13,
-    25,
-    "DEWI LESTARI",
-    "medium"
-   ],
    [
     "NAME",
     50,

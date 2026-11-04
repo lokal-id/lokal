@@ -165,6 +165,44 @@ function normalizeName(s: string): string {
     .replace(PREFIX, '');
 }
 
+/** Common short and everyday names, by region code: "Jatim", "Jogja", "DKI", "Jaksel". Normalized (lowercase). */
+export const WILAYAH_ALIASES: Readonly<Record<string, readonly string[]>> = {
+  '11': ['nad', 'nanggroe aceh darussalam'],
+  '12': ['sumut', 'sumatra utara'],
+  '13': ['sumbar', 'sumatra barat'],
+  '16': ['sumsel', 'sumatra selatan'],
+  '19': ['babel', 'bangka belitung'],
+  '21': ['kepri'],
+  '31': ['dki', 'dki jakarta', 'jakarta', 'jkt'],
+  '32': ['jabar'],
+  '33': ['jateng'],
+  '34': ['diy', 'yogyakarta', 'jogja', 'jogjakarta', 'yogya', 'di yogyakarta'],
+  '35': ['jatim'],
+  '52': ['ntb'],
+  '53': ['ntt'],
+  '61': ['kalbar'],
+  '62': ['kalteng'],
+  '63': ['kalsel'],
+  '64': ['kaltim'],
+  '65': ['kaltara'],
+  '71': ['sulut'],
+  '72': ['sulteng'],
+  '73': ['sulsel'],
+  '74': ['sultra'],
+  '76': ['sulbar'],
+  '82': ['malut'],
+  '92': ['papua barat', 'pabar'],
+  '31.71': ['jakpus', 'jakarta pusat'],
+  '31.72': ['jakut', 'jakarta utara'],
+  '31.73': ['jakbar', 'jakarta barat'],
+  '31.74': ['jaksel', 'jakarta selatan'],
+  '31.75': ['jaktim', 'jakarta timur'],
+  '36.74': ['tangsel'],
+};
+
+/** Spellings the official names write differently: "Sumatra" is "Sumatera" in Kepmendagri. */
+const SPELLINGS: Array<[RegExp, string]> = [[/\bsumatra\b/g, 'sumatera']];
+
 export interface SearchWilayahOptions {
   /** Only return regions at this level (1 provinsi … 4 kelurahan/desa). */
   level?: WilayahLevel;
@@ -179,8 +217,9 @@ export interface SearchWilayahOptions {
  * since many villages share names.
  */
 export function searchWilayah(query: string, options: SearchWilayahOptions = {}): Wilayah[] {
-  const q = normalizeName(query);
-  if (!q) return [];
+  const asked = normalizeName(query);
+  if (!asked) return [];
+  const q = SPELLINGS.reduce((s, [from, to]) => s.replace(from, to), asked);
   const limit = options.limit ?? 10;
   const within = options.within ? normalizeWilayahCode(options.within) : undefined;
   const includeDesa = options.level === 4 || (within !== undefined && levelOf(within) >= 3);
@@ -196,6 +235,11 @@ export function searchWilayah(query: string, options: SearchWilayahOptions = {})
       else if (n.startsWith(q)) score = 80;
       else if (` ${n}`.includes(` ${q}`)) score = 60;
       else if (n.includes(q)) score = 40;
+      // "Jatim", "Jogja": the everyday name counts as the name itself.
+      for (const alias of WILAYAH_ALIASES[code] ?? []) {
+        if (alias === asked) score = Math.max(score, 100);
+        else if (alias.startsWith(asked)) score = Math.max(score, 80);
+      }
       if (!score) continue;
       // Prefer larger regions when names tie: "Bogor" the kabupaten before the kecamatan.
       scored.push([score - levelOf(code), code, name]);

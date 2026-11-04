@@ -140,6 +140,65 @@ test('shell: pencarian ke folder, find -exec, gzip, file tanpa ekstensi, dan .en
   }
 });
 
+test('shell: git, arsip, glob di folder, pembungkus, pola BRE, dan perintah yang menjalankan perintah lain', () => {
+  const dir = project();
+  const run = (cmd: string, args: string[]) => spawnSync(cmd, args, { cwd: dir, encoding: 'utf8' });
+  try {
+    // A committed export, deleted from the working tree: only git still holds it.
+    mkdirSync(path.join(dir, 'lama'));
+    writeFileSync(path.join(dir, 'lama', 'nasabah.csv'), CSV);
+    run('git', ['init', '-q']);
+    run('git', ['add', 'lama/nasabah.csv']);
+    run('git', ['-c', 'user.name=uji', '-c', 'user.email=uji@contoh.test', 'commit', '-qm', 'ekspor']);
+    rmSync(path.join(dir, 'lama', 'nasabah.csv'));
+    writeFileSync(path.join(dir, 'Makefile'), 'peek:\n\t@cat data/pelanggan.csv\n');
+    writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ scripts: { peek: 'head -3 data/pelanggan.csv', build: 'tsc' } }));
+    const hasTar = run('tar', ['--version']).status === 0;
+    if (hasTar) run('tar', ['-czf', 'ekspor.tar.gz', 'data/pelanggan.csv']);
+    const encoded = Buffer.from('cat data/pelanggan.csv').toString('base64');
+    const commands = [
+      'git show HEAD:lama/nasabah.csv',
+      'git log -p',
+      'git grep Budi HEAD',
+      'cat data/*/lama.csv',
+      'cat */arsip/lama.csv',
+      'cat data/pelanggan.{csv,txt}',
+      'timeout 5 cat data/pelanggan.csv',
+      'sudo -u app cat data/pelanggan.csv',
+      'stdbuf -oL cat data/pelanggan.csv',
+      'nice -n 10 head data/pelanggan.csv',
+      'dd if=data/pelanggan.csv',
+      'tee < data/pelanggan.csv',
+      'tr a-z A-Z < data/pelanggan.csv',
+      'grep -rn "320[0-9]\\{13\\}" .',
+      'grep Budi\\|Siti data/pelanggan.csv',
+      'make peek',
+      'npm run peek',
+      `awk 'BEGIN{system("cat data/pelanggan.csv")}'`,
+      `awk 'BEGIN{while((getline l < "data/pelanggan.csv")>0) print l}'`,
+      `find data -name "*.csv" -exec sh -c 'cat "$1"' _ {} \\;`,
+      `ls data/*.csv | xargs -I{} sh -c 'head -5 {}'`,
+      'script -qc "cat data/pelanggan.csv" /dev/null',
+      'eval "c""at data/pelanggan.csv"',
+      `echo ${encoded} | base64 -d | sh`,
+      ...(hasTar ? ['tar -xOzf ekspor.tar.gz'] : []),
+    ];
+    for (const command of commands) {
+      assert.ok(dataReadsInCommand(command, dir).length > 0, command);
+    }
+    // Not data: listing, counting, logs without patches, building.
+    for (const command of ['git log --oneline', 'git status', 'git show --stat HEAD', 'npm run build', 'grep -c "08[0-9]\\{9\\}" data/pelanggan.csv', 'timeout 5 wc -l data/pelanggan.csv', 'tar -tzf ekspor.tar.gz']) {
+      const reads = dataReadsInCommand(command, dir);
+      assert.ok(reads.every((r) => r.text === undefined || !r.text.includes('3201011508950001')), command);
+      if (!command.startsWith('git show')) assert.deepEqual(reads, [], command);
+    }
+    // Agent-supplied git options that could run something else are not replayed.
+    assert.deepEqual(dataReadsInCommand('git -c core.pager=evil show HEAD:lama/nasabah.csv', dir), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('shell strict: skrip yang dijalankan dan mencetak data juga ditahan', () => {
   const dir = project();
   try {

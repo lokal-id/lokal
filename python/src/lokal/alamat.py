@@ -15,7 +15,7 @@ from typing import Literal, Optional, Union
 
 from ._js import rx, trim
 from ._result import Result
-from .wilayah import Wilayah, WilayahLevel, _region_names, get_wilayah, villages_with_postal_code
+from .wilayah import WILAYAH_ALIASES, Wilayah, WilayahLevel, _region_names, get_wilayah, villages_with_postal_code
 
 AlamatLevel = Literal['provinsi', 'kabupaten_kota', 'kecamatan', 'kelurahan_desa']
 _LEVEL_KEYS: list[AlamatLevel] = ['provinsi', 'kabupaten_kota', 'kecamatan', 'kelurahan_desa']
@@ -59,42 +59,6 @@ _NOT_NAME = re.compile(r'[^a-z0-9]+')
 def _norm(s: str) -> str:
     return _NOT_NAME.sub(' ', _APOSTROPHES.sub('', s.lower())).strip(' ')
 
-
-_PROVINCE_ALIASES: dict[str, list[str]] = {
-    '11': ['nad', 'nanggroe aceh darussalam'],
-    '12': ['sumut'],
-    '13': ['sumbar'],
-    '16': ['sumsel'],
-    '19': ['babel', 'bangka belitung'],
-    '21': ['kepri'],
-    '31': ['dki', 'dki jakarta', 'jakarta'],
-    '32': ['jabar'],
-    '33': ['jateng'],
-    '34': ['diy', 'yogyakarta', 'jogja', 'jogjakarta', 'yogya', 'di yogyakarta'],
-    '35': ['jatim'],
-    '52': ['ntb'],
-    '53': ['ntt'],
-    '61': ['kalbar'],
-    '62': ['kalteng'],
-    '63': ['kalsel'],
-    '64': ['kaltim'],
-    '65': ['kaltara'],
-    '71': ['sulut'],
-    '72': ['sulteng'],
-    '73': ['sulsel'],
-    '74': ['sultra'],
-    '76': ['sulbar'],
-    '82': ['malut'],
-    '92': ['papua barat', 'pabar'],
-}
-_REGENCY_ALIASES: dict[str, list[str]] = {
-    '31.71': ['jakpus', 'jakarta pusat'],
-    '31.72': ['jakut', 'jakarta utara'],
-    '31.73': ['jakbar', 'jakarta barat'],
-    '31.74': ['jaksel', 'jakarta selatan'],
-    '31.75': ['jaktim', 'jakarta timur'],
-    '36.74': ['tangsel'],
-}
 
 _NUMERALS = [
     ['satu', 'i', '1'],
@@ -152,7 +116,7 @@ def _name_index() -> dict[str, list[str]]:
                     continue
                 for form in forms:
                     add(' '.join([*words[:at], form, *words[at + 1 :]]), code)
-    for code, aliases in [*_PROVINCE_ALIASES.items(), *_REGENCY_ALIASES.items()]:
+    for code, aliases in WILAYAH_ALIASES.items():
         for alias in aliases:
             add(alias, code)
     _longest = longest
@@ -249,6 +213,10 @@ _TOKEN_APOSTROPHE = re.compile("['’]")
 _Range = tuple[int, int]
 
 
+# Words after which a city's name is the road's: the main road, the trunk road, or the road to it.
+_ROAD_TO = frozenset(['raya', 'lintas', 'poros', 'trans', 'arah', 'akses'])
+
+
 def _street_ranges(text: str) -> list[_Range]:
     out: list[_Range] = []
     for m in _STREET_START.finditer(text):
@@ -268,9 +236,13 @@ def _street_ranges(text: str) -> list[_Range]:
         # The rest is left to the region names, and the street is then read as everything before them.
         delimited = stop is not None and not stop[1][:1].isdigit()
         length = 0
+        prev = ''
         for n, w in enumerate(_NON_SPACE.finditer(before), start=1):
             word = _norm(w[0])
-            if n >= 2 and any(_level_of(code) <= 2 for code in _name_index().get(word, [])):
+            # "Jl. Raya Bogor KM 30", "Jalan Lintas Sumatera": a road named after the city it leads to.
+            leads_to = prev in _ROAD_TO
+            prev = word
+            if n >= 2 and not leads_to and any(_level_of(code) <= 2 for code in _name_index().get(word, [])):
                 break
             length = w.start() + len(w[0])
             if (n >= 2 and _HOUSE_DIGITS.search(word)) or not delimited:

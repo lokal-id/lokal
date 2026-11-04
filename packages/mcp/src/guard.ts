@@ -10,7 +10,7 @@
 //     Bash / PowerShell    `cat`, `head`, `grep`, `Get-Content`, `Import-Csv` … printing a data file
 //   Source code is never blocked: example numbers in code are normal, and agents must be able to read
 //   it. Running a script on a data file is allowed: that is how data gets processed without being
-//   shown. Files in .samaranignore are allowed.
+//   shown. Files in .samaranignore are allowed, once the user approved it (lokal-mcp trust).
 // - PreToolUse, Read of what Samaran cannot check: asks the user first. That is a photo filed or named
 //   like someone's document (ktp/, selfie_budi.jpg, media/uploads/…; not the app's own assets), a
 //   PDF that is scanned, encrypted, damaged, or read only in part, and lines past the part of a big file it read.
@@ -25,11 +25,11 @@ import path from 'node:path';
 import { PII_TYPES, type PiiMatch, type PiiType } from '@lokal-id/core';
 import {
   detectConfigured, GUARD_MAX_ZIP_BYTES, GUARD_SAMPLE_BYTES, globToRegExp, loadConfig, loadDocument, loadIgnore, loadUnmasked,
-  policyFor, previewForModel,
+  policyFor, previewForModel, recordUnmasked, unmaskedCopy,
   walkFiles, type Document, type SamaranConfig,
 } from './files.ts';
 import { countMatches, writeAudit } from './audit.ts';
-import { dataReadsInCommand, inlineCodeReads, isShellDataFile, markDataFiles } from './shell-reads.ts';
+import { analyzeCommand, inlineCodeReads, isSampleFile, isShellDataFile, markDataFiles, plainPath } from './shell-reads.ts';
 
 // One of these is enough to hold a prompt or a file back: identity numbers, and labeled sensitive data.
 const STRICT: PiiType[] = [
@@ -48,8 +48,8 @@ const DATA_FILE = /\.(csv|tsv|json|jsonl|ndjson|log|txt|sql|xml|ya?ml|dump|bak|o
 const GREP_MAX_FILES = 300;
 // Claude Code's Read shows this many lines when no limit is given.
 const READ_LINES = 2000;
-// The hook is stopped after 10 s, and a stopped hook lets the call through: strict mode blocks well before that.
-const STRICT_BUDGET_MS = 7000;
+// The hook is stopped after 10 s, and a stopped hook lets the call through: the guard stops checking well before that.
+const BUDGET_MS = 7000;
 // Read sends images to the model too, and nothing in them can be checked without OCR.
 const IMAGE_FILE = /\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?)$/i;
 // Words in a path that point at someone's documents: the kind of document, or whose it is.
@@ -143,6 +143,36 @@ function verdict(texts: string[]): PiiMatch[] | undefined {
   return verdictOf(texts.flatMap((t) => detectConfigured(t, { minConfidence: 'high' }, config)));
 }
 
+// Numbers that identify one person: the measure of a file that is not a data file.
+const IDENTITY: PiiType[] = ['NIK', 'KK', 'NPWP', 'PASSPORT', 'SIM', 'NIP', 'NISN', 'AKTA', 'BANK_ACCOUNT', 'CARD', 'BPJS'];
+
+/**
+ * The personal data a file that is not a data file shows, when it reads like one: at least two identity numbers, and
+ * personal data on at least a quarter of its lines. An export copied to notes.md has it on nearly every line; code and
+ * documentation with a few sample numbers (a validator, its README, a changelog) have it on a few of hundreds.
+ */
+function identityValues(text: string, file: string): PiiMatch[] {
+  if (isSampleFile(file) || !text.trim()) return [];
+  const found = detectConfigured(text, { types: [...IDENTITY, 'PHONE', 'EMAIL'], minConfidence: 'high' }, config);
+  const ids = new Set(found.filter((m) => IDENTITY.includes(m.type)).map((m) => m.value.replace(/\D/g, '')));
+  if (ids.size < 2) return [];
+  const starts = [0];
+  for (let i = text.indexOf('\n'); i !== -1; i = text.indexOf('\n', i + 1)) starts.push(i + 1);
+  const lineOf = (pos: number) => {
+    let lo = 0;
+    let hi = starts.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (starts[mid]! <= pos) lo = mid;
+      else hi = mid - 1;
+    }
+    return lo;
+  };
+  const withData = new Set(found.map((m) => lineOf(m.start))).size;
+  const lines = text.split('\n').filter((l) => l.trim()).length;
+  return withData / Math.max(1, lines) >= 0.25 ? found : [];
+}
+
 function verdictOf(found: PiiMatch[]): PiiMatch[] | undefined {
   // What the project's policy blocks or keeps local is held back like an identity number: one is enough.
   const strict = found.some((m) => STRICT.includes(m.type) || ['block', 'route'].includes(policyFor(config, m)));
@@ -172,6 +202,8 @@ function shownPii(full: string, shown: string, file: string): PiiMatch[] {
 
 const PROCESS_HINT =
   'To process the data, run a script that reads the file and writes its results to a file (or prints only counts), or use `write_file_unmasked`.';
+const IGNORE_HINT =
+  'If the user confirms the file only holds fake data, they can list it in .samaranignore and approve that with `npx @lokal-id/mcp trust` in their own terminal.';
 
 /**
  * SAMARAN_GUARD=strict, for teams that want the guard to fail closed: an error in the guard blocks instead of allowing,
@@ -184,9 +216,40 @@ const strictBy = () => (process.env.SAMARAN_GUARD === 'strict' ? 'SAMARAN_GUARD=
 
 /** The project's .samaran.json, loaded by `evaluate`. */
 let config: SamaranConfig = { custom: [], allow: [] };
-/** When strict mode stops checking, set by `evaluate`. */
+/**
+ * When the guard stops checking, set by `evaluate`, well before the hook's 10 seconds: a hook that is stopped lets the
+ * call through, so what is left unchecked is asked about (blocked in strict mode) instead.
+ */
 let deadline = Infinity;
-const outOfTime = () => strictMode() && Date.now() > deadline;
+const outOfTime = () => Date.now() > deadline;
+let timedOut = false;
+
+/** What a command or search the guard could not finish checking gets: the user is asked, and strict mode blocks. */
+function unfinished(what: string, why: string[]): Verdict {
+  if (strictMode()) return uncheckedBlock(what, why);
+  return {
+    action: 'ask',
+    message: [
+      `🛡️  Samaran: ${what} membaca terlalu banyak data untuk diperiksa sebelum batas waktu hook (${why.join('; ')}).`,
+      'Izinkan hanya jika berkas-berkas itu tidak berisi data pribadi asli; atau persempit perintahnya.',
+    ].join(' '),
+  };
+}
+
+/**
+ * Default mode's answer to a command or search that shows a big text file past the part the guard read (`tail`,
+ * `grep`, Grep): the rest may hold anything, so the user is asked, as Read with an offset there is.
+ */
+function pastSample(what: string, why: string[]): Verdict {
+  if (strictMode()) return uncheckedBlock(what, why);
+  return {
+    action: 'ask',
+    message: [
+      `🛡️  Samaran: ${what} menampilkan bagian berkas besar yang tidak diperiksa (${why.join('; ')}), jadi data pribadi di bagian itu akan dikirim ke model AI apa adanya.`,
+      'Izinkan hanya jika berkas itu tidak berisi data pribadi asli; atau baca dengan read_file_masked dari server MCP lokal.',
+    ].join(' '),
+  };
+}
 
 /** What the guard does with a prompt or tool call: block it (the message goes to Claude), or ask the user. */
 export type Verdict = { action: 'block' | 'ask'; message: string; counts?: Record<string, number> };
@@ -197,7 +260,7 @@ function uncheckedBlock(what: string, why: string[]): Verdict {
   return block([
     `Samaran blocked ${what}: ${why.join('; ')}, so it could not be checked for personal data, and ${strictBy()} blocks what it cannot check.`,
     'Use the `read_file_masked` tool from the lokal MCP server, or narrow the command to what you need (`head -n 50`).',
-    'If the user confirms the file holds no real personal data, they can add it to .samaranignore.',
+    IGNORE_HINT,
   ].join(' '));
 }
 
@@ -208,7 +271,7 @@ function ask(shownAs: string, what: string): Verdict {
     message: [
       `🛡️  Samaran: ${shownAs} ${what}, jadi isinya tidak bisa diperiksa dan akan dikirim ke model AI apa adanya.`,
       'Izinkan hanya jika berkas ini tidak berisi data pribadi asli (KTP, selfie, formulir pelanggan).',
-      'Berkas contoh bisa dimasukkan ke .samaranignore supaya tidak ditanyakan lagi.',
+      'Berkas contoh bisa dimasukkan ke .samaranignore (lalu disetujui dengan npx @lokal-id/mcp trust di terminal Anda) supaya tidak ditanyakan lagi.',
     ].join(' '),
   };
 }
@@ -225,6 +288,18 @@ function uncheckedRead(shownAs: string, what: string, why: string): Verdict {
   return strictMode() ? uncheckedBlock(`reading ${shownAs}`, [why]) : ask(shownAs, what);
 }
 
+/** Read of a file that is not a data file: blocked only when it shows enough identity numbers to be one. */
+function otherFile(file: string, shownAs: string): Verdict | undefined {
+  const { texts } = fileTexts(file);
+  const found = texts.flatMap((t) => identityValues(t, file));
+  if (!found.length) return undefined;
+  return block([
+    `Samaran blocked reading ${shownAs}: it holds ${new Set(found.map((m) => m.value)).size} identity numbers (${summarize(found, false)}), as an export would.`,
+    'Use the `read_file_masked` tool from the lokal MCP server instead.',
+    IGNORE_HINT,
+  ].join(' '), found);
+}
+
 function readTool(
   file: string, shownAs: string, root: string, ignored: (f: string) => boolean, lines: { offset?: number; limit?: number },
 ): Verdict | undefined {
@@ -234,7 +309,7 @@ function readTool(
       ? uncheckedRead(shownAs, 'mungkin foto KTP atau dokumen pribadi', 'it is an image that may be a photo of an ID card or document')
       : undefined;
   }
-  if (!DATA_FILE.test(file) && !isShellDataFile(file)) return undefined;
+  if (!DATA_FILE.test(file) && !isShellDataFile(file)) return otherFile(file, shownAs);
   let doc: Document;
   try {
     // A big export is checked from its first rows instead of being skipped: skipping once let a 6 MB CSV through.
@@ -254,7 +329,7 @@ function readTool(
         `Samaran blocked reading ${shownAs}: it contains personal data (${summarize(found, false)}).`,
         'Use the `read_file_masked` tool from the lokal MCP server instead: same content, with personal data replaced by stable placeholders.',
         'Write results that need the real values with `write_file_unmasked`.',
-        'If the user confirms the file only holds fake data, they can add it to .samaranignore.',
+        IGNORE_HINT,
       ].join(' '),
       found,
     );
@@ -272,24 +347,109 @@ function readTool(
   return undefined;
 }
 
-function shellTool(command: string, cwd: string, powershell: boolean, ignored: (f: string) => boolean): Verdict | undefined {
-  const reads = [...dataReadsInCommand(command, cwd, powershell), ...(strictMode() ? inlineCodeReads(command, cwd, powershell) : [])]
+const TAMPER_MESSAGE = [
+  'Samaran blocked this: it would change or delete the list of files write_file_unmasked wrote with real values',
+  '(.lokal/unmasked.json, or its copy in the user cache), after which they could be read like source code.',
+  'If those files no longer hold real data, the user can delete them and the list by hand.',
+].join(' ');
+// A command that names either copy of the list, or Lokal's folder, and changes files: deletes, moves, writes, edits.
+const REGISTRY_PATH = /\.lokal(?:[\\/]|\b)|unmasked\.json|lokal-id[\\/]unmasked/i;
+const CHANGES_FILES =
+  /(?:^|[\s;&|(`])(?:rm|rmdir|unlink|del|erase|rd|remove-item|ri|mv|move|move-item|mi|cp|copy|copy-item|cpi|truncate|shred|set-content|sc|out-file|clear-content|clc|add-content|tee|sed|perl|python3?|node|chmod|chattr|ln|rename-item|ren|rsync|install|dd)\b|>/i;
+
+// Running `lokal-mcp trust` approves what .samaran.json and .samaranignore relax: only the user may, in a terminal.
+const TRUST_COMMAND = /(?:lokal-mcp|@lokal-id\/mcp(?:@[\w.-]+)?|mcp[\\/](?:dist|src)[\\/]cli\.[jt]s)\b[^\n;&|]*\btrust\b/i;
+const TRUST_MESSAGE = [
+  'Samaran blocked this: `lokal-mcp trust` approves what .samaran.json and .samaranignore relax (values the model may see,',
+  'files left out of every check), and only the user may approve that. Ask the user to run it in their own terminal.',
+].join(' ');
+// The trust record in the user's cache: an agent writing it would approve its own settings.
+const TRUST_PATH = /lokal-id[\\/]trust\.json/i;
+// Files whose change can switch protection off: Lokal's settings, the agent's settings (hooks), and git hooks.
+const SETTINGS_PATH = /(?:^|[\s'"=\\/])(?:\.samaran\.json|\.samaranignore|\.claude[\\/]settings(?:\.local)?\.json|\.git[\\/]hooks[\\/])/i;
+
+/** The user is asked before an agent changes a file that decides what is protected. */
+function askSettings(what: string): Verdict {
+  return {
+    action: 'ask',
+    message: [
+      `🛡️  Samaran: ${what} mengubah pengaturan yang menentukan data apa yang dilindungi (.samaran.json, .samaranignore,`,
+      'pengaturan hook agent, atau git hook). Izinkan hanya jika Anda sendiri yang meminta perubahan ini.',
+    ].join(' '),
+  };
+}
+
+/**
+ * A command that would switch protection off: run `trust`, write the trust record, empty or delete the list of
+ * unmasked files (while there is one), or change a settings file (asked about).
+ */
+function protectionTamper(command: string, root: string): Verdict | undefined {
+  // As the shell reads it: quotes and escapes taken out (`tru""st`, `t\rust`, PowerShell's `tr`ust`). `trust` itself
+  // approves nothing without a terminal and a typed "yes"; this only tells the agent so early.
+  const bare = command.replace(/["'`\\^]/g, '');
+  if (TRUST_COMMAND.test(command) || TRUST_COMMAND.test(bare)) return block(TRUST_MESSAGE);
+  const changes = CHANGES_FILES.test(command);
+  if ((TRUST_PATH.test(command) || TRUST_PATH.test(bare) || /lokal-id[\s\S]*trust\.json/i.test(bare)) && changes) return block(TRUST_MESSAGE);
+  // `git clean -x` and `-X` delete ignored files, and .lokal/ is ignored.
+  const registry = (REGISTRY_PATH.test(command) && changes) || /\bgit\s+clean\b[^\n;&|]*\s-[a-zA-Z]*[xX]/.test(command);
+  if (registry && loadUnmasked(root).length) return block(TAMPER_MESSAGE);
+  if (SETTINGS_PATH.test(command) && changes) return askSettings('perintah ini');
+  return undefined;
+}
+
+function shellTool(
+  command: string, cwd: string, powershell: boolean, ignored: (f: string) => boolean, root: string,
+): Verdict | undefined {
+  const analyzed = analyzeCommand(command, cwd, powershell);
+  const reads = [...analyzed.reads, ...(strictMode() ? inlineCodeReads(command, cwd, powershell) : [])]
     .filter((r) => !ignored(r.file));
+  // A copy of a data file under another name (`cp pelanggan.csv catatan.md`) is data in the commands after this one:
+  // listed with what write_file_unmasked wrote, so Read, cat, and Grep check it whatever its extension.
+  for (const { target, from } of analyzed.copies) {
+    if (from.some((f) => !ignored(f) && verdict(fileTexts(f).texts))) recordUnmasked(root, target);
+  }
+  // Sending a file off the machine (curl -d @x, scp x host:, nc < x) is a leak as much as printing it, in both modes.
+  for (const { file, to } of analyzed.uploads) {
+    if (ignored(file)) continue;
+    const { texts } = fileTexts(file);
+    const found = isShellDataFile(file) ? verdict(texts) : texts.flatMap((t) => identityValues(t, file));
+    if (found?.length) {
+      return block([
+        `Samaran blocked this command: it would send personal data from ${path.relative(cwd, file) || file} to ${to} (${summarize(found, false)}).`,
+        'Personal data stays on this machine: send a copy made with `anonymize_file` (made-up people), or only the counts or results the task needs.',
+      ].join(' '), found);
+    }
+  }
   const matches: PiiMatch[] = [];
   const files = new Set<string>();
   const unchecked: string[] = [];
-  const nameOf = (f: string) => path.relative(cwd, f) || f;
+  let past = false; // shows a big file past the part that was read
+  const nameOf = (f: string) => (path.isAbsolute(f) ? path.relative(cwd, f) || f : f);
   for (const r of reads) {
+    if (verdictOf(matches)) break; // enough to block: the rest need not be read
     if (outOfTime()) {
       unchecked.push(`checking ${nameOf(r.file)} took too long`);
+      timedOut = true;
       break;
     }
-    const loaded = fileTexts(r.file);
+    const loaded = r.text !== undefined ? { texts: [r.text], sampled: r.text.length >= GUARD_SAMPLE_BYTES } : fileTexts(r.file);
+    if (r.other) {
+      // Notes, code, a page: data when it shows enough identity numbers (a copy of an export under another name).
+      for (const full of loaded.texts) {
+        // Judged on the whole file, then checked like a data file in what the command shows of it.
+        if (!identityValues(full, r.file).length) continue;
+        const here = shownPii(full, r.select(full), r.file);
+        for (const m of here) matches.push(m);
+        if (verdictOf(here)) files.add(r.file);
+      }
+      continue;
+    }
     if (loaded.unchecked) unchecked.push(`${nameOf(r.file)}: ${loaded.unchecked}`);
     for (const full of loaded.texts) {
       const shown = r.select(full);
       if (loaded.sampled && !withinSample(r.select, full, shown)) {
         unchecked.push(`${nameOf(r.file)}: only its first ${GUARD_SAMPLE_BYTES / 1024 / 1024} MB were checked`);
+        past = true;
       }
       if (!shown.trim()) continue;
       const here = shownPii(full, shown, r.file);
@@ -298,13 +458,15 @@ function shellTool(command: string, cwd: string, powershell: boolean, ignored: (
     }
   }
   const found = verdictOf(matches);
+  if (!found && timedOut) return unfinished('this command', unchecked);
+  if (!found && past) return pastSample('this command', unchecked);
   if (!found) return strictMode() && unchecked.length ? uncheckedBlock('this command', unchecked) : undefined;
   const names = [...(files.size ? files : new Set(reads.map((r) => r.file)))].map(nameOf);
   return block([
     `Samaran blocked this command: it would print personal data from ${names.join(', ')} into the conversation (${summarize(found, false)}).`,
     'To look at the data, use the `read_file_masked` tool from the lokal MCP server (personal data replaced by stable placeholders).',
     PROCESS_HINT,
-    'If the user confirms the file only holds fake data, they can add it to .samaranignore.',
+    IGNORE_HINT,
   ].join(' '), found);
 }
 
@@ -320,8 +482,12 @@ function grepTool(input: NonNullable<HookInput['tool_input']>, cwd: string, igno
   const glob = input.glob ? globToRegExp(input.glob.includes('/') ? input.glob : `**/${input.glob}`) : undefined;
   const typeFilter = input.type ? GREP_TYPES[input.type.toLowerCase()] : undefined;
   if (input.type && !typeFilter) return undefined; // `type: "ts"` searches code
+  // Data files, and the other files the search names on purpose (one file, or a glob such as "*.md"): a copy of an
+  // export under another name shows its identity numbers there.
+  const named = !statSync(target).isDirectory() || !!input.glob;
   candidates = candidates
-    .filter((f) => isShellDataFile(f) && !ignored(f))
+    .map((f) => plainPath(f))
+    .filter((f) => (isShellDataFile(f) || named) && !ignored(f))
     .filter((f) => !glob || glob.test(path.relative(target, f).split(path.sep).join('/')) || glob.test(path.basename(f)))
     .filter((f) => !typeFilter || typeFilter.test(f));
   const unchecked: string[] = [];
@@ -329,7 +495,8 @@ function grepTool(input: NonNullable<HookInput['tool_input']>, cwd: string, igno
     unchecked.push(`only ${GREP_MAX_FILES} of the ${candidates.length} data files it searches were checked`);
     candidates = candidates.slice(0, GREP_MAX_FILES);
   }
-  const nameOf = (f: string) => path.relative(cwd, f) || f;
+  const nameOf = (f: string) => (path.isAbsolute(f) ? path.relative(cwd, f) || f : f);
+  let past = false; // searches a big file past the part that was read
 
   let re: RegExp | undefined;
   try {
@@ -342,14 +509,19 @@ function grepTool(input: NonNullable<HookInput['tool_input']>, cwd: string, igno
   const matches: PiiMatch[] = [];
   const files: string[] = [];
   for (const file of candidates) {
+    if (verdictOf(matches)) break;
     if (outOfTime()) {
       unchecked.push(`checking the files took too long (stopped at ${nameOf(file)})`);
+      timedOut = true;
       break;
     }
     const loaded = fileTexts(file);
     if (loaded.unchecked) unchecked.push(`${nameOf(file)}: ${loaded.unchecked}`);
     // Grep searches the whole file; past the part that was read, any line can match.
-    if (loaded.sampled) unchecked.push(`${nameOf(file)}: only its first ${GUARD_SAMPLE_BYTES / 1024 / 1024} MB were checked`);
+    if (loaded.sampled) {
+      unchecked.push(`${nameOf(file)}: only its first ${GUARD_SAMPLE_BYTES / 1024 / 1024} MB were checked`);
+      past = true;
+    }
     for (const full of loaded.texts) {
       const lines = full.split('\n');
       const keep = new Set<number>();
@@ -359,12 +531,14 @@ function grepTool(input: NonNullable<HookInput['tool_input']>, cwd: string, igno
       });
       if (!keep.size) continue;
       const shown = [...keep].sort((a, b) => a - b).map((i) => lines[i]).join('\n');
-      const here = shownPii(full, shown, file);
+      const here = isShellDataFile(file) || identityValues(full, file).length ? shownPii(full, shown, file) : [];
       for (const m of here) matches.push(m);
       if (verdictOf(here)) files.push(file);
     }
   }
   const found = verdictOf(matches);
+  if (!found && timedOut) return unfinished('this search', unchecked);
+  if (!found && past) return pastSample('this search', unchecked);
   if (!found) return strictMode() && unchecked.length ? uncheckedBlock('this search', unchecked) : undefined;
   const names = (files.length ? files : candidates).slice(0, 5).map(nameOf);
   return block([
@@ -379,10 +553,19 @@ export function evaluate(input: HookInput, projectRoot?: string): Verdict | unde
   if (process.env.SAMARAN_GUARD === 'off') return undefined;
   const root = projectRoot ?? process.env.CLAUDE_PROJECT_DIR ?? input.cwd ?? process.cwd();
   // SAMARAN_GUARD_BUDGET_MS can only shorten the budget, which blocks more: tests use it.
-  const budget = Math.min(Number(process.env.SAMARAN_GUARD_BUDGET_MS) || STRICT_BUDGET_MS, STRICT_BUDGET_MS);
+  const budget = Math.min(Number(process.env.SAMARAN_GUARD_BUDGET_MS) || BUDGET_MS, BUDGET_MS);
   deadline = Date.now() + budget;
-  // One hook call is one process: the project's rules apply to every check below.
-  config = loadConfig(root);
+  timedOut = false;
+  // One hook call is one process: the project's rules apply to every check below. A broken .samaran.json must not
+  // switch the guard off (it did: the error let every call through): its rules are left out, the defaults still hold.
+  try {
+    config = loadConfig(root);
+  } catch (e) {
+    // Strict mode blocks what it cannot check, a broken config included.
+    if (process.env.SAMARAN_GUARD === 'strict') throw e;
+    config = { custom: [], allow: [] };
+    process.stderr.write(`samaran-guard: ${(e as Error).message} The guard checks with its defaults until it is fixed.\n`);
+  }
   // Files write_file_unmasked wrote hold real values whatever their extension: checked like data files.
   markDataFiles(loadUnmasked(root));
 
@@ -414,7 +597,8 @@ export function evaluate(input: HookInput, projectRoot?: string): Verdict | unde
     case 'Read':
       if (!tool.file_path) return undefined;
       {
-        const file = path.resolve(root, tool.file_path);
+        // pelanggan.csv::$DATA and "pelanggan.csv." open pelanggan.csv on Windows.
+        const file = plainPath(path.resolve(root, tool.file_path));
         const rel = path.relative(root, file);
         const shownAs = rel && !rel.startsWith('..') && !path.isAbsolute(rel) ? rel.split(path.sep).join('/') : tool.file_path;
         return readTool(file, shownAs, root, ignored, tool);
@@ -422,9 +606,22 @@ export function evaluate(input: HookInput, projectRoot?: string): Verdict | unde
     case 'Grep':
       return grepTool(tool, cwd, ignored);
     case 'Bash':
-      return tool.command ? shellTool(tool.command, cwd, false, ignored) : undefined;
+      return tool.command ? protectionTamper(tool.command, root) ?? shellTool(tool.command, cwd, false, ignored, root) : undefined;
     case 'PowerShell':
-      return tool.command ? shellTool(tool.command, cwd, true, ignored) : undefined;
+      return tool.command ? protectionTamper(tool.command, root) ?? shellTool(tool.command, cwd, true, ignored, root) : undefined;
+    case 'Write':
+    case 'Edit':
+    case 'MultiEdit':
+    case 'NotebookEdit': {
+      const target = tool.file_path ?? (tool as { notebook_path?: string }).notebook_path;
+      if (!target) return undefined;
+      const file = path.resolve(root, target);
+      if (TRUST_PATH.test(file.split(path.sep).join('/'))) return block(TRUST_MESSAGE);
+      if (loadUnmasked(root).length && [path.join(root, '.lokal', 'unmasked.json'), unmaskedCopy(root)].some((f) => path.resolve(f) === file)) {
+        return block(TAMPER_MESSAGE);
+      }
+      return SETTINGS_PATH.test(` ${file}`) ? askSettings(`${input.tool_name} ${path.relative(root, file) || file}`) : undefined;
+    }
     default:
       return undefined;
   }

@@ -65,6 +65,9 @@ def parse_phone(input: str) -> PhoneInfo:  # noqa: A002
 
     if clean.startswith('+62'):
         rest = clean[3:]
+    elif clean.startswith('0062') and len(clean) >= 12:
+        # "0062 812 …" dials out of another country the way "+62" does.
+        rest = clean[4:]
     elif clean.startswith('62') and len(clean) >= 10:
         rest = clean[2:]
     elif clean.startswith('0'):

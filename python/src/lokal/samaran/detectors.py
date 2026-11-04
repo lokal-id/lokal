@@ -6,6 +6,8 @@ Keep both files in step: tests/vectors checks that both give the same matches.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import datetime as _dt
 import re
 from collections.abc import Callable, Iterable
@@ -23,7 +25,7 @@ from ._names import (
     GIVEN_NAMES,
     SECOND_NAMES,
 )
-from .custom import RuleLike, detect_custom, to_rules
+from .custom import CustomRule, RuleLike, detect_custom, to_rules
 from .fields import field_type, is_generic_name_key, is_known_name_part, is_plausible_value
 from .types import PII_TYPES, Confidence, PiiMatch, PiiType
 
@@ -163,10 +165,45 @@ _NPWP_KEYWORD = rx(r'\bnpwp\b')
 _NISN_KEYWORD = rx(r'\b(nisn|nomor induk siswa nasional)\b[^\d]*$')
 _BPJS_KEYWORD = rx(r'\b(bpjs|jkn|kis|kartu indonesia sehat|kpj|jamsostek)\b')
 _BANK_KEYWORD = rx(
-    r'\b(no\.?\s*rek(ening)?|norek|rekening|rek|account|acc|a\/c|virtual account|va|transfer|tf|bca|bri|bni|mandiri|bsi|cimb|niaga|permata|danamon|btn|jago|seabank|blu|ocbc|panin|maybank|mega|muamalat)\b'  # noqa: E501
+    r'\b(no\.?\s*rek(ening)?|norek|rekening|rek|account|acct|acc|a\/c|virtual account|va|transfer|tf|bca|bri|bni|mandiri|bsi|cimb|niaga|permata|danamon|btn|jago|seabank|blu|ocbc|panin|maybank|mega|muamalat)\b'  # noqa: E501
 )
 # A technical or order ID right before the number: "trace_id=7340…", "request 7340…", "id transaksi 7340…". In a
 # payment service's log the words around it ("transfer", "va", "bca") would otherwise make every ID an account.
+# Right before a number: a currency, or an order or technical ID label. A valid NIK there is an amount or an ID.
+_NOT_A_NIK_LABEL = rx(
+    r'(?:\b(?:rp|idr|usd|sgd|eur)\.?|[$€£])\s*$|(?:\b|_)(?:order|pesanan|invoice|inv|txn|trx|transaction|transaksi|ref|reference|referensi|booking|resi|tracking|trace|request|req|session|ticket|tiket)(?:[_ -]?(?:id|no|number|nomor|key))?\s*[:=#]?\s*["\']?$',  # noqa: E501
+    'i',
+)
+# Mailboxes of a role, not of a person: noreply@, support@, info@.
+_ROLE_MAILBOX = rx(
+    r'^(?:no-?reply|do-?not-?reply|donotreply|noreply-\w+|support|info|admin|administrator|cs|help|helpdesk|halo|hello|contact|kontak|sales|marketing|billing|notifications?|notif|security|privacy|webmaster|postmaster|hostmaster|abuse|hr|careers?|karir|humas|layanan|pengaduan|redaksi|team|tim|office|kantor|enquiries|inquiry|newsletter|news|mailer-daemon|bounce|system|alerts?|cs-\w+|customer-?(?:service|care|support))@',  # noqa: E501
+    'i',
+)
+# Books of the Bible, as Indonesian writes them: "Matius 5:9" is a verse, not a man named Matius.
+_BIBLE_BOOKS = frozenset((
+    'kejadian keluaran imamat bilangan ulangan yosua hakim rut samuel raja tawarikh ezra nehemia ester ayub mazmur amsal '
+    'pengkhotbah kidung yesaya yeremia ratapan yehezkiel daniel hosea yoel amos obaja yunus mikha nahum habakuk zefanya '
+    'hagai zakharia maleakhi matius markus lukas yohanes kisah roma korintus galatia efesus filipi kolose tesalonika '
+    'timotius titus filemon ibrani yakobus petrus yudas wahyu'
+).split())
+# Titles a place's name can carry between the place word and the person it is named after: "RSUD Dr. Soetomo".
+_TITLES_BEFORE = rx(r'(?:\b(?:dr|drs|dra|prof|ir|h|hj|kh|k\.h|st|sh|se|mr|mrs|raden|r)\.?\s+)+$', 'i')
+# The place word right before a name on the same line, not in the cell or line before.
+_PLACE_RIGHT_BEFORE = rx(r'(?:^|[ \t])([A-Za-z]+)\.?[ \t]+$')
+_BOOK_NUMBER = re.compile(r'^\d\s+')
+_VERSE_AFTER = rx(r'^\s*\d+(?::\d+(?:-\d+)?)?\b')
+
+
+def _not_a_person(text: str, m: PiiMatch) -> bool:
+    """A name that is a place named after someone ("RSUD Dr. Soetomo"), or a book of the Bible before a verse."""
+    lead = _TITLES_BEFORE.sub('', text[max(0, m.start - 40) : m.start])
+    prev = _PLACE_RIGHT_BEFORE.search(lead)
+    if prev and (prev.group(1).lower() in _PLACE_WORDS or prev.group(1).lower() in _ORGANIZATION):
+        return True
+    book = _BOOK_NUMBER.sub('', m.value).lower()
+    return book in _BIBLE_BOOKS and bool(_VERSE_AFTER.search(text[m.end : m.end + 12]))
+
+
 _TECH_ID_LABEL = rx(
     r'(?:\b|_)(?:trace|span|request|req|correlation|corr|session|sess|message|msg|event|job|task|order|pesanan|invoice|inv|txn|trx|transaction|transaksi|ref|reference|referensi|idempotency|booking|resi|tracking|uuid|nonce|seq|sequence)(?:[_ -]?(?:id|no|number|nomor|key))?\s*[:=#]?\s*["\']?$'  # noqa: E501
 )
@@ -200,6 +237,9 @@ def _detect_digit_runs(text: str) -> list[PiiMatch]:
         if _MOBILE_START.match(digits) and parse_phone(digits).valid:
             continue
         if _DATE_RUN.search(value):
+            continue
+        # After a currency or an order or reference label, a number is an amount or an ID, whatever its digits.
+        if _NOT_A_NIK_LABEL.search(label) and not _NIK_KEYWORD.search(ctx):
             continue
         title = _previous_line(text, m.start()) if _NUMBER_ONLY_LABEL.search(label) else ''
         n = len(digits)
@@ -281,7 +321,8 @@ def _detect_passports(text: str) -> list[PiiMatch]:
 # Otherwise a number at the end of a line swallows the digits that start the next one ("…6789\n14/10/26"),
 # fails validation, and is left unmasked.
 # "0062 812 …" dials out of another country the way "+62" does.
-_MOBILE = rx(r'(?<![\d+\w])(?:\+62|0062|62|0)[ \t-]?8\d{1,2}(?:[ \t.-]?\d{3,4}){2,3}(?![\d\w])')
+# "+62 (0)813-…" writes the trunk 0 in brackets after the country code.
+_MOBILE = rx(r'(?<![\d+\w])(?:\+62[ \t]?\(0\)|\+62|0062|62|0)[ \t-]?8\d{1,2}(?:[ \t.-]?\d{3,4}){2,3}(?![\d\w])')
 _LANDLINE = rx(
     r'\((?:\+62[ \t]?|0)\d{2,3}\)[ \t]?\d{3,4}[ \t-]?\d{3,4}(?!\d)|(?<![\d\w])\+62[ \t]?[2-79]\d{1,2}[ \t-]?\d{3,4}[ \t-]?\d{3,4}(?!\d)'  # noqa: E501
 )
@@ -385,13 +426,26 @@ _SPELLED_EMAIL = rx(rf'(?<![\w.+-])[A-Za-z0-9._%+-]+{_AT}[A-Za-z0-9-]+(?:{_DOT}[
 _URL_EMAIL = rx(r'(?<![\w.+-])[A-Za-z0-9._+-]+%40[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}(?![\w-])')
 
 
+_SPACED_EMAIL = rx(
+    r'(?<![\w.+-])[A-Za-z0-9_%+-]+(?:[ \t]?\.[ \t]?[A-Za-z0-9_%+-]+)*[ \t]?@[ \t]?[A-Za-z0-9-]+(?:[ \t]?\.[ \t]?[A-Za-z0-9-]+)*[ \t]?\.[ \t]?[A-Za-z]{2,}(?![\w-])'  # noqa: E501
+)
+_BLANK = re.compile(r'[ \t]')
+
+
 def _detect_emails(text: str) -> list[PiiMatch]:
     out = [
         _match('EMAIL', m.start(), m.group(0), 'high')
         for m in _EMAIL.finditer(text)
-        if not _RESERVED_EMAIL_DOMAIN.search(m.group(0))
+        if not _RESERVED_EMAIL_DOMAIN.search(m.group(0)) and not _ROLE_MAILBOX.match(m.group(0))
     ]
     out += [_match('EMAIL', m.start(), m.group(0), 'high') for m in _SPELLED_EMAIL.finditer(text)]
+    # Spaced out: "siti . rahayu88 @ gmail . com". Only with a space around "@" or a dot, so a plain address is the
+    # pattern above's.
+    out += [
+        _match('EMAIL', m.start(), m.group(0), 'high')
+        for m in _SPACED_EMAIL.finditer(text)
+        if _BLANK.search(m.group(0)) and not _RESERVED_EMAIL_DOMAIN.search(_BLANK.sub('', m.group(0)))
+    ]
     # URL-encoded: "email=siti%40gmail.com".
     out += [_match('EMAIL', m.start(), m.group(0), 'high') for m in _URL_EMAIL.finditer(text)]
     return out
@@ -1541,13 +1595,100 @@ def _detect_record_birth_dates(text: str) -> list[PiiMatch]:
     return out
 
 
-_DIGIT_WORD = '(?:nol|kosong|satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan)'
-_SPOKEN_PHONE = rx(rf'\b(?:nol|kosong)[\s,.-]+delapan(?:[\s,.-]+{_DIGIT_WORD}){{8,11}}\b', 'gi')
+_DIGIT_WORD = '(?:nol|kosong|satu|dua|tiga|empat|lima|enam|tujuh|delapan|lapan|sembilan)'
+_DIGIT_VALUE = {
+    'nol': '0', 'kosong': '0', 'satu': '1', 'dua': '2', 'tiga': '3', 'empat': '4', 'lima': '5', 'enam': '6',
+    'tujuh': '7', 'delapan': '8', 'lapan': '8', 'sembilan': '9',
+}
+_SPOKEN = rx(rf'(?<![\w])(?:{_DIGIT_WORD}|\d{{1,4}})(?:[\s,.-]+(?:{_DIGIT_WORD}|\d{{1,4}})){{4,20}}(?![\w])', 'gi')
+_SPOKEN_SEP = re.compile(r'[\s,.-]+')
+_STARTS_WITH_LETTER = re.compile('^[a-z]', re.IGNORECASE)
 
 
 def _detect_spoken_phones(text: str) -> list[PiiMatch]:
-    """A phone number read out in a voice-bot or call transcript: "nol delapan satu dua tiga …"."""
-    return [_match('PHONE', m.start(), m.group(0), 'medium') for m in _SPOKEN_PHONE.finditer(text)]
+    """Numbers read out or typed half in words, in a voice-bot or call transcript or a chat: "nol delapan satu dua …",
+    "0812 3456 78 lapan sembilan nol", "NIK tiga dua nol satu …". A phone number, or a NIK that is valid as one."""
+    out: list[PiiMatch] = []
+    for m in _SPOKEN.finditer(text):
+        tokens = [t for t in _SPOKEN_SEP.split(m.group(0)) if t]
+        if not any(_STARTS_WITH_LETTER.match(t) for t in tokens):
+            continue  # all digits: the other detectors' part
+        digits = ''.join(_DIGIT_VALUE.get(t.lower(), t) for t in tokens)
+        if (digits.startswith('08') or digits.startswith('628')) and 10 <= len(digits) <= 13:
+            out.append(_match('PHONE', m.start(), m.group(0), 'medium'))
+        elif len(digits) == 16 and parse_nik(digits).valid:
+            out.append(_match('NIK', m.start(), m.group(0), 'high'))
+    return out
+
+
+# "NIK 32010115\n08950001": a NIK broken over two lines after its label.
+_SPLIT_NIK = rx(r'\b(?:nik|no\.?\s*ktp|ktp|no\.?\s*kk|kk)\b[^\d\n]{0,15}(\d{2,14})[ \t]*\r?\n[ \t]*(\d{2,14})(?!\d)', 'gi')
+
+
+def _detect_split_niks(text: str) -> list[PiiMatch]:
+    out: list[PiiMatch] = []
+    for m in _SPLIT_NIK.finditer(text):
+        digits = m.group(1) + m.group(2)
+        if len(digits) != 16 or not parse_nik(digits).valid:
+            continue
+        out.append(_match('NIK', m.start(1), text[m.start(1) : m.end()], 'high'))
+    return out
+
+
+# Base64 tokens, and MIME encoded words in mail headers ("=?UTF-8?B?QnVkaSBTYW50b3Nv?="): the text they hold is
+# checked, and a token that holds personal data is masked whole. Not inside one another.
+_BASE64_TOKEN = rx(r'(?<![A-Za-z0-9+/=_-])[A-Za-z0-9+/]{16,4096}={0,2}(?![A-Za-z0-9+/=_-])')
+_ENCODED_WORD = re.compile(r'=\?[\w-]+\?([BQbq])\?([^?\s]*)\?=')
+_MAYBE_ENCODED = re.compile(r'[A-Za-z0-9+/]{16}|=\?')
+_QP_BYTE = re.compile(r'=([\dA-Fa-f]{2})')
+_HAS_LOWER = re.compile('[a-z]')
+_HAS_UPPER = re.compile('[A-Z]')
+_DECODED_TYPES: list[PiiType] = ['NIK', 'KK', 'NPWP', 'PASSPORT', 'BANK_ACCOUNT', 'CARD', 'BPJS', 'PHONE', 'EMAIL', 'NAME', 'ADDRESS']
+_decoding = False
+
+
+def _from_base64(s: str) -> str:
+    """Base64 as UTF-8 text, as the browser's atob and TextDecoder read it; empty when it is not base64."""
+    try:
+        return base64.b64decode(s + '=' * (-len(s) % 4)).decode('utf-8', 'replace')
+    except (binascii.Error, ValueError):
+        return ''
+
+
+def _detect_encoded(text: str) -> list[PiiMatch]:
+    global _decoding
+    if _decoding or not _MAYBE_ENCODED.search(text):
+        return []
+    _decoding = True
+    try:
+        out: list[PiiMatch] = []
+
+        def inside(decoded: str, cue: str) -> Optional[PiiMatch]:
+            # Mostly printable text, or it is a key, an image, or a hash.
+            controls = sum(1 for c in decoded if c < ' ' and c not in '\n\t')
+            if not decoded or controls > len(decoded) / 20 or '�' in decoded:
+                return None
+            found = detect_pii(f'{cue}{decoded}', types=_DECODED_TYPES, min_confidence='high')
+            return found[0] if found else None
+
+        for m in _ENCODED_WORD.finditer(text):
+            if m.group(1).upper() == 'B':
+                decoded = _from_base64(m.group(2))
+            else:
+                decoded = _QP_BYTE.sub(lambda h: chr(int(h.group(1), 16)), m.group(2).replace('_', ' '))
+            # A header word is someone's name or address as often as not: read it after a label.
+            hit = inside(decoded, 'Nama: ')
+            if hit:
+                out.append(_match(hit.type, m.start(), m.group(0), 'high'))
+        for m in _BASE64_TOKEN.finditer(text):
+            if not _HAS_LOWER.search(m.group(0)) or not _HAS_UPPER.search(m.group(0)):
+                continue  # not an all-caps code or a number
+            hit = inside(_from_base64(m.group(0)), '')
+            if hit and hit.type != 'NAME':
+                out.append(_match(hit.type, m.start(), m.group(0), 'high'))
+        return out
+    finally:
+        _decoding = False
 
 
 _LONE_WORD = rx("(?<![\\w@.'\u2019-])[A-Z][a-z]{2,14}(?![\\w'\u2019-]|\\.\\w|[ \\t]+[A-Z])", 'g')
@@ -1652,6 +1793,26 @@ def _pair_word_ok(w: str) -> bool:
     return bare not in _NOT_NAME and bare not in _PLACE_WORDS and bare not in _TITLE_WORDS
 
 
+# A NIK inside a file name, a path, or a URL, or written with slashes or underscores: "scan_ktp_3275_0412_0592_0003.pdf",
+# "/kyc/3275041205920003_selfie.jpg", "3275/0412/0592/0003". Valid by its structure, and grouped the way a NIK is.
+_EMBEDDED_NIK = rx(r'(?<!\d)\d(?:[/_ .-]?\d){15}(?!\d)')
+_NIK_GROUP_SEP = re.compile(r'[/_ .-]')
+_NIK_GROUPS = {'16', '4,4,4,4', '2,2,2,6,4', '6,6,4'}
+
+
+def _detect_embedded_niks(text: str) -> list[PiiMatch]:
+    out: list[PiiMatch] = []
+    for m in _EMBEDDED_NIK.finditer(text):
+        groups = ','.join(str(len(g)) for g in _NIK_GROUP_SEP.split(m.group(0)))
+        if groups not in _NIK_GROUPS or not parse_nik(_digits(m.group(0))).valid:
+            continue
+        ctx = _before(text, m.start())
+        if not _NIK_KEYWORD.search(ctx) and _NOT_A_NIK_LABEL.search(_last_units(ctx, 25)):
+            continue
+        out.append(_match('NIK', m.start(), m.group(0), 'high'))
+    return out
+
+
 # "Fatimah binti Abdullah", "AHMAD BIN HASAN": a name, then bin or binti and the father's name. Nothing else is written
 # that way, so no cue is needed.
 _PATRONYMIC = rx(
@@ -1661,6 +1822,114 @@ _PATRONYMIC_LEAD = rx(r'^(\S+)\s+(?=\S+\s+\S+\s+\S)')
 # "R. Ayu Kusumawardhani", "R.A. Siti Rahma": a Javanese title or initials before a name the lists know.
 _INITIALED = rx(r"(?<![\w.])(?:[A-Z]\.\s?){1,3}[A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+){0,3}")
 _INITIALS = rx(r'^(?:[A-Z]\.\s?)+')
+_LIST_NEXT_NAME = rx(r"(\s*(?:,\s*(?:dan\s+|serta\s+)?|\s(?:dan|serta|atau|&)\s+))([A-Z][a-z'’-]+(?:\s+[A-Z][a-z'’-]+){0,3})(?![\w'’-])")
+_DIGIT_NEXT = re.compile(r'\s*\d')
+
+# An IBAN, for a transfer from or to an account abroad: two letters, two check digits, the account; mod 97 decides.
+_IBAN = rx(r'\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){2,7}(?:[ ]?[A-Z0-9]{1,4})?\b')
+
+
+def _iban_valid(iban: str) -> bool:
+    s = iban.replace(' ', '')
+    if not 15 <= len(s) <= 34:
+        return False
+    moved = s[4:] + s[:4]
+    rest = 0
+    for c in moved:
+        for d in c if c.isdigit() else str(ord(c) - 55):
+            rest = (rest * 10 + int(d)) % 97
+    return rest == 1
+
+
+def _detect_ibans(text: str) -> list[PiiMatch]:
+    return [_match('BANK_ACCOUNT', m.start(), m.group(0), 'high') for m in _IBAN.finditer(text) if _iban_valid(m.group(0))]
+
+
+# Fields in markup and queries, read by their name: <nama>Budi</nama>, nama LIKE '%Darmaji%', nik = '3201…'.
+_XML_FIELD = rx(r'<([A-Za-z_][\w.-]{0,40})(?:\s[^<>]*)?>([^<>]{1,200})</\1>')
+_SQL_CONDITION = rx(r"\b([A-Za-z_][\w.]{0,60})\s+(?:I?LIKE|=|<>|!=)\s*(N?)'%?([^'%]{2,120})%?'", 'gi')
+
+
+def _detect_markup_fields(text: str) -> list[PiiMatch]:
+    out: list[PiiMatch] = []
+
+    def push(key: str, value: str, start: int) -> None:
+        pii_type = field_type(key.split('.')[-1])
+        trimmed = value.strip()
+        if not pii_type or not trimmed or not is_plausible_value(pii_type, trimmed, key):
+            return
+        out.append(_match(pii_type, start + value.find(trimmed), trimmed, 'high'))
+
+    for m in _XML_FIELD.finditer(text):
+        push(m.group(1), m.group(2), m.start(2))
+    for m in _SQL_CONDITION.finditer(text):
+        push(m.group(1), m.group(3), m.start(3))
+    return out
+
+
+# A document named after its owner: "KTP Bonifasius Mote", "ktp_bonifasius_mote.jpg", "CV Kaleandra Wirasena 2026.pdf".
+_DOCUMENT_TITLE = rx(
+    r"\b(?:e-?ktp|ktp|kartu[ _-]keluarga|npwp|paspor|passport|ijazah|transkrip|akta[ _-]lahir|akta[ _-]kelahiran|slip[ _-]gaji|cv|resume|surat[ _-]lamaran|rapor|raport|kartu[ _-]bpjs|selfie|swafoto|foto[ _-]ktp)[ _-]+([A-Za-z][A-Za-z'’]+(?:[ _-][A-Za-z][A-Za-z'’]+){0,3})(?=[ _-]*(?:\d|\.[A-Za-z]{2,4}\b|$|[\s,;)]))",  # noqa: E501
+    'gi',
+)
+_TITLE_WORD_SEP = re.compile(r'[ _-]+')
+_FILE_SEP = re.compile(r'[_-]')
+_EXTENSION_AFTER = rx(r'\.[A-Za-z]{2,4}\b')
+_CAPITAL_START = re.compile('^[A-Z]')
+
+
+def _detect_document_titles(text: str) -> list[PiiMatch]:
+    out: list[PiiMatch] = []
+    for m in _DOCUMENT_TITLE.finditer(text):
+        words = _TITLE_WORD_SEP.split(m.group(1))
+        bare = [w.lower() for w in words]
+        if any(w in _NOT_NAME or w in _PLACE_WORDS or w in _TITLE_WORDS for w in bare):
+            continue
+        # In a file name a name is written in lower case; in a title, capitalized or known.
+        file_name = bool(_FILE_SEP.search(m.group(0)) or _EXTENSION_AFTER.search(text[m.end() : m.end() + 8]))
+        if not file_name and not all(_CAPITAL_START.match(w) for w in words) and not any(map(is_known_name_part, bare)):
+            continue
+        out.append(_match('NAME', m.start(1), m.group(1), 'high'))
+    return out
+
+
+# Health data without a label, when the sentence is about a person: a medicine for a condition that marks it
+# ("minum Clozapine"), or a disability ("disabilitas netra", "tunarungu"). A general article has no person in it.
+_SENSITIVE_MEDICINE = (
+    'clozapine|risperidone|haloperidol|olanzapine|quetiapine|aripiprazole|lithium|sertraline|fluoxetine|escitalopram|'
+    'amitriptyline|alprazolam|clonazepam|diazepam|methadone|metadon|buprenorphine|naltrexone|tenofovir|efavirenz|'
+    'dolutegravir|lamivudine|zidovudine|arv|insulin|metformin|levothyroxine|isoniazid|rifampicin|rifampisin|'
+    'carbamazepine|valproate|valproat|levetiracetam|phenytoin|fenitoin|tamoxifen|letrozole|imatinib|methotrexate'
+)
+_DISABILITY_TERMS = (
+    r'(?:penyandang\s+)?disabilitas\s+(?:netra|rungu|wicara|daksa|grahita|intelektual|mental|fisik|ganda|sensorik)|'
+    r'tuna(?:netra|rungu|wicara|daksa|grahita|laras)'
+)
+_HEALTH_TERM = rx(
+    rf'\b(?:(?:minum|konsumsi|mengonsumsi|diresepkan|resep|obat|terapi|pakai)\s+(?:obat\s+)?({_SENSITIVE_MEDICINE})|({_DISABILITY_TERMS}))\b',
+    'gi',
+)
+_PERSON_CUE = rx(
+    r'\b(?:saya|aku|gue|gw|anak(?:\s+saya)?|istri|suami|ibu|bapak|ayah|adik|kakak|pasien|pelamar|pelanggan|nasabah|karyawan|pegawai|siswa|beliau|dia|pak|bu|mas|mbak|atas\s+nama|a\.n\.|nama|rutin)\b',  # noqa: E501
+    'i',
+)
+_CAPITALIZED_WORD = rx(r'\b[A-Z][a-z]{2,}\b')
+
+
+def _detect_health_without_label(text: str) -> list[PiiMatch]:
+    out: list[PiiMatch] = []
+    for m in _HEALTH_TERM.finditer(text):
+        line_start = text.rfind('\n', 0, m.start()) + 1
+        line_end = text.find('\n', m.start())
+        line = text[line_start : len(text) if line_end == -1 else line_end]
+        if not _PERSON_CUE.search(line) and not _CAPITALIZED_WORD.search(text[line_start : m.start()]):
+            continue
+        # The medicine or the disability, not the verb before it.
+        group = 1 if m.group(1) else 2
+        out.append(_match('HEALTH', m.start(group), m.group(group), 'medium'))
+    return out
+
+
 _NAME_TAIL = rx(
     r'\s+(?:telah|sudah|akan|sedang|pernah|masih|tidak|tak|belum|lalu|kemudian|segera|sempat|(?:meng|meny|memb|memp)[a-z]{3,})\b',
     'i',
@@ -2591,10 +2860,17 @@ _DETECTORS: tuple[Callable[[str], list[PiiMatch]], ...] = (
     _detect_record_birth_dates,
     _detect_card_codes,
     _detect_spoken_phones,
+    _detect_split_niks,
+    _detect_encoded,
+    _detect_ibans,
+    _detect_markup_fields,
+    _detect_document_titles,
+    _detect_health_without_label,
     _detect_lone_given_names,
     _detect_names_with_age,
     _detect_name_pairs,
     _detect_patronymics_and_initials,
+    _detect_embedded_niks,
     _detect_attendance,
     _detect_sentence_subjects,
     _detect_bracket_handles,
@@ -2651,7 +2927,24 @@ def detect_pii(
     wanted = set(check_types(types) if types is not None else PII_TYPES)
     wanted -= set(check_types(exclude or ()))
     min_rank = 2 if min_confidence == 'high' else 1
+    extra = list(ner(text)) if ner is not None else []
+    if not _HIDDEN.search(text):
+        return _detect_plain(text, wanted, min_rank, rules, extra)
+    # Detected on the normalized text, reported on the original: a match covers the hidden characters inside it too.
+    norm, start_of, end_of, at = _normalize(text)
+    moved = [PiiMatch(m.type, at[m.start], at[m.end], norm[at[m.start] : at[m.end]], m.confidence, m.label) for m in extra]
+    out: list[PiiMatch] = []
+    for m in _detect_plain(norm, wanted, min_rank, rules, moved):
+        if m.end <= m.start:
+            continue
+        start, end = start_of[m.start], end_of[m.end - 1]
+        out.append(PiiMatch(m.type, start, end, text[start:end], m.confidence, m.label))
+    return out
 
+
+def _detect_plain(
+    text: str, wanted: set[PiiType], min_rank: int, rules: tuple[CustomRule, ...], extra: list[PiiMatch]
+) -> list[PiiMatch]:
     def rank(m: PiiMatch) -> int:
         return 2 if m.confidence == 'high' else 1
 
@@ -2662,8 +2955,8 @@ def detect_pii(
     found = [m for detector in _DETECTORS for m in detector(view)] + _detect_escaped_strings(units)
     if rules:
         found.extend(detect_custom(view, rules))
-    if ner is not None:
-        found.extend(_in_units(list(ner(text)), text) if astral else ner(text))
+    if extra:
+        found.extend(_in_units(extra, text) if astral else extra)
     candidates = [m for m in found if m.end > m.start and m.type in wanted and rank(m) >= min_rank]
     # Prefer confident, then longer matches, then a team's own rule; drop anything overlapping an accepted match.
     candidates.sort(key=lambda m: (-rank(m), -(m.end - m.start), -(m.type == 'CUSTOM'), m.start))
@@ -2675,8 +2968,33 @@ def detect_pii(
         taken[c.start : c.end] = b'\x01' * (c.end - c.start)
         accepted.append(c)
     accepted.sort(key=lambda m: m.start)
+    # "Pelanggan Dewi Lestari dan Kaleandra Wirasena": the next name in a list after a name is a person too, even one
+    # no list knows. Followed one name at a time, so "A, B, dan C" is read whole.
+    i = 0
+    while i < len(accepted):
+        m = accepted[i]
+        i += 1
+        if m.type != 'NAME':
+            continue
+        nxt = _LIST_NEXT_NAME.match(units, m.end, m.end + 80)
+        if not nxt:
+            continue
+        words = [w.lower() for w in nxt.group(2).split()]
+        if any(w in _NOT_NAME or w in _PLACE_WORDS or w in _TITLE_WORDS or w in _ORGANIZATION for w in words):
+            continue
+        # One word must be a name the lists know ("…, Room 1207" is not a person), and a number does not follow a name.
+        if (len(words) < 2 and not is_known_name_part(words[0])) or _DIGIT_NEXT.match(units[nxt.end() : nxt.end() + 3]):
+            continue
+        start, end = nxt.start(2), nxt.end(2)
+        if any(taken[start:end]):
+            continue
+        taken[start:end] = b'' * (end - start)
+        accepted.insert(i, _match('NAME', start, nxt.group(2), m.confidence))
     for i, m in enumerate(accepted):
         if m.type != 'NAME':
+            continue
+        if _not_a_person(units, m):
+            accepted[i] = PiiMatch(m.type, m.start, m.start, '', m.confidence, m.label)
             continue
         # "SUPRIYADI ALIAS UDIN TELAH MENGAMBIL": in capitals nothing marks where a name ends, so it ends at a word that
         # says when, or an active verb (meng-, meny-, memb-, memp-; not men-, as "Mentari" is a name).
@@ -2687,6 +3005,8 @@ def detect_pii(
     # went through twice. Its value is the text as it is.
     trimmed: list[PiiMatch] = []
     for m in accepted:
+        if m.end <= m.start:
+            continue  # dropped above
         end = m.end
         while True:
             if end > m.start and (view[end - 1] != units[end - 1] or units[end - 1] == '\\'):
@@ -2725,6 +3045,67 @@ def detect_pii(
         start, end = unit_to_char[m.start], char_end(m.end)
         out.append(PiiMatch(m.type, start, end, text[start:end], m.confidence, m.label))
     return out
+
+
+# Characters that hide data from patterns written for ASCII, and HTML entities: fullwidth forms, Arabic-Indic digits,
+# non-breaking and other Unicode spaces, zero-width characters and soft hyphens, "&#51;" and "&nbsp;".
+_HIDDEN = re.compile(
+    '[！-～　٠-٩۰-۹  -‍  ⁠﻿­]'
+    r'|&(?:#\d{1,7}|#x[\da-f]{1,6}|nbsp|commat|period|amp|lt|gt|quot|apos);',
+    re.IGNORECASE,
+)
+_ENTITY = re.compile(r'&(?:#(\d{1,7})|#x([\da-f]{1,6})|(nbsp|commat|period|amp|lt|gt|quot|apos));', re.IGNORECASE)
+_NAMED_ENTITY = {'nbsp': ' ', 'commat': '@', 'period': '.', 'amp': '&', 'lt': '<', 'gt': '>', 'quot': '"', 'apos': "'"}
+_UNICODE_SPACES = {0x3000, 0x00A0, 0x202F, 0x205F, *range(0x2000, 0x200B)}
+_REMOVED = {0x200B, 0x200C, 0x200D, 0x2060, 0xFEFF, 0x00AD}
+
+
+def _normalize(text: str) -> tuple[str, list[int], list[int], list[int]]:
+    """The text as patterns read it, with where each of its characters came from: "３２０１\\u00a0０１…" and "3201&#48;1…"
+    become "3201 01…". ``start_of[i]`` and ``end_of[i]`` are the span of the original behind normalized character i;
+    ``at[j]`` is the normalized index of original character j (the next one kept, for a removed character)."""
+    norm: list[str] = []
+    start_of: list[int] = []
+    end_of: list[int] = []
+    at = [0] * (len(text) + 1)
+
+    def put(c: str, start: int, end: int) -> None:
+        norm.append(c)
+        start_of.append(start)
+        end_of.append(end)
+
+    i = 0
+    while i < len(text):
+        at[i] = len(norm)
+        code = ord(text[i])
+        if code == 0x26:
+            m = _ENTITY.match(text, i, i + 12)
+            if m:
+                if m.group(3):
+                    value: Optional[str] = _NAMED_ENTITY[m.group(3).lower()]
+                else:
+                    point = int(m.group(1), 10) if m.group(1) else int(m.group(2), 16)
+                    value = chr(point) if point <= 0x10FFFF else None
+                # Only entities for printable ASCII and spaces: the ones that spell data.
+                if value is not None and len(value) == 1 and 0x20 <= ord(value) < 0x7F:
+                    for k in range(i + 1, m.end()):
+                        at[k] = len(norm)
+                    put(value, i, m.end())
+                    i = m.end()
+                    continue
+        if 0xFF01 <= code <= 0xFF5E:
+            put(chr(code - 0xFEE0), i, i + 1)
+        elif 0x0660 <= code <= 0x0669:
+            put(chr(code - 0x0660 + 48), i, i + 1)
+        elif 0x06F0 <= code <= 0x06F9:
+            put(chr(code - 0x06F0 + 48), i, i + 1)
+        elif code in _UNICODE_SPACES:
+            put(' ', i, i + 1)
+        elif code not in _REMOVED:
+            put(text[i], i, i + 1)
+        i += 1
+    at[len(text)] = len(norm)
+    return ''.join(norm), start_of, end_of, at
 
 
 _ASTRAL = re.compile('[\U00010000-\U0010ffff]')

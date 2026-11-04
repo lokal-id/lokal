@@ -45,3 +45,23 @@ test('kembaran: file tanpa data yang dikenali dilaporkan apa adanya, tanpa nada 
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('kembaran: file Latin-1 ditulis kembali dalam Latin-1, BOM UTF-8 tetap ada', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'lokal-kembaran-'));
+  try {
+    // "São Paulo" with ã as the single byte 0xE3: not UTF-8.
+    writeFileSync(path.join(dir, 'lama.csv'), Buffer.from(`nama,nik,kota\nBudi Santoso,${NIKS[2]},S\xe3o Paulo\n`, 'latin1'));
+    writeFileSync(path.join(dir, 'bom.csv'), `﻿nama,nik\r\nSiti Aminah,${NIKS[1]}\r\n`);
+    const r = kembaran(dir, 'lama.csv', 'bom.csv', '-o', 'out', '--secret', 'uji');
+    assert.equal(r.status, 0, r.stderr);
+    const latin = readFileSync(path.join(dir, 'out', 'lama.csv'));
+    assert.ok(latin.includes(0xe3) && !latin.includes(Buffer.from('ã', 'utf8')), 'still Latin-1');
+    assert.ok(!latin.toString('latin1').includes('Budi Santoso') && !latin.toString('latin1').includes(NIKS[2]!));
+    assert.match(latin.toString('latin1'), /,S\xe3o Paulo\n$/);
+    const bom = readFileSync(path.join(dir, 'out', 'bom.csv'));
+    assert.deepEqual([...bom.subarray(0, 3)], [0xef, 0xbb, 0xbf]);
+    assert.ok(bom.includes(13), 'CRLF kept');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

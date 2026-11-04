@@ -191,13 +191,17 @@ def add_working_days(
 def count_working_days(
     start: DateLike, end: DateLike, *, cuti_bersama: bool = True, weekend: Iterable[int] = (0, 6)
 ) -> int:
-    """Working days from ``start`` to ``end``, both inclusive."""
+    """Working days from ``start`` to ``end``, both inclusive; negative when ``end`` comes before ``start``, as
+    ``add_working_days`` counts back."""
     d = _to_date(start)
     last = _to_date(end)
+    sign = -1 if last < d else 1
+    if sign < 0:
+        d, last = last, d
     off = tuple(weekend)
     count = 0
     while d <= last:
         if is_working_day(d, cuti_bersama=cuti_bersama, weekend=off):
             count += 1
         d += _dt.timedelta(days=1)
-    return count
+    return sign * count

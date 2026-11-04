@@ -13,7 +13,7 @@ It works on ChatGPT, Claude, Gemini (and AI Studio), Microsoft Copilot, Perplexi
 - **Reading the answer.** Placeholders in the conversation are highlighted. Point at one to see the real value.
 - **Copying.** Ctrl+C, and the site's own copy buttons, put the answer on the clipboard with the real values back.
 - **Attachments.** A file chosen with the site's attach button, dropped on the page, or pasted is checked before the site gets it. Text files (CSV, JSON, logs, SQL, code) are masked and keep their name. An Excel file becomes one masked CSV per sheet, and a Word document or a PDF with a text layer becomes one masked text file, since the extension cannot write `.xlsx`, `.docx`, or PDF. A file without personal data is uploaded unchanged.
-- **Consistent placeholders.** The same NIK is `[NIK_1]` in every tab, so the model can still compare and join records.
+- **Consistent placeholders.** The same NIK is `[NIK_1]` in every tab of a site, so the model can still compare and join records. Each site has its own mapping: a value pasted into one AI site is never shown, restored, or copied on another.
 
 The real values are **never written into the site's page**, where the site's own scripts could read them. They stay in the extension: highlighted placeholders in the page, the value in a tooltip the page cannot read, and the clipboard when you copy.
 
@@ -38,7 +38,7 @@ Then load `packages/extension/dist` the same way.
 ## Privacy
 
 - No server, no account, no analytics. The extension makes no network requests.
-- Detection and masking happen on your device. The mapping from placeholders to real values is kept in the browser's session memory (`chrome.storage.session`). It is never written to disk and is gone when the browser closes. **Forget all real values** in the popup clears it immediately.
+- Detection and masking happen on your device. The mapping from placeholders to real values is kept in the browser's session memory (`chrome.storage.session`). It is never written to disk and is gone when the browser closes. **Forget all real values** in the popup clears it immediately. Real values go back on the clipboard only when you copy (Ctrl+C, the context menu) or click the site's own copy button; a copy the page starts by itself gets the placeholders.
 - Permissions: `storage` for the per-site on/off setting and the session mapping, `activeTab` so the popup can tell which site you are on, and access to the AI chat sites listed above. See [PRIVACY.md](PRIVACY.md).
 
 ## Limitations
@@ -59,4 +59,4 @@ npm run build:extension      # dist/ and release/lokal-extension-<version>.zip
 npm run test:extension       # loads dist-test/ into Edge or Chrome and drives a test page
 ```
 
-`src/content.ts` handles pasting, sending, highlighting, and copying; `src/background.ts` owns the vault; `src/page-clipboard.ts` runs in the page to see the site's own clipboard writes (it only ever sees placeholders).
+`src/content.ts` handles pasting, sending, highlighting, and copying; `src/background.ts` owns the vaults, one per site; `src/page-clipboard.ts` runs in the page to see the site's own clipboard writes (it only ever sees placeholders).

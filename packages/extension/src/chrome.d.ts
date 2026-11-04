@@ -2,8 +2,11 @@
 declare namespace chrome {
   namespace runtime {
     interface MessageSender {
-      tab?: { id?: number };
+      tab?: { id?: number; url?: string };
       id?: string;
+      /** The page or frame that sent the message: its URL, and its origin (Chrome 80+). */
+      url?: string;
+      origin?: string;
     }
     const id: string;
     const lastError: { message?: string } | undefined;

@@ -61,6 +61,53 @@ def check_custom_rules(rules: Iterable[CustomRule]) -> None:
                 _js.rx(rule.pattern)
             except (re.error, IndexError) as e:
                 raise ValueError(f'Custom rule {rule.label}: pattern does not compile ({e}).') from None
+        source = rule.pattern.pattern if isinstance(rule.pattern, re.Pattern) else rule.pattern
+        if source is not None and len(source) > _MAX_PATTERN:
+            raise ValueError(f'Custom rule {rule.label}: pattern is longer than {_MAX_PATTERN} characters.')
+        if source is not None and nested_quantifier(source):
+            raise ValueError(
+                f'Custom rule {rule.label}: a repeated group that repeats inside, like (a+)+, can take exponential '
+                'time on some text and stop the guard; write it without the nesting.'
+            )
+
+
+_MAX_PATTERN = 1000
+_COUNTED = re.compile(r'\{\d*,\d*\}|\{\d+\}')
+_ONCE = re.compile(r'\{[01]\}')
+_OPEN_RANGE = re.compile(r'\{\d*,')
+
+
+def nested_quantifier(source: str) -> bool:
+    """Whether a pattern repeats a group that itself holds a repetition: (a+)+, (\\w*)*, (x+){2,}. Those can
+    backtrack for minutes on a line that almost matches, and a guard past its hook's time limit lets a call through."""
+    inner: list[bool] = []
+    i = 0
+    while i < len(source):
+        c = source[i]
+        if c == '\\':
+            i += 1
+        elif c == '[':
+            # A character class: skip to its end.
+            i += 1
+            while i < len(source) and source[i] != ']':
+                if source[i] == '\\':
+                    i += 1
+                i += 1
+        elif c == '(':
+            inner.append(False)
+        elif c == ')':
+            repeated = inner.pop() if inner else False
+            # A repetition inside counts for the group around this one too.
+            if repeated and inner:
+                inner[-1] = True
+            rest = source[i + 1 :]
+            counted = rest[:1] == '{' and bool(_COUNTED.match(rest)) and not _ONCE.match(rest)
+            if repeated and (rest[:1] in ('*', '+') or counted):
+                return True
+        elif inner and (c in '*+' or (c == '{' and _OPEN_RANGE.match(source[i:]))):
+            inner[-1] = True
+        i += 1
+    return False
 
 
 def _custom(label: str, start: int, value: str) -> PiiMatch:

@@ -9,8 +9,11 @@ import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { loadConfig } from '../src/files.ts';
-import { describeConfig, PROFILES } from '../src/init.ts';
+import { describeConfig, PROFILES, runTrust } from '../src/init.ts';
 import { VERSION } from '../src/version.ts';
+
+// Approvals (lokal-mcp trust) go to a cache folder of the tests' own; child processes inherit it.
+process.env.LOKAL_CACHE_DIR = mkdtempSync(path.join(tmpdir(), 'lokal-cache-'));
 
 const CLI = path.resolve(import.meta.dirname, '../src/cli.ts');
 const CSV = 'nama,nik,hp\nKenanga Purbasari,3174015507880099,0813-7788-1290\n';
@@ -63,7 +66,10 @@ test('init: --dry-run writes nothing; existing files are kept, and --force repla
     writeFileSync(path.join(dir, '.samaranignore'), 'seed/\n');
     const kept = run(dir, ['init', '--profile', 'strict']);
     assert.match(kept.stdout, /\.samaran\.json\s+kept \(already there\)/);
-    assert.deepEqual(loadConfig(dir).allow, ['0800-1-500-500']);
+    // A file that was already there (a cloned repository's, an agent's) is not approved by init: the user reads it.
+    assert.match(kept.stdout, /\.samaran\.json and \.samaranignore was already here and is not approved/);
+    assert.deepEqual(loadConfig(dir).allow, []);
+    assert.deepEqual(loadConfig(dir, { trusted: true }).allow, ['0800-1-500-500']);
     assert.ok(existsSync(path.join(dir, '.github', 'workflows', 'pii.yml')));
 
     const forced = run(dir, ['init', '--profile', 'strict', '--force']);
@@ -79,7 +85,7 @@ test('init: --dry-run writes nothing; existing files are kept, and --force repla
   }
 });
 
-test('check: explains the configuration, warns about risky settings, and fails on a broken file', () => {
+test('check: explains the configuration, warns about risky settings, and fails on a broken file', async () => {
   const dir = tempDir();
   try {
     const none = run(dir, ['check']);
@@ -87,20 +93,67 @@ test('check: explains the configuration, warns about risky settings, and fails o
     assert.match(none.stdout, /not found \(the defaults below apply\)/);
     assert.match(none.stdout, /policy\s+everything is masked/);
 
+    // Routed requests go unmasked: an endpoint off the local network is refused, as is an audit log outside.
+    writeFileSync(path.join(dir, '.samaran.json'), JSON.stringify({ policy: { HEALTH: 'route' }, route: { openai: 'https://llm.example.com/v1' } }));
+    const remote = run(dir, ['check']);
+    assert.equal(remote.status, 1);
+    assert.match(remote.stderr, /route\.openai must be on this machine or the local network/);
+    writeFileSync(path.join(dir, '.samaran.json'), JSON.stringify({ audit: '../elsewhere/audit.jsonl' }));
+    assert.match(run(dir, ['check']).stderr, /"audit" must be a file inside the project/);
+
     writeFileSync(path.join(dir, '.samaran.json'), JSON.stringify({
       policy: { NIK: 'allow', HEALTH: 'route' },
-      route: { openai: 'https://llm.example.com/v1' },
+      route: { openai: 'http://127.0.0.1:11434/v1' },
       audit: 'logs/audit.jsonl',
     }));
     writeFileSync(path.join(dir, '.samaranignore'), '# made-up data\nfixtures/\n*.csv\n');
+    // Not approved yet: what relaxes protection is left out, and said so.
+    const unapproved = run(dir, ['check']);
+    assert.equal(unapproved.status, 0, unapproved.stderr);
+    assert.match(unapproved.stdout, /policy\s+everything is masked/);
+    assert.match(unapproved.stdout, /approved\s+\.samaran\.json no, \.samaranignore no/);
+    assert.match(unapproved.stdout, /left out\s+policy NIK: "allow", policy HEALTH: "route", "route"/);
+    assert.match(unapproved.stdout, /\.samaranignore is not applied until approved/);
+    // Without a terminal (an agent's shell, a script, a pipe) nothing is approved, whatever is typed into stdin.
+    const piped = spawnSync(process.execPath, [CLI, 'trust'], { cwd: dir, input: 'yes\n', env: { ...process.env, SAMARAN_GUARD: '' }, encoding: 'utf8' });
+    assert.equal(piped.status, 1);
+    assert.match(piped.stderr, /only in a terminal.*Nothing was approved/s);
+    assert.match(run(dir, ['check']).stdout, /approved\s+\.samaran\.json no, \.samaranignore no/);
+    // In a terminal, an answer other than "yes" approves nothing; "yes" approves what was shown.
+    const questions: string[] = [];
+    const terminal = (answer: string) => ({ interactive: true, ask: async (q: string) => (questions.push(q), answer) });
+    await runTrust([dir], terminal('n'));
+    assert.match(run(dir, ['check']).stdout, /\.samaran\.json no/);
+    await runTrust([dir], terminal('yes'));
+    assert.match(questions[0]!, /Approve \.samaran\.json and \.samaranignore as shown above\? Type "yes"/);
+    process.exitCode = 0;
+    // A file changed while the user read it is not approved: the hash shown is the hash approved.
+    const other = tempDir();
+    writeFileSync(path.join(other, '.samaran.json'), JSON.stringify({ allow: ['x'] }));
+    await runTrust([other], {
+      interactive: true,
+      ask: async () => {
+        writeFileSync(path.join(other, '.samaran.json'), JSON.stringify({ policy: { NIK: 'allow' } }));
+        return 'yes';
+      },
+    });
+    assert.equal(process.exitCode, 1);
+    process.exitCode = 0;
+    assert.match(run(other, ['check']).stdout, /\.samaran\.json no/);
+    rmSync(other, { recursive: true, force: true });
     const risky = run(dir, ['check']);
     assert.equal(risky.status, 0, risky.stderr);
     assert.match(risky.stdout, /policy\s+NIK=allow, HEALTH=route; everything else is masked/);
+    assert.match(risky.stdout, /approved\s+\.samaran\.json yes, \.samaranignore yes/);
     assert.match(risky.stdout, /\.samaranignore\s+2 pattern\(s\)/);
     assert.match(risky.stdout, /policy allows NIK: the model sees these identity numbers unmasked/);
-    assert.match(risky.stdout, /route\.openai \(https:\/\/llm\.example\.com\/v1\) is not on this machine/);
     assert.match(risky.stdout, /audit log logs[\\/]audit\.jsonl is inside the project/);
     assert.match(risky.stdout, /"\*\.csv", which skips real data files too/);
+    // Any change needs approval again.
+    writeFileSync(path.join(dir, '.samaranignore'), '*\n');
+    assert.match(run(dir, ['check']).stdout, /\.samaranignore no/);
+    assert.match(run(dir, ['trust', '--revoke']).stdout, /Approval withdrawn/);
+    assert.match(run(dir, ['check']).stdout, /\.samaran\.json no/);
 
     // Local and private endpoints, and the compose service name, are not warned about.
     for (const url of ['http://127.0.0.1:11434/v1', 'http://localhost:11434/v1', 'http://ollama:11434/v1', 'http://192.168.1.20:11434/v1']) {

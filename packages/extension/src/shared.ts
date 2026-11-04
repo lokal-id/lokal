@@ -10,9 +10,24 @@ export type Vault = ReadonlyMap<string, string>;
 /** Messages from the content scripts and the popup to the service worker, which owns the vault. */
 export type Request =
   | { type: 'mask'; text: string }
-  | { type: 'vault' }
+  /** `site`: only from the popup, for the tab it was opened on. A content script always gets its own site's vault. */
+  | { type: 'vault'; site?: string }
   | { type: 'clear' }
-  | { type: 'stats' };
+  | { type: 'stats'; site?: string };
+
+/**
+ * The site a vault belongs to: a page's origin, "https://chatgpt.com". Undefined for anything but an https page or a
+ * page on this computer (the extension's own end-to-end test).
+ */
+export function siteOf(url: string): string | undefined {
+  try {
+    const u = new URL(url);
+    const local = u.protocol === 'http:' && (u.hostname === '127.0.0.1' || u.hostname === 'localhost');
+    return u.protocol === 'https:' || local ? u.origin : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export interface MaskResponse {
   text: string;

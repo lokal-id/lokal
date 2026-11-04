@@ -10,16 +10,20 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { loadConfig } from '../src/files.ts';
+import { loadConfig, recordTrust } from '../src/files.ts';
 import { startProxy } from '../src/proxy.ts';
 
 const CLI = path.resolve(import.meta.dirname, '../src/cli.ts');
+// Approvals go to a cache folder of the tests' own; child processes inherit it.
+process.env.LOKAL_CACHE_DIR = mkdtempSync(path.join(tmpdir(), 'lokal-cache-'));
 const VALUES = ['Kenanga Purbasari', '3174015507880099', 'C7788120', '0813-7788-1290', 'hipertensi'];
 
 function project(config: unknown, files: Record<string, string> = {}): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'lokal-policy-'));
   writeFileSync(path.join(dir, '.samaran.json'), JSON.stringify(config));
   for (const [name, text] of Object.entries(files)) writeFileSync(path.join(dir, name), text);
+  // The team's own policy, approved as a user does with `lokal-mcp trust`.
+  recordTrust(dir);
   return dir;
 }
 

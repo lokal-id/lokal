@@ -29,6 +29,8 @@ def ts_shape(doc: Document) -> dict[str, Any]:
         out: dict[str, Any] = {'kind': 'text', 'text': doc.parts[0].text}
         if doc.sampled:
             out['sampled'] = True
+        if doc.encoding:
+            out['encoding'] = doc.encoding
         return out
     out = {'kind': 'sheets', 'sheets': [{'name': p.name, 'csv': p.text} for p in doc.parts]}
     if UNITS[doc.kind]:

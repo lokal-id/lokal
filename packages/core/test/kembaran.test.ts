@@ -38,7 +38,8 @@ test('Kembaran: CSV pelanggan tanpa satu pun nilai asli, tetap konsisten dan val
   assert.equal(parsePhone(budi![3]!).operator, 'Telkomsel');
   assert.equal(parsePhone(budiAgain![3]!).e164, parsePhone(budi![3]!).e164, '0812-… and 0812… are one person');
   assert.match(siti![3]!, /^\+62 857 \d{4} \d{4}$/);
-  assert.match(budi![4]!, /^[a-z]+\.[a-z]+\d{2}@example\.com$/);
+  // budi.santoso@… belongs to Budi Santoso: its stand-in is made from his stand-in name.
+  assert.equal(budi![4]!, `${budi![0]!.toLowerCase().replace(' ', '.')}@example.com`);
   assert.match(budi![5]!, /^"Jl\. [A-Z][a-z]+(?: [A-Z][a-z]+)? No\. \d+ RT 0\d\/RW 0\d, Cibinong"$/);
 });
 

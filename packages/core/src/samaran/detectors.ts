@@ -106,10 +106,36 @@ const NISN_KEYWORD = /\b(nisn|nomor induk siswa nasional)\b[^\d]*$/;
 const BPJS_KEYWORD =/\b(bpjs|jkn|kis|kartu indonesia sehat|kpj|jamsostek)\b/;
 // A technical or order ID right before the number: "trace_id=7340…", "request 7340…", "id transaksi 7340…". In a
 // payment service's log the words around it ("transfer", "va", "bca") would otherwise make every ID an account.
+// Right before a number: a currency, or an order or technical ID label. A valid NIK there is an amount or an ID.
+const NOT_A_NIK_LABEL = /(?:\b(?:rp|idr|usd|sgd|eur)\.?|[$€£])\s*$|(?:\b|_)(?:order|pesanan|invoice|inv|txn|trx|transaction|transaksi|ref|reference|referensi|booking|resi|tracking|trace|request|req|session|ticket|tiket)(?:[_ -]?(?:id|no|number|nomor|key))?\s*[:=#]?\s*["']?$/i;
+
+// Mailboxes of a role, not of a person: noreply@, support@, info@.
+const ROLE_MAILBOX = /^(?:no-?reply|do-?not-?reply|donotreply|noreply-\w+|support|info|admin|administrator|cs|help|helpdesk|halo|hello|contact|kontak|sales|marketing|billing|notifications?|notif|security|privacy|webmaster|postmaster|hostmaster|abuse|hr|careers?|karir|humas|layanan|pengaduan|redaksi|team|tim|office|kantor|enquiries|inquiry|newsletter|news|mailer-daemon|bounce|system|alerts?|cs-\w+|customer-?(?:service|care|support))@/i;
+
+// Books of the Bible, as Indonesian writes them: "Matius 5:9" is a verse, not a man named Matius.
+const BIBLE_BOOKS = new Set(
+  ('kejadian keluaran imamat bilangan ulangan yosua hakim rut samuel raja tawarikh ezra nehemia ester ayub mazmur amsal ' +
+    'pengkhotbah kidung yesaya yeremia ratapan yehezkiel daniel hosea yoel amos obaja yunus mikha nahum habakuk zefanya ' +
+    'hagai zakharia maleakhi matius markus lukas yohanes kisah roma korintus galatia efesus filipi kolose tesalonika ' +
+    'timotius titus filemon ibrani yakobus petrus yudas wahyu').split(' '),
+);
+// Titles a place's name can carry between the place word and the person it is named after: "RSUD Dr. Soetomo".
+const TITLES_BEFORE = /(?:\b(?:dr|drs|dra|prof|ir|h|hj|kh|k\.h|st|sh|se|mr|mrs|raden|r)\.?\s+)+$/i;
+
+/** A name that is a place named after someone ("RSUD Dr. Soetomo"), or a book of the Bible before a verse. */
+function notAPerson(text: string, m: PiiMatch): boolean {
+  const lead = text.slice(Math.max(0, m.start - 40), m.start).replace(TITLES_BEFORE, '');
+  // The place word right before it on the same line, not in the cell or line before.
+  const prev = /(?:^|[ \t])([A-Za-z]+)\.?[ \t]+$/.exec(lead)?.[1]?.toLowerCase();
+  if (prev && (PLACE_WORDS.has(prev) || ORGANIZATION.has(prev))) return true;
+  const book = m.value.replace(/^\d\s+/, '').toLowerCase();
+  return BIBLE_BOOKS.has(book) && /^\s*\d+(?::\d+(?:-\d+)?)?\b/.test(text.slice(m.end, m.end + 12));
+}
+
 const TECH_ID_LABEL =
   /(?:\b|_)(?:trace|span|request|req|correlation|corr|session|sess|message|msg|event|job|task|order|pesanan|invoice|inv|txn|trx|transaction|transaksi|ref|reference|referensi|idempotency|booking|resi|tracking|uuid|nonce|seq|sequence)(?:[_ -]?(?:id|no|number|nomor|key))?\s*[:=#]?\s*["']?$/;
 const BANK_KEYWORD =
-  /\b(no\.?\s*rek(ening)?|norek|rekening|rek|account|acc|a\/c|virtual account|va|transfer|tf|bca|bri|bni|mandiri|bsi|cimb|niaga|permata|danamon|btn|jago|seabank|blu|ocbc|panin|maybank|mega|muamalat)\b/;
+  /\b(no\.?\s*rek(ening)?|norek|rekening|rek|account|acct|acc|a\/c|virtual account|va|transfer|tf|bca|bri|bni|mandiri|bsi|cimb|niaga|permata|danamon|btn|jago|seabank|blu|ocbc|panin|maybank|mega|muamalat)\b/;
 
 // A NIK or KK written with dots, the way a form or a letter groups it: "3175.0912.0390.0002", "32.01.01.150895.0001",
 // "320101.150895.0001". Other dotted numbers are amounts ("12.500.000.000") and versions, never read as an ID.
@@ -134,11 +160,15 @@ function detectDigitRuns(text: string): PiiMatch[] {
     if (/^(08|628)/.test(digits) && parsePhone(digits).valid) continue;
     // A date and time ("2026-12-03 04:15"), not a number.
     if (/^(?:19|20)\d{2}-\d{2}-\d{2}(?: \d{2})?$|^\d{2}-\d{2}-(?:19|20)\d{2}(?: \d{2})?$/.test(value)) continue;
+    // After a currency or an order or reference label, a number is an amount or an ID, whatever its digits.
+    if (NOT_A_NIK_LABEL.test(label) && !NIK_KEYWORD.test(ctx)) continue;
     const title = NUMBER_ONLY_LABEL.test(label) ? previousLine(text, m.index) : '';
 
     if (digits.length === 16 && (KK_KEYWORD.test(label) || /\bkartu keluarga\b/.test(title))) push('KK', 'high');
     else if (digits.length >= 12 && digits.length <= 16 && SIM_KEYWORD.test(label)) push('SIM', 'high');
-    else if (digits.length === 16 && parseNik(digits).valid) push('NIK', 'high');
+    // An amount or an order number that happens to be a valid NIK ("Rp 3201…", "order_id=3201…") is not one, unless
+    // a NIK label says it is.
+    else if (digits.length === 16 && parseNik(digits).valid && (NIK_KEYWORD.test(ctx) || !NOT_A_NIK_LABEL.test(label))) push('NIK', 'high');
     else if (isNip(digits)) push('NIP', 'high');
     else if (
       digits.length >= 13 && digits.length <= 19 && /^[3-6]/.test(digits) && luhn(digits) &&
@@ -227,7 +257,8 @@ function detectPhones(text: string): PiiMatch[] {
   // Otherwise a number at the end of a line swallows the digits that start the next one ("…6789\n14/10/26"),
   // fails validation, and is left unmasked.
   // "0062 812 …" dials out of another country the way "+62" does.
-  const mobile = /(?<![\d+\w])(?:\+62|0062|62|0)[ \t-]?8\d{1,2}(?:[ \t.-]?\d{3,4}){2,3}(?![\d\w])/g;
+  // "+62 (0)813-…" writes the trunk 0 in brackets after the country code.
+  const mobile = /(?<![\d+\w])(?:\+62[ \t]?\(0\)|\+62|0062|62|0)[ \t-]?8\d{1,2}(?:[ \t.-]?\d{3,4}){2,3}(?![\d\w])/g;
   for (const m of text.matchAll(mobile)) {
     if (isMeasurement(text, m.index, m.index + m[0].length)) continue;
     if (parsePhone(m[0].replace(/^00/, '+')).valid && !gluedToCode(text, m.index)) out.push(match('PHONE', m.index, m[0], 'high'));
@@ -267,13 +298,17 @@ const RESERVED_EMAIL_DOMAIN = /@(?:[\w-]+\.)*(?:example\.(?:com|net|org)|[\w-]+\
 function detectEmails(text: string): PiiMatch[] {
   const re = /(?<![\w.+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}(?![\w-])/g;
   const out = [...text.matchAll(re)]
-    .filter((m) => !RESERVED_EMAIL_DOMAIN.test(m[0]))
+    .filter((m) => !RESERVED_EMAIL_DOMAIN.test(m[0]) && !ROLE_MAILBOX.test(m[0]))
     .map((m) => match('EMAIL', m.index, m[0], 'high'));
   // Written out to dodge scrapers: "siti.rahayu88 [at] gmail [dot] com", "budi(at)yahoo.co.id".
   const AT = String.raw`\s*(?:\[\s*at\s*\]|\(\s*at\s*\)|\{\s*at\s*\})\s*`;
   const DOT = String.raw`(?:\s*(?:\[\s*dot\s*\]|\(\s*dot\s*\)|\{\s*dot\s*\})\s*|\.)`;
   const spelled = new RegExp(String.raw`(?<![\w.+-])[A-Za-z0-9._%+-]+${AT}[A-Za-z0-9-]+(?:${DOT}[A-Za-z0-9-]+)*${DOT}[A-Za-z]{2,}(?![\w-])`, 'gi');
   for (const m of text.matchAll(spelled)) out.push(match('EMAIL', m.index, m[0], 'high'));
+  // Spaced out: "siti . rahayu88 @ gmail . com". Only with a space around "@" or a dot, so a plain address is the
+  // pattern above's.
+  const spaced = /(?<![\w.+-])[A-Za-z0-9_%+-]+(?:[ \t]?\.[ \t]?[A-Za-z0-9_%+-]+)*[ \t]?@[ \t]?[A-Za-z0-9-]+(?:[ \t]?\.[ \t]?[A-Za-z0-9-]+)*[ \t]?\.[ \t]?[A-Za-z]{2,}(?![\w-])/g;
+  for (const m of text.matchAll(spaced)) if (/[ \t]/.test(m[0]) && !RESERVED_EMAIL_DOMAIN.test(m[0].replace(/[ \t]/g, ''))) out.push(match('EMAIL', m.index, m[0], 'high'));
   // URL-encoded: "email=siti%40gmail.com".
   for (const m of text.matchAll(/(?<![\w.+-])[A-Za-z0-9._+-]+%40[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}(?![\w-])/g)) {
     out.push(match('EMAIL', m.index, m[0], 'high'));
@@ -1104,7 +1139,7 @@ function detectGluedIds(text: string): PiiMatch[] {
   return out;
 }
 
-const DIGIT_WORD = '(?:nol|kosong|satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan)';
+const DIGIT_WORD = '(?:nol|kosong|satu|dua|tiga|empat|lima|enam|tujuh|delapan|lapan|sembilan)';
 
 /** A phone number read out in a voice-bot or call transcript: "nol delapan satu dua tiga …". */
 // A NIK or KK that OCR read from a card, with letters for the digits they look like: "NIK : 33O521 6805000l43".
@@ -1142,9 +1177,86 @@ function detectRecordBirthDates(text: string): PiiMatch[] {
   return out;
 }
 
+const DIGIT_VALUE: Record<string, string> = {
+  nol: '0', kosong: '0', satu: '1', dua: '2', tiga: '3', empat: '4', lima: '5', enam: '6', tujuh: '7', delapan: '8', lapan: '8',
+  sembilan: '9',
+};
+
+/**
+ * Numbers read out or typed half in words, in a voice-bot or call transcript or a chat: "nol delapan satu dua …",
+ * "0812 3456 78 lapan sembilan nol", "NIK tiga dua nol satu …". A phone number, or a NIK that is valid as one.
+ */
 function detectSpokenPhones(text: string): PiiMatch[] {
-  const re = new RegExp(`\\b(?:nol|kosong)[\\s,.-]+delapan(?:[\\s,.-]+${DIGIT_WORD}){8,11}\\b`, 'gi');
-  return [...text.matchAll(re)].map((m) => match('PHONE', m.index, m[0], 'medium'));
+  const out: PiiMatch[] = [];
+  const re = new RegExp(`(?<![\\w])(?:${DIGIT_WORD}|\\d{1,4})(?:[\\s,.-]+(?:${DIGIT_WORD}|\\d{1,4})){4,20}(?![\\w])`, 'gi');
+  for (const m of text.matchAll(re)) {
+    const tokens = m[0].split(/[\s,.-]+/).filter(Boolean);
+    if (!tokens.some((t) => /^[a-z]/i.test(t))) continue; // all digits: the other detectors' part
+    const digits = tokens.map((t) => DIGIT_VALUE[t.toLowerCase()] ?? t).join('');
+    if (/^08|^628/.test(digits) && digits.length >= 10 && digits.length <= 13) out.push(match('PHONE', m.index, m[0], 'medium'));
+    else if (digits.length === 16 && parseNik(digits).valid) out.push(match('NIK', m.index, m[0], 'high'));
+  }
+  return out;
+}
+
+// "NIK 32010115\n08950001": a NIK broken over two lines after its label.
+const SPLIT_NIK = /\b(?:nik|no\.?\s*ktp|ktp|no\.?\s*kk|kk)\b[^\d\n]{0,15}(\d{2,14})[ \t]*\r?\n[ \t]*(\d{2,14})(?!\d)/gi;
+
+function detectSplitNiks(text: string): PiiMatch[] {
+  const out: PiiMatch[] = [];
+  for (const m of text.matchAll(SPLIT_NIK)) {
+    const digits = m[1]! + m[2]!;
+    if (digits.length !== 16 || !parseNik(digits).valid) continue;
+    const start = m.index + m[0].indexOf(m[1]!);
+    out.push(match('NIK', start, text.slice(start, m.index + m[0].length), 'high'));
+  }
+  return out;
+}
+
+// Base64 tokens, and MIME encoded words in mail headers ("=?UTF-8?B?QnVkaSBTYW50b3Nv?="): the text they hold is
+// checked, and a token that holds personal data is masked whole. Not inside one another.
+const BASE64_TOKEN = /(?<![A-Za-z0-9+/=_-])[A-Za-z0-9+/]{16,4096}={0,2}(?![A-Za-z0-9+/=_-])/g;
+const ENCODED_WORD = /=\?[\w-]+\?([BQbq])\?([^?\s]*)\?=/g;
+const DECODED_TYPES: PiiType[] = ['NIK', 'KK', 'NPWP', 'PASSPORT', 'BANK_ACCOUNT', 'CARD', 'BPJS', 'PHONE', 'EMAIL', 'NAME', 'ADDRESS'];
+let decoding = false;
+
+/** Base64 as UTF-8 text, in the browser as in Node; empty when it is not base64. */
+function fromBase64(s: string): string {
+  try {
+    const binary = atob(s);
+    return new TextDecoder().decode(Uint8Array.from(binary, (c) => c.charCodeAt(0)));
+  } catch {
+    return '';
+  }
+}
+
+function detectEncoded(text: string): PiiMatch[] {
+  if (decoding || !/[A-Za-z0-9+/]{16}|=\?/.test(text)) return [];
+  decoding = true;
+  try {
+    const out: PiiMatch[] = [];
+    const inside = (decoded: string, cue: string) => {
+      // Mostly printable text, or it is a key, an image, or a hash.
+      if (!decoded || [...decoded].filter((c) => c < ' ' && c !== '\n' && c !== '\t').length > decoded.length / 20 || decoded.includes('�')) return undefined;
+      return detectPii(`${cue}${decoded}`, { types: DECODED_TYPES, minConfidence: 'high' })[0];
+    };
+    for (const m of text.matchAll(ENCODED_WORD)) {
+      const decoded = m[1]!.toUpperCase() === 'B'
+        ? fromBase64(m[2]!)
+        : m[2]!.replace(/_/g, ' ').replace(/=([\dA-F]{2})/gi, (_, h: string) => String.fromCharCode(Number.parseInt(h, 16)));
+      // A header word is someone's name or address as often as not: read it after a label.
+      const found = inside(decoded, 'Nama: ');
+      if (found) out.push(match(found.type, m.index, m[0], 'high'));
+    }
+    for (const m of text.matchAll(BASE64_TOKEN)) {
+      if (!/[a-z]/.test(m[0]) || !/[A-Z]/.test(m[0])) continue; // not an all-caps code or a number
+      const found = inside(fromBase64(m[0]), '');
+      if (found && found.type !== 'NAME') out.push(match(found.type, m.index, m[0], 'high'));
+    }
+    return out;
+  } finally {
+    decoding = false;
+  }
 }
 
 /**
@@ -1211,6 +1323,105 @@ function detectSentenceSubjects(text: string): PiiMatch[] {
     const bare = m[1]!.toLowerCase();
     if (!GIVEN_NAMES.has(bare) && !JAVANESE_NAME.test(bare)) continue;
     out.push(match('NAME', m.index + m[0].length - m[1]!.length, m[1]!, 'medium'));
+  }
+  return out;
+}
+
+// An IBAN, for a transfer from or to an account abroad: two letters, two check digits, the account; mod 97 decides.
+const IBAN = /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){2,7}(?:[ ]?[A-Z0-9]{1,4})?\b/g;
+
+function ibanValid(iban: string): boolean {
+  const s = iban.replace(/ /g, '');
+  if (s.length < 15 || s.length > 34) return false;
+  const moved = s.slice(4) + s.slice(0, 4);
+  let rest = 0;
+  for (const c of moved) {
+    const v = /\d/.test(c) ? c : String(c.charCodeAt(0) - 55);
+    for (const d of v) rest = (rest * 10 + Number(d)) % 97;
+  }
+  return rest === 1;
+}
+
+function detectIbans(text: string): PiiMatch[] {
+  return [...text.matchAll(IBAN)].filter((m) => ibanValid(m[0])).map((m) => match('BANK_ACCOUNT', m.index, m[0], 'high'));
+}
+
+// Fields in markup and queries, read by their name: <nama>Budi</nama>, nama LIKE '%Darmaji%', nik = '3201…'.
+const XML_FIELD = /<([A-Za-z_][\w.-]{0,40})(?:\s[^<>]*)?>([^<>]{1,200})<\/\1>/g;
+const SQL_CONDITION = /\b([A-Za-z_][\w.]{0,60})\s+(?:I?LIKE|=|<>|!=)\s*(N?)'%?([^'%]{2,120})%?'/gi;
+
+function detectMarkupFields(text: string): PiiMatch[] {
+  const out: PiiMatch[] = [];
+  const push = (key: string, value: string, start: number) => {
+    const type = fieldType(key.split('.').pop()!);
+    const trimmed = value.trim();
+    if (!type || !trimmed || !isPlausibleValue(type, trimmed, key)) return;
+    out.push(match(type, start + value.indexOf(trimmed), trimmed, 'high'));
+  };
+  for (const m of text.matchAll(XML_FIELD)) push(m[1]!, m[2]!, m.index + m[0].indexOf('>') + 1);
+  for (const m of text.matchAll(SQL_CONDITION)) push(m[1]!, m[3]!, m.index + m[0].lastIndexOf(m[3]!));
+  return out;
+}
+
+// A document named after its owner: "KTP Bonifasius Mote", "ktp_bonifasius_mote.jpg", "CV Kaleandra Wirasena 2026.pdf".
+const DOCUMENT_TITLE =
+  /\b(?:e-?ktp|ktp|kartu[ _-]keluarga|npwp|paspor|passport|ijazah|transkrip|akta[ _-]lahir|akta[ _-]kelahiran|slip[ _-]gaji|cv|resume|surat[ _-]lamaran|rapor|raport|kartu[ _-]bpjs|selfie|swafoto|foto[ _-]ktp)[ _-]+([A-Za-z][A-Za-z'’]+(?:[ _-][A-Za-z][A-Za-z'’]+){0,3})(?=[ _-]*(?:\d|\.[A-Za-z]{2,4}\b|$|[\s,;)]))/gi;
+
+function detectDocumentTitles(text: string): PiiMatch[] {
+  const out: PiiMatch[] = [];
+  for (const m of text.matchAll(DOCUMENT_TITLE)) {
+    const words = m[1]!.split(/[ _-]+/);
+    const bare = words.map((w) => w.toLowerCase());
+    if (bare.some((w) => NOT_NAME.has(w) || PLACE_WORDS.has(w) || TITLE_WORDS.has(w))) continue;
+    // In a file name a name is written in lower case; in a title, capitalized or known.
+    const fileName = /[_-]/.test(m[0]) || /\.[A-Za-z]{2,4}\b/.test(text.slice(m.index + m[0].length, m.index + m[0].length + 8));
+    if (!fileName && !words.every((w) => /^[A-Z]/.test(w)) && !bare.some(isKnownNamePart)) continue;
+    out.push(match('NAME', m.index + m[0].length - m[1]!.length, m[1]!, 'high'));
+  }
+  return out;
+}
+
+// Health data without a label, when the sentence is about a person: a medicine for a condition that marks it
+// ("minum Clozapine"), or a disability ("disabilitas netra", "tunarungu"). A general article has no person in it.
+const SENSITIVE_MEDICINE =
+  'clozapine|risperidone|haloperidol|olanzapine|quetiapine|aripiprazole|lithium|sertraline|fluoxetine|escitalopram|' +
+  'amitriptyline|alprazolam|clonazepam|diazepam|methadone|metadon|buprenorphine|naltrexone|tenofovir|efavirenz|' +
+  'dolutegravir|lamivudine|zidovudine|arv|insulin|metformin|levothyroxine|isoniazid|rifampicin|rifampisin|' +
+  'carbamazepine|valproate|valproat|levetiracetam|phenytoin|fenitoin|tamoxifen|letrozole|imatinib|methotrexate';
+const DISABILITY =
+  '(?:penyandang\\s+)?disabilitas\\s+(?:netra|rungu|wicara|daksa|grahita|intelektual|mental|fisik|ganda|sensorik)|' +
+  'tuna(?:netra|rungu|wicara|daksa|grahita|laras)';
+const HEALTH_TERM = new RegExp(`\\b(?:(?:minum|konsumsi|mengonsumsi|diresepkan|resep|obat|terapi|pakai)\\s+(?:obat\\s+)?(${SENSITIVE_MEDICINE})|(${DISABILITY}))\\b`, 'gi');
+const PERSON_CUE =
+  /\b(?:saya|aku|gue|gw|anak(?:\s+saya)?|istri|suami|ibu|bapak|ayah|adik|kakak|pasien|pelamar|pelanggan|nasabah|karyawan|pegawai|siswa|beliau|dia|pak|bu|mas|mbak|atas\s+nama|a\.n\.|nama|rutin)\b/i;
+
+function detectHealthWithoutLabel(text: string): PiiMatch[] {
+  const out: PiiMatch[] = [];
+  for (const m of text.matchAll(HEALTH_TERM)) {
+    const lineStart = text.lastIndexOf('\n', m.index) + 1;
+    const lineEnd = text.indexOf('\n', m.index);
+    const line = text.slice(lineStart, lineEnd === -1 ? text.length : lineEnd);
+    if (!PERSON_CUE.test(line) && !/\b[A-Z][a-z]{2,}\b/.test(text.slice(lineStart, m.index))) continue;
+    // The medicine or the disability, not the verb before it.
+    const value = (m[1] ?? m[2])!;
+    out.push(match('HEALTH', m.index + m[0].lastIndexOf(value), value, 'medium'));
+  }
+  return out;
+}
+
+// A NIK inside a file name, a path, or a URL, or written with slashes or underscores: "scan_ktp_3275_0412_0592_0003.pdf",
+// "/kyc/3275041205920003_selfie.jpg", "3275/0412/0592/0003". Valid by its structure, and grouped the way a NIK is.
+const EMBEDDED_NIK = /(?<!\d)\d(?:[/_ .-]?\d){15}(?!\d)/g;
+const NIK_GROUPS = new Set(['16', '4,4,4,4', '2,2,2,6,4', '6,6,4']);
+
+function detectEmbeddedNiks(text: string): PiiMatch[] {
+  const out: PiiMatch[] = [];
+  for (const m of text.matchAll(EMBEDDED_NIK)) {
+    const groups = m[0].split(/[/_ .-]/).map((g) => g.length).join(',');
+    if (!NIK_GROUPS.has(groups) || !parseNik(m[0].replace(/\D/g, '')).valid) continue;
+    const ctx = before(text, m.index);
+    if (!NIK_KEYWORD.test(ctx) && NOT_A_NIK_LABEL.test(ctx.slice(-25))) continue;
+    out.push(match('NIK', m.index, m[0], 'high'));
   }
   return out;
 }
@@ -1912,10 +2123,17 @@ const DETECTORS: Array<(text: string) => PiiMatch[]> = [
   detectRecordBirthDates,
   detectCardCodes,
   detectSpokenPhones,
+  detectSplitNiks,
+  detectEncoded,
+  detectIbans,
+  detectMarkupFields,
+  detectDocumentTitles,
+  detectHealthWithoutLabel,
   detectLoneGivenNames,
   detectNamesWithAge,
   detectNamePairs,
   detectPatronymicsAndInitials,
+  detectEmbeddedNiks,
   detectAttendance,
   detectSentenceSubjects,
   detectBracketHandles,
@@ -2041,10 +2259,75 @@ function escapesAsBreaks(text: string): string {
 }
 
 /** All personal data in the text, non-overlapping, in reading order. */
+const LIST_NEXT_NAME = /^(\s*(?:,\s*(?:dan\s+|serta\s+)?|\s(?:dan|serta|atau|&)\s+))([A-Z][a-z'’-]+(?:\s+[A-Z][a-z'’-]+){0,3})(?![\w'’-])/;
+
 const NAME_TAIL =
   /\s+(?:telah|sudah|akan|sedang|pernah|masih|tidak|tak|belum|lalu|kemudian|segera|sempat|(?:meng|meny|memb|memp)[a-z]{3,})\b/i;
 
+// Characters that hide data from patterns written for ASCII, and HTML entities: fullwidth forms, Arabic-Indic digits,
+// non-breaking and other Unicode spaces, zero-width characters and soft hyphens, "&#51;" and "&nbsp;".
+const HIDDEN = /[！-～　٠-٩۰-۹  -‍  ⁠﻿­]|&(?:#\d{1,7}|#x[\da-f]{1,6}|nbsp|commat|period|amp|lt|gt|quot|apos);/i;
+const ENTITY = /^&(?:#(\d{1,7})|#x([\da-f]{1,6})|(nbsp|commat|period|amp|lt|gt|quot|apos));/i;
+const NAMED_ENTITY: Record<string, string> = { nbsp: ' ', commat: '@', period: '.', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+
+/**
+ * The text as patterns read it, with where each of its characters came from: "３２０１ ０１…" and "3201&#48;1…"
+ * become "3201 01…". `from[i]` and `to[i]` are the span of the original behind normalized character i; `at[j]` is
+ * the normalized index of original character j (the next one kept, for a removed character).
+ */
+function normalize(text: string): { norm: string; from: number[]; to: number[]; at: number[] } {
+  let norm = '';
+  const from: number[] = [];
+  const to: number[] = [];
+  const at: number[] = new Array(text.length + 1);
+  const put = (c: string, start: number, end: number) => {
+    norm += c;
+    from.push(start);
+    to.push(end);
+  };
+  for (let i = 0; i < text.length;) {
+    at[i] = norm.length;
+    const code = text.charCodeAt(i);
+    if (code === 0x26) {
+      const m = ENTITY.exec(text.slice(i, i + 12));
+      const point = m && !m[3] ? Number.parseInt(m[1] ?? m[2]!, m[1] ? 10 : 16) : undefined;
+      // "&#9999999;" is no character: fromCodePoint would throw on it.
+      const value = m ? (m[3] ? NAMED_ENTITY[m[3].toLowerCase()] : point! <= 0x10ffff ? String.fromCodePoint(point!) : undefined) : undefined;
+      // Only entities for printable ASCII and spaces: the ones that spell data.
+      if (m && value !== undefined && value.length === 1 && value.charCodeAt(0) >= 0x20 && value.charCodeAt(0) < 0x7f) {
+        for (let k = i + 1; k < i + m[0].length; k++) at[k] = norm.length;
+        put(value, i, i + m[0].length);
+        i += m[0].length;
+        continue;
+      }
+    }
+    if (code >= 0xff01 && code <= 0xff5e) put(String.fromCharCode(code - 0xfee0), i, i + 1);
+    else if (code >= 0x0660 && code <= 0x0669) put(String.fromCharCode(code - 0x0660 + 48), i, i + 1);
+    else if (code >= 0x06f0 && code <= 0x06f9) put(String.fromCharCode(code - 0x06f0 + 48), i, i + 1);
+    else if (code === 0x3000 || code === 0x00a0 || (code >= 0x2000 && code <= 0x200a) || code === 0x202f || code === 0x205f) put(' ', i, i + 1);
+    else if ((code >= 0x200b && code <= 0x200d) || code === 0x2060 || code === 0xfeff || code === 0x00ad) {
+      // removed: the next character kept stands for it
+    } else put(text[i]!, i, i + 1);
+    i++;
+  }
+  at[text.length] = norm.length;
+  return { norm, from, to, at };
+}
+
 export function detectPii(text: string, options: DetectOptions = {}): PiiMatch[] {
+  if (!HIDDEN.test(text)) return detectPlain(text, options);
+  // Detected on the normalized text, reported on the original: a match covers the hidden characters inside it too.
+  const { norm, from, to, at } = normalize(text);
+  const extra = options.extra?.map((m) => ({ ...m, start: at[m.start]!, end: at[m.end]!, value: norm.slice(at[m.start]!, at[m.end]!) }));
+  return detectPlain(norm, { ...options, extra }).flatMap((m) => {
+    if (m.end <= m.start) return [];
+    const start = from[m.start]!;
+    const end = to[m.end - 1]!;
+    return [{ ...m, start, end, value: text.slice(start, end) }];
+  });
+}
+
+function detectPlain(text: string, options: DetectOptions = {}): PiiMatch[] {
   for (const t of [...(options.types ?? []), ...(options.exclude ?? [])]) {
     if (!PII_TYPES.includes(t)) throw new RangeError(`Unknown PII type "${t}". Valid types: ${PII_TYPES.join(', ')}`);
   }
@@ -2075,8 +2358,31 @@ export function detectPii(text: string, options: DetectOptions = {}): PiiMatch[]
     accepted.push(c);
   }
   accepted.sort((a, b) => a.start - b.start);
+  // "Pelanggan Dewi Lestari dan Kaleandra Wirasena": the next name in a list after a name is a person too, even one
+  // no list knows. Followed one name at a time, so "A, B, dan C" is read whole.
+  for (let i = 0; i < accepted.length; i++) {
+    const m = accepted[i]!;
+    if (m.type !== 'NAME') continue;
+    const next = LIST_NEXT_NAME.exec(text.slice(m.end, m.end + 80));
+    if (!next) continue;
+    const words = next[2]!.split(/\s+/).map((w) => w.toLowerCase());
+    if (words.some((w) => NOT_NAME.has(w) || PLACE_WORDS.has(w) || TITLE_WORDS.has(w) || ORGANIZATION.has(w))) continue;
+    // One word must be a name the lists know ("…, Room 1207" is not a person), and a number does not follow a name.
+    if ((words.length < 2 && !isKnownNamePart(words[0]!)) || /^\s*\d/.test(text.slice(m.end + next[0].length, m.end + next[0].length + 3))) continue;
+    const start = m.end + next[1]!.length;
+    const end = start + next[2]!.length;
+    let free = true;
+    for (let k = start; k < end && free; k++) free = taken[k] === 0;
+    if (!free) continue;
+    taken.fill(1, start, end);
+    accepted.splice(i + 1, 0, match('NAME', start, next[2]!, m.confidence));
+  }
   for (const [i, m] of accepted.entries()) {
     if (m.type !== 'NAME') continue;
+    if (notAPerson(text, m)) {
+      accepted[i] = { ...m, end: m.start };
+      continue;
+    }
     // "SUPRIYADI ALIAS UDIN TELAH MENGAMBIL": in capitals nothing marks where a name ends, so it ends at a word that
     // says when, or an active verb (meng-, meny-, memb-, memp-; not men-, as "Mentari" is a name).
     const tail = NAME_TAIL.exec(m.value);
@@ -2085,6 +2391,7 @@ export function detectPii(text: string, options: DetectOptions = {}): PiiMatch[]
   // A match stops before an escape it ran into: a line break read from "\n", or a quote written "\"" in JSON that
   // went through twice. Its value is the text as it is.
   return accepted.flatMap((m) => {
+    if (m.end <= m.start) return []; // dropped above
     let end = m.end;
     for (;;) {
       if (end > m.start && view[end - 1] !== text[end - 1]) end--;

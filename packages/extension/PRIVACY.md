@@ -10,7 +10,7 @@ On the AI chat sites it runs on, the extension reads text you paste or type into
 
 ## What it keeps, and where
 
-- **The mapping from placeholders to real values** (for example `[NIK_1]` → the NIK you pasted), so it can show and copy the real values for you. It is kept in the browser's session storage, in memory only. It is never written to disk and is deleted when you close the browser, or when you choose **Forget all real values**.
+- **The mapping from placeholders to real values** (for example `[NIK_1]` → the NIK you pasted), so it can show and copy the real values for you. It is kept in the browser's session storage, in memory only, separately for each site: what you paste into one AI site is never shown or restored on another. It is never written to disk and is deleted when you close the browser, or when you choose **Forget all real values**.
 - **Your settings**: the sites where you paused the extension, in the browser's local storage.
 
 ## What it does not do

@@ -2,7 +2,14 @@
 // 16424" becomes the street, RT/RW, kode pos, and the kelurahan, kecamatan, kota, and provinsi with their codes.
 // Region names are matched against the Kemendagri data; a region only counts when the rest of the address agrees with
 // it (its parents, a level word such as "kec.", or the kode pos), since many villages share a name.
-import { getWilayah, regionNames, villagesWithPostalCode, type Wilayah, type WilayahLevel } from './wilayah.ts';
+import {
+  WILAYAH_ALIASES,
+  getWilayah,
+  regionNames,
+  villagesWithPostalCode,
+  type Wilayah,
+  type WilayahLevel,
+} from './wilayah.ts';
 
 export type AlamatLevel = 'provinsi' | 'kabupatenKota' | 'kecamatan' | 'kelurahanDesa';
 const LEVEL_KEYS: AlamatLevel[] = ['provinsi', 'kabupatenKota', 'kecamatan', 'kelurahanDesa'];
@@ -44,42 +51,6 @@ const norm = (s: string) =>
     .replace(/['’`]/g, '')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
-
-const PROVINCE_ALIASES: Record<string, string[]> = {
-  '11': ['nad', 'nanggroe aceh darussalam'],
-  '12': ['sumut'],
-  '13': ['sumbar'],
-  '16': ['sumsel'],
-  '19': ['babel', 'bangka belitung'],
-  '21': ['kepri'],
-  '31': ['dki', 'dki jakarta', 'jakarta'],
-  '32': ['jabar'],
-  '33': ['jateng'],
-  '34': ['diy', 'yogyakarta', 'jogja', 'jogjakarta', 'yogya', 'di yogyakarta'],
-  '35': ['jatim'],
-  '52': ['ntb'],
-  '53': ['ntt'],
-  '61': ['kalbar'],
-  '62': ['kalteng'],
-  '63': ['kalsel'],
-  '64': ['kaltim'],
-  '65': ['kaltara'],
-  '71': ['sulut'],
-  '72': ['sulteng'],
-  '73': ['sulsel'],
-  '74': ['sultra'],
-  '76': ['sulbar'],
-  '82': ['malut'],
-  '92': ['papua barat', 'pabar'],
-};
-const REGENCY_ALIASES: Record<string, string[]> = {
-  '31.71': ['jakpus', 'jakarta pusat'],
-  '31.72': ['jakut', 'jakarta utara'],
-  '31.73': ['jakbar', 'jakarta barat'],
-  '31.74': ['jaksel', 'jakarta selatan'],
-  '31.75': ['jaktim', 'jakarta timur'],
-  '36.74': ['tangsel'],
-};
 
 const NUMERALS = [
   ['satu', 'i', '1'],
@@ -126,7 +97,7 @@ function nameIndex(): Map<string, string[]> {
       }
     }
   }
-  for (const [code, aliases] of [...Object.entries(PROVINCE_ALIASES), ...Object.entries(REGENCY_ALIASES)]) {
+  for (const [code, aliases] of Object.entries(WILAYAH_ALIASES)) {
     for (const alias of aliases) add(alias, code);
   }
   return index;
@@ -202,6 +173,9 @@ const RT_RW = /\brt[.:]?\s*0*(\d{1,3})\b(?:\s*(?:[/\\-]|\s)\s*(?:rw[.:]?\s*)?0*(
 const POSTAL_LABEL = /\b(?:kode\s*pos|kodepos|kd\.?\s*pos)\b\s*[.:]?/gi;
 const POSTAL = /(?<![\d.-])[1-9]\d{4}(?![\d.-])/g;
 
+/** Words after which a city's name is the road's: the main road, the trunk road, or the road to it. */
+const ROAD_TO = new Set(['raya', 'lintas', 'poros', 'trans', 'arah', 'akses']);
+
 type Range = [number, number];
 
 function streetRanges(text: string): Range[] {
@@ -222,9 +196,13 @@ function streetRanges(text: string): Range[] {
     const delimited = !!stop && !/^\d/.test(stop.text);
     let length = 0;
     let n = 0;
+    let prev = '';
     for (const w of before.matchAll(/\S+/g)) {
       const word = norm(w[0]);
-      if (n >= 1 && (nameIndex().get(word) ?? []).some((code) => levelOf(code) <= 2)) break;
+      // "Jl. Raya Bogor KM 30", "Jalan Lintas Sumatera": a road named after the city it leads to.
+      const leadsTo = ROAD_TO.has(prev);
+      prev = word;
+      if (n >= 1 && !leadsTo && (nameIndex().get(word) ?? []).some((code) => levelOf(code) <= 2)) break;
       length = w.index + w[0].length;
       n++;
       if ((n >= 2 && /^\d+[a-z]?$/.test(word)) || (!delimited && n >= 1)) break;
