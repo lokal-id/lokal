@@ -134,7 +134,7 @@ export function getHolidays(year: number): HolidayYear {
 /** Holidays on a date (a date can be both, rarely). */
 export function holidaysOn(date: string | Date, options: { timeZone?: string } = {}): Holiday[] {
   const iso = toIsoDate(date, options.timeZone);
-  return yearData(Number(iso.slice(0, 4))).holidays.filter((h) => h.date === iso);
+  return yearData(Number(iso.slice(0, 4))).holidays.filter((h) => h.date === iso).map((h) => ({ ...h }));
 }
 
 export interface WorkingDayOptions {
@@ -152,8 +152,9 @@ export interface WorkingDayOptions {
 export function isWorkingDay(date: string | Date, options: WorkingDayOptions = {}): boolean {
   const iso = toIsoDate(date, options.timeZone);
   const { cutiBersama = true, weekend = [0, 6] } = options;
+  const holidays = holidaysOn(iso);
   if (weekend.includes(new Date(`${iso}T00:00:00Z`).getUTCDay())) return false;
-  return !holidaysOn(iso).some((h) => h.type === 'libur_nasional' || cutiBersama);
+  return !holidays.some((h) => h.type === 'libur_nasional' || cutiBersama);
 }
 
 function shift(iso: string, days: number): string {
@@ -165,6 +166,11 @@ function shift(iso: string, days: number): string {
 /** The date `n` working days after (or before, if negative) `date`. SLA and delivery estimates. */
 export function addWorkingDays(date: string | Date, n: number, options: WorkingDayOptions = {}): string {
   let iso = toIsoDate(date, options.timeZone);
+  yearData(Number(iso.slice(0, 4)));
+  if (!Number.isSafeInteger(n)) throw new RangeError('Jumlah hari kerja harus bilangan bulat yang aman.');
+  if (n !== 0 && new Set((options.weekend ?? [0, 6]).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)).size === 7) {
+    throw new RangeError('Jadwal harus memiliki setidaknya satu hari kerja.');
+  }
   const step = n < 0 ? -1 : 1;
   for (let left = Math.abs(n); left > 0; ) {
     iso = shift(iso, step);

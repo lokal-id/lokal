@@ -63,3 +63,19 @@ test('tanggal yang tidak ada ditolak, bukan digeser ke bulan berikutnya', () => 
   assert.throws(() => addWorkingDays('2026-13-01', 1), /tidak valid/);
   assert.throws(() => isWorkingDay('17-08-2026'), /YYYY-MM-DD/);
 });
+
+test("calendar results cannot change the stored holiday", () => {
+  const [holiday] = holidaysOn("2026-01-01");
+  holiday!.type = "cuti_bersama";
+  assert.equal(isWorkingDay("2026-01-01", { cutiBersama: false }), false);
+});
+
+test("workday arithmetic checks supported dates and integer offsets", () => {
+  assert.throws(() => isWorkingDay("2028-01-01"), /belum tersedia/);
+  assert.throws(() => addWorkingDays("2028-01-01", 0), /belum tersedia/);
+  for (const days of [0.5, NaN, Infinity]) {
+    assert.throws(() => addWorkingDays("2026-01-05", days), /bilangan bulat/);
+  }
+  assert.throws(() => addWorkingDays("2026-01-05", 1, { weekend: [0, 1, 2, 3, 4, 5, 6] }), /satu hari kerja/);
+  assert.equal(addWorkingDays("2026-12-31", 1), "2027-01-04");
+});

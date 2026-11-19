@@ -113,6 +113,7 @@ const rupiahTexts = [
   'constructor', '2 toString', '~2jt', '±500rb', 'Rp.25.000', 'IDR 1.000.000', '1.500', '1,500', '1,5', '1.5', '1.500jt',
   'rb', 'juta', '12 rebu', 'sejuta', 'semiliar', '3 noban', 'jigo', 'gocap ceng', '5 jt-an', '1jt-an', 'kurleb 300rb',
   '2,5 t', '1 triliun', 'sebelas ribu', 'dua belas', 'tujuh puluh', '1.234.567,89', '1,234,567.89', '10.5.3', '1e5',
+  '0 juta', '0 ceban', 'nol ratus ribu', 'ceban', '100/200', '9007199254740991', '9007199254740993', '9007199254740990,1',
   '  Rp 1.000  ', 'harga 50rb dong', 'total 1jt', 'sembilan ratus sembilan puluh sembilan', '99999999999999999999',
 ];
 const words = ['satu', 'dua', 'tiga', 'lima', 'sepuluh', 'sebelas', 'belas', 'puluh', 'ratus', 'ribu', 'juta', 'rb',
