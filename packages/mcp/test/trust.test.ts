@@ -3,12 +3,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { loadConfig, recordTrust, trustStore } from '../src/files.ts';
+import { loadConfig, loadUnmasked, recordTrust, recordUnmasked, trustStore, unmaskedRecordDirs } from '../src/files.ts';
 
 const CLI = path.resolve(import.meta.dirname, '../src/cli.ts');
 process.env.LOKAL_CACHE_DIR = mkdtempSync(path.join(tmpdir(), 'lokal-cache-'));
@@ -165,7 +165,7 @@ test('guard: salinan data dengan ekstensi lain tetap data, kode dan dokumentasi 
     // The copy happens in one command; reading it comes in the next.
     assert.equal(bash(dir, 'cp pelanggan.csv catatan.md').status, 0, 'copying prints nothing');
     copyFileSync(path.join(dir, 'pelanggan.csv'), path.join(dir, 'catatan.md')); // what the command then does
-    assert.match(readFileSync(path.join(dir, '.lokal', 'unmasked.json'), 'utf8'), /catatan\.md/, 'the copy is listed as data');
+    assert.ok(loadUnmasked(dir).includes(path.join(dir, 'catatan.md')), 'the copy is listed as data');
     assert.equal(guard(dir, { tool_name: 'Read', tool_input: { file_path: path.join(dir, 'catatan.md') } }).status, 2);
     assert.equal(bash(dir, 'cat catatan.md').status, 2);
     // A copy made some other way (a script) is judged by what it holds: records on nearly every line.
@@ -244,6 +244,79 @@ test('read_file_masked dan write_file_unmasked: pesan yang jelas untuk argumen y
     assert.equal(ok.isError, undefined, ok.content[0]!.text);
   } finally {
     await client.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('unmasked output is tracked by either store and reports failure when both are unavailable', () => {
+  const cacheOnly = project({ '.lokal': '' });
+  const neither = project({ '.lokal': '' });
+  const blockedCacheDir = unmaskedRecordDirs(neither).cache;
+  try {
+    const first = path.join(cacheOnly, 'output.txt');
+    assert.equal(recordUnmasked(cacheOnly, first), true);
+    assert.deepEqual(loadUnmasked(cacheOnly), [first]);
+
+    mkdirSync(path.dirname(blockedCacheDir), { recursive: true });
+    writeFileSync(blockedCacheDir, '');
+    const second = path.join(neither, 'output.txt');
+    assert.equal(recordUnmasked(neither, second), false);
+    assert.deepEqual(loadUnmasked(neither), []);
+  } finally {
+    rmSync(unmaskedRecordDirs(cacheOnly).cache, { recursive: true, force: true });
+    rmSync(blockedCacheDir, { force: true });
+    rmSync(cacheOnly, { recursive: true, force: true });
+    rmSync(neither, { recursive: true, force: true });
+  }
+});
+
+
+test('parallel MCP writers keep every output protected in either registry', async () => {
+  const dir = project({
+    '.lokal/.gitignore': '*\n',
+    '.lokal/unmasked.json': JSON.stringify({ files: ['older.md'] }),
+  });
+  const dirs = unmaskedRecordDirs(dir);
+  const clients = Array.from({ length: 4 }, (_, i) => new Client({ name: `writer-${i}`, version: '0' }));
+  const outputs = clients.map((_, i) => `output-${i}.md`);
+  try {
+    await Promise.all(clients.map((client) => client.connect(new StdioClientTransport({
+      command: process.execPath,
+      args: [CLI],
+      env: { ...process.env, LOKAL_ROOT: dir } as Record<string, string>,
+    }))));
+    const placeholders = await Promise.all(clients.map(async (client) => {
+      const result = (await client.callTool({ name: 'read_file_masked', arguments: { path: 'pelanggan.csv' } })) as { content: Array<{ text: string }> };
+      const placeholder = /\[NIK_\d+\]/.exec(result.content[0]!.text)?.[0];
+      assert.ok(placeholder);
+      return placeholder;
+    }));
+    const results = await Promise.all(clients.map((client, i) => client.callTool({
+      name: 'write_file_unmasked',
+      arguments: { path: outputs[i], content: `NIK: ${placeholders[i]}` },
+    })));
+    assert.ok(results.every((result) => !result.isError));
+    mkdirSync(path.dirname(dirs.cache), { recursive: true });
+    writeFileSync(`${dirs.cache}.json`, JSON.stringify({ files: ['cached-older.md'] }));
+    const expected = outputs.map((file) => path.join(dir, file));
+    assert.deepEqual(
+      new Set(loadUnmasked(dir)),
+      new Set([...expected, path.join(dir, 'older.md'), path.join(dir, 'cached-older.md')]),
+    );
+    const read = (file: string) => guard(dir, { tool_name: 'Read', tool_input: { file_path: file } });
+    for (const file of expected) assert.equal(read(file).status, 2);
+
+    // Each store independently retained all four writes.
+    const savedProjectRecords = `${dirs.project}-saved`;
+    renameSync(dirs.project, savedProjectRecords);
+    for (const file of expected) assert.ok(loadUnmasked(dir).includes(file));
+    renameSync(savedProjectRecords, dirs.project);
+    rmSync(dirs.cache, { recursive: true, force: true });
+    for (const file of expected) assert.ok(loadUnmasked(dir).includes(file));
+  } finally {
+    await Promise.allSettled(clients.map((client) => client.close()));
+    rmSync(dirs.cache, { recursive: true, force: true });
+    rmSync(`${dirs.cache}.json`, { force: true });
     rmSync(dir, { recursive: true, force: true });
   }
 });

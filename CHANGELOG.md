@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The format is based on 
 
 ### Fixed
 
+- Keep restored-file records from concurrent MCP sessions independently in both the project and machine cache. Update the guard hook and MCP server together.
 - Preserve explicit zero in Rupiah amounts and reject ambiguous or unsafe values in TypeScript and Python.
 - Isolate returned holiday entries from the shared calendar and validate working-day arithmetic in both ports.
 
