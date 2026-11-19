@@ -43,8 +43,10 @@ if (command === 'guard') {
   const { startHttpServer } = await import('./server.ts');
   const host = option('host') ?? '127.0.0.1';
   const port = Number(option('port') ?? process.env.PORT ?? 3000);
-  await startHttpServer(port, host);
-  process.stderr.write(`Lokal MCP server on http://${host}:${port}/mcp (data tools only; put it behind HTTPS for remote clients)\n`);
+  const server = await startHttpServer(port, host);
+  const address = server.address();
+  const actualPort = address && typeof address === 'object' ? address.port : port;
+  process.stderr.write(`Lokal MCP server on http://${host}:${actualPort}/mcp (data tools only; put it behind HTTPS for remote clients)\n`);
 } else if (command === undefined || command === 'serve') {
   const { runServer } = await import('./server.ts');
   await runServer();
