@@ -1,3 +1,7 @@
+import { spawnSync } from "node:child_process";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -70,4 +74,41 @@ test('jumlah wilayah sama dengan rekap Kepmendagri 300.2.2-2138/2025', () => {
   };
   walk();
   assert.deepEqual(count, { provinsi: 38, kabupaten: 416, kota: 98, kecamatan: 7285, kelurahan: 8496, desa: 75266 });
+});
+
+
+test("wilayah generator validates both inputs before writing a snapshot", (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), "lokal-data-"));
+  t.after(() => {
+    // This fixture only contains generated data and copies of the input scripts.
+    rmSync(root, { recursive: true, force: true });
+  });
+  for (const dir of ["scripts", "src", "data"]) mkdirSync(path.join(root, dir));
+  const script = path.join(root, "scripts", "build-wilayah.ts");
+  copyFileSync(new URL("../scripts/build-wilayah.ts", import.meta.url), script);
+
+  const wilayah = path.join(root, "wilayah.sql");
+  const postal = path.join(root, "kodepos.sql");
+  const output = path.join(root, "data", "desa.json");
+  const quote = String.fromCharCode(39);
+  const entry = (code: string, value: string) => `(${quote}${code}${quote}, ${quote}${value}${quote})`;
+  const codes = ["32", "32.76", "32.76.01", "32.76.01.1001"];
+  const valid = codes.map((code) => entry(code, code)).join(", ");
+  const postcodes = entry(codes[3]!, "16431");
+  const build = (...args: string[]) => spawnSync(process.execPath, [script, wilayah, ...args], { encoding: "utf8" });
+  writeFileSync(wilayah, valid);
+  writeFileSync(postal, postcodes);
+  const first = build(postal);
+  assert.equal(first.status, 0, first.stderr);
+  assert.match(first.stdout, /wilayah.sql SHA-256=[0-9a-f]{64}/);
+  const original = readFileSync(output, "utf8");
+  assert.deepEqual(JSON.parse(original), { "32.76.01.1001": "32.76.01.1001" });
+
+  writeFileSync(wilayah, valid + ", " + entry("32.76.01", "duplicate"));
+  assert.match(build(postal).stderr, /Duplicate wilayah code/);
+  writeFileSync(wilayah, valid.replaceAll("32.76.01.1001", "32.76.02.1001"));
+  assert.match(build(postal).stderr, /Missing parent/);
+  writeFileSync(wilayah, valid + ", " + entry("32.76.01.1002", "new village"));
+  assert.match(build().stderr, /Missing kode pos/);
+  assert.equal(readFileSync(output, "utf8"), original);
 });

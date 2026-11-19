@@ -400,6 +400,53 @@
   "out": null
  },
  {
+  "text": "0 juta",
+  "out": {
+   "amount": 0,
+   "approximate": false
+  }
+ },
+ {
+  "text": "0 ceban",
+  "out": {
+   "amount": 0,
+   "approximate": false
+  }
+ },
+ {
+  "text": "nol ratus ribu",
+  "out": {
+   "amount": 0,
+   "approximate": false
+  }
+ },
+ {
+  "text": "ceban",
+  "out": {
+   "amount": 10000,
+   "approximate": false
+  }
+ },
+ {
+  "text": "100/200",
+  "out": null
+ },
+ {
+  "text": "9007199254740991",
+  "out": {
+   "amount": 9007199254740991,
+   "approximate": false
+  }
+ },
+ {
+  "text": "9007199254740993",
+  "out": null
+ },
+ {
+  "text": "9007199254740990,1",
+  "out": null
+ },
+ {
   "text": "  Rp 1.000  ",
   "out": {
    "amount": 1000,
@@ -429,10 +476,7 @@
  },
  {
   "text": "99999999999999999999",
-  "out": {
-   "amount": 100000000000000000000,
-   "approximate": false
-  }
+  "out": null
  },
  {
   "text": "juta-k-ribu-tiga-tiga",

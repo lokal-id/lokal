@@ -106,7 +106,9 @@ function parseNumberToken(tok: string, hasUnit: boolean): number {
   } else {
     normalized = tok;
   }
-  return Number(normalized);
+  const value = Number(normalized);
+  if (/\.\d*[1-9]/.test(normalized) && value * 100 > Number.MAX_SAFE_INTEGER) return Number.NaN;
+  return value;
 }
 
 function stripApproxSuffix(tok: string): { tok: string; approx: boolean } {
@@ -126,7 +128,7 @@ function stripApproxSuffix(tok: string): { tok: string; approx: boolean } {
 /**
  * Parses how Indonesians actually write money:
  * "Rp 25.000", "1,5jt", "2jtan", "50rb-an", "goceng", "2 ceban", "sejuta setengah",
- * "dua ratus lima puluh ribu", "1jt 500rb". Returns null when the text is not an amount.
+ * "dua ratus lima puluh ribu", "1jt 500rb". Returns null for ambiguous or unsafe amounts.
  *
  * "m" is read as miliar (Indonesian usage), not million.
  */
@@ -144,7 +146,8 @@ export function parseRupiah(text: string): ParsedRupiah | null {
     .replace(/(\d)([a-z])/g, '$1 $2')
     .replace(/([a-z])(\d)/g, '$1 $2');
 
-  const rawTokens = t.split(/[\s\-/]+/).filter(Boolean);
+  if (t.includes('/')) return null;
+  const rawTokens = t.split(/[\s-]+/).filter(Boolean);
   let approximate = false;
   const tokens: string[] = [];
   for (const raw of rawTokens) {
@@ -157,9 +160,10 @@ export function parseRupiah(text: string): ParsedRupiah | null {
 
   let total = 0;
   let current = 0;
-  let lastDigit = 0;
+  let lastDigit: number | undefined;
   let lastScale = 0;
   let sawValue = false;
+  let hasMultiplier = false;
 
   const isScaleToken = (tok: string | undefined) =>
     tok !== undefined && (Object.hasOwn(SCALES, tok) || Object.hasOwn(SE_SCALES, tok));
@@ -172,58 +176,69 @@ export function parseRupiah(text: string): ParsedRupiah | null {
       const n = parseNumberToken(tok, isScaleToken(next) || (next !== undefined && Object.hasOwn(SLANG_AMOUNTS, next)));
       if (!Number.isFinite(n)) return null;
       current += n;
+      hasMultiplier = true;
       lastDigit = n;
       sawValue = true;
     } else if (Object.hasOwn(DIGIT_WORDS, tok)) {
       const n = DIGIT_WORDS[tok]!;
       current += n;
+      hasMultiplier = true;
       lastDigit = n;
       sawValue = true;
     } else if (tok === 'sepuluh' || tok === 'sebelas' || tok === 'seratus') {
       current += tok === 'sepuluh' ? 10 : tok === 'sebelas' ? 11 : 100;
-      lastDigit = 0;
+      hasMultiplier = true;
+      lastDigit = undefined;
       sawValue = true;
     } else if (tok === 'belas') {
       current += 10;
-      lastDigit = 0;
+      hasMultiplier = true;
+      lastDigit = undefined;
     } else if (tok === 'puluh' || tok === 'ratus') {
       const mult = tok === 'puluh' ? 10 : 100;
-      current = current - lastDigit + (lastDigit || 1) * mult;
-      lastDigit = 0;
+      current = current - (lastDigit ?? 0) + (lastDigit ?? 1) * mult;
+      hasMultiplier = true;
+      lastDigit = undefined;
       sawValue = true;
     } else if (Object.hasOwn(SE_SCALES, tok)) {
       const scale = SE_SCALES[tok]!;
       total += (current + 1) * scale;
       current = 0;
-      lastDigit = 0;
+      hasMultiplier = false;
+      lastDigit = undefined;
       lastScale = scale;
       sawValue = true;
     } else if (Object.hasOwn(SCALES, tok)) {
       if (!sawValue) return null;
       const scale = SCALES[tok]!;
-      total += (current || 1) * scale;
+      total += (hasMultiplier ? current : 1) * scale;
       current = 0;
-      lastDigit = 0;
+      hasMultiplier = false;
+      lastDigit = undefined;
       lastScale = scale;
     } else if (Object.hasOwn(SLANG_NUMBERS, tok)) {
       current += SLANG_NUMBERS[tok]!;
-      lastDigit = 0;
+      hasMultiplier = true;
+      lastDigit = undefined;
       sawValue = true;
     } else if (Object.hasOwn(SLANG_AMOUNTS, tok)) {
-      total += (current || 1) * SLANG_AMOUNTS[tok]!;
+      total += (hasMultiplier ? current : 1) * SLANG_AMOUNTS[tok]!;
       current = 0;
-      lastDigit = 0;
+      hasMultiplier = false;
+      lastDigit = undefined;
       lastScale = 0;
       sawValue = true;
     } else if (tok === 'setengah') {
       if (isScaleToken(next)) {
         // "setengah juta", "dua setengah juta"
         current += 0.5;
+        hasMultiplier = true;
       } else if (lastScale) {
         // "sejuta setengah"
         total += lastScale * 0.5;
       } else {
         current += 0.5;
+        hasMultiplier = true;
       }
       sawValue = true;
     } else if (APPROX_WORDS.has(tok)) {
@@ -236,6 +251,9 @@ export function parseRupiah(text: string): ParsedRupiah | null {
   }
 
   if (!sawValue) return null;
-  const amount = Math.round((total + current) * 100) / 100;
+  const value = total + current;
+  if (!Number.isFinite(value) || value > Number.MAX_SAFE_INTEGER) return null;
+  if (!Number.isInteger(value) && value * 100 > Number.MAX_SAFE_INTEGER) return null;
+  const amount = Number.isInteger(value) ? value : Math.round(value * 100) / 100;
   return { amount: negative ? -amount : amount, approximate };
 }

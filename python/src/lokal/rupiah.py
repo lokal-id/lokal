@@ -141,7 +141,10 @@ def _parse_number_token(tok: str, has_unit: bool) -> float:
         normalized = tok.replace(sep, '', 1) if is_thousands else tok.replace(sep, '.', 1)
     else:
         normalized = tok
-    return float(normalized)
+    value = float(normalized)
+    if re.search(r'\.[0-9]*[1-9]', normalized) and value * 100 > 2**53 - 1:
+        return float('nan')
+    return value
 
 
 def _strip_approx_suffix(tok: str) -> tuple[str, bool]:
@@ -160,7 +163,7 @@ def parse_rupiah(text: str) -> Optional[ParsedRupiah]:
     """Parses how Indonesians actually write money.
 
     "Rp 25.000", "1,5jt", "2jtan", "50rb-an", "goceng", "2 ceban", "sejuta setengah",
-    "dua ratus lima puluh ribu", "1jt 500rb". Returns None when the text is not an amount.
+    "dua ratus lima puluh ribu", "1jt 500rb". Returns None for ambiguous or unsafe amounts.
     "m" is read as miliar (Indonesian usage), not million.
     """
     t = trim(str(text).lower())
@@ -178,6 +181,8 @@ def parse_rupiah(text: str) -> Optional[ParsedRupiah]:
     t = re.sub(r'([0-9])([a-z])', r'\1 \2', t)
     t = re.sub(r'([a-z])([0-9])', r'\1 \2', t)
 
+    if '/' in t:
+        return None
     approximate = False
     tokens: list[str] = []
     for raw in _TOKEN_SPLIT.split(t):
@@ -191,9 +196,10 @@ def parse_rupiah(text: str) -> Optional[ParsedRupiah]:
 
     total = 0.0
     current = 0.0
-    last_digit = 0.0
+    last_digit: Optional[float] = None
     last_scale = 0.0
     saw_value = False
+    has_multiplier = False
 
     def is_scale_token(tok: Optional[str]) -> bool:
         return tok is not None and (tok in _SCALES or tok in _SE_SCALES)
@@ -206,57 +212,69 @@ def parse_rupiah(text: str) -> Optional[ParsedRupiah]:
             if not math.isfinite(n):
                 return None
             current += n
+            has_multiplier = True
             last_digit = n
             saw_value = True
         elif tok in _DIGIT_WORDS:
             n = _DIGIT_WORDS[tok]
             current += n
+            has_multiplier = True
             last_digit = n
             saw_value = True
         elif tok in ('sepuluh', 'sebelas', 'seratus'):
             current += 10 if tok == 'sepuluh' else 11 if tok == 'sebelas' else 100
-            last_digit = 0
+            has_multiplier = True
+            last_digit = None
             saw_value = True
         elif tok == 'belas':
             current += 10
-            last_digit = 0
+            has_multiplier = True
+            last_digit = None
         elif tok in ('puluh', 'ratus'):
             mult = 10 if tok == 'puluh' else 100
-            current = current - last_digit + (last_digit or 1) * mult
-            last_digit = 0
+            digit = 1 if last_digit is None else last_digit
+            current = current - (last_digit or 0) + digit * mult
+            has_multiplier = True
+            last_digit = None
             saw_value = True
         elif tok in _SE_SCALES:
             scale = _SE_SCALES[tok]
             total += (current + 1) * scale
             current = 0
-            last_digit = 0
+            has_multiplier = False
+            last_digit = None
             last_scale = scale
             saw_value = True
         elif tok in _SCALES:
             if not saw_value:
                 return None
             scale = _SCALES[tok]
-            total += (current or 1) * scale
+            total += (current if has_multiplier else 1) * scale
             current = 0
-            last_digit = 0
+            has_multiplier = False
+            last_digit = None
             last_scale = scale
         elif tok in _SLANG_NUMBERS:
             current += _SLANG_NUMBERS[tok]
-            last_digit = 0
+            has_multiplier = True
+            last_digit = None
             saw_value = True
         elif tok in _SLANG_AMOUNTS:
-            total += (current or 1) * _SLANG_AMOUNTS[tok]
+            total += (current if has_multiplier else 1) * _SLANG_AMOUNTS[tok]
             current = 0
-            last_digit = 0
+            has_multiplier = False
+            last_digit = None
             last_scale = 0
             saw_value = True
         elif tok == 'setengah':
             if is_scale_token(nxt):
                 current += 0.5  # "setengah juta", "dua setengah juta"
+                has_multiplier = True
             elif last_scale:
                 total += last_scale * 0.5  # "sejuta setengah"
             else:
                 current += 0.5
+                has_multiplier = True
             saw_value = True
         elif tok in _APPROX_WORDS:
             approximate = True
@@ -267,7 +285,13 @@ def parse_rupiah(text: str) -> Optional[ParsedRupiah]:
 
     if not saw_value:
         return None
-    amount = round_half_up((total + current) * 100) / 100
+    value = total + current
+    max_safe_integer = 2**53 - 1
+    if not math.isfinite(value) or value > max_safe_integer:
+        return None
+    if not value.is_integer() and value * 100 > max_safe_integer:
+        return None
+    amount = value if value.is_integer() else round_half_up(value * 100) / 100
     if negative:
         amount = -amount
     return ParsedRupiah(int(amount) if float(amount).is_integer() else amount, approximate)

@@ -102,3 +102,14 @@ test('terbilang angka desimal sangat kecil', () => {
   assert.equal(terbilang(1e-7), 'nol koma nol nol nol nol nol nol satu');
   assert.throws(() => terbilang(1e21), /bigint/);
 });
+
+test("parseRupiah preserves explicit zero and rejects ambiguous or unsafe amounts", () => {
+  for (const text of ["0 juta", "0 ceban", "nol ratus ribu"]) {
+    assert.deepEqual(parseRupiah(text), { amount: 0, approximate: false });
+  }
+  assert.equal(parseRupiah("ceban")?.amount, 10_000);
+  assert.equal(parseRupiah("9007199254740991")?.amount, Number.MAX_SAFE_INTEGER);
+  assert.equal(parseRupiah("9007199254740993"), null);
+  assert.equal(parseRupiah("9007199254740990,1"), null);
+  assert.equal(parseRupiah("100/200"), null);
+});

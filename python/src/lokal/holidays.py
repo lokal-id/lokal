@@ -159,9 +159,10 @@ def is_working_day(date: DateLike, *, cuti_bersama: bool = True, weekend: Iterab
     0 = Minggu … 6 = Sabtu.
     """
     d = _to_date(date)
+    holidays = holidays_on(d)
     if _js_weekday(d) in tuple(weekend):
         return False
-    return not any(h.type == 'libur_nasional' or cuti_bersama for h in holidays_on(d))
+    return not any(h.type == 'libur_nasional' or cuti_bersama for h in holidays)
 
 
 @overload
@@ -179,6 +180,11 @@ def add_working_days(
     """
     d = _to_date(date)
     off = tuple(weekend)
+    _year_data(d.year)
+    if type(n) is not int or abs(n) > 2**53 - 1:
+        raise ValueError('Jumlah hari kerja harus bilangan bulat yang aman.')
+    if n and all(day in off for day in range(7)):
+        raise ValueError('Jadwal harus memiliki setidaknya satu hari kerja.')
     step = _dt.timedelta(days=-1 if n < 0 else 1)
     left = abs(n)
     while left > 0:

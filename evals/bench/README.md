@@ -35,6 +35,8 @@ For each type:
 - **F1**: the harmonic mean of the two
 - **protected**: labelled values with every letter and digit masked, by a detection of any type. This is the number that matters for privacy: a NIK masked as a KK still never reaches the model.
 
+The per-format table also counts **exposed documents**. A labelled document is counted once if any labelled value retains a letter or digit. Documents with no labelled values are excluded from that denominator.
+
 A detection outside every labelled value is a **false positive**. Some text is neutral: the district and city after a street address do not identify a household, so masking them is not a false positive and leaving them is not a leak.
 
 ## The baseline

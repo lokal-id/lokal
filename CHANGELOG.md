@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format is based on 
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve explicit zero in Rupiah amounts and reject ambiguous or unsafe values in TypeScript and Python.
+- Isolate returned holiday entries from the shared calendar and validate working-day arithmetic in both ports.
+
+### Changed
+
+- Validate region hierarchy and postal-code coverage before regenerating wilayah data.
+- Report how many labelled Samaran benchmark documents still contain a value that is not fully masked.
+
 ## [0.18.1] - 2026-11-19
 
 ### Security

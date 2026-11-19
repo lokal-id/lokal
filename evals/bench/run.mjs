@@ -62,9 +62,11 @@ const started = performance.now();
 for (const doc of docs) {
   const found = detectPii(doc.text);
   for (const m of extra.get(doc.id) ?? []) found.push({ ...m, value: doc.text.slice(m.start, m.end) });
-  const fmt = formats.get(doc.format) ?? { gold: 0, protected: 0, docs: 0, falsePositives: 0 };
+  const fmt = formats.get(doc.format) ?? { gold: 0, protected: 0, docs: 0, labelledDocs: 0, exposedDocs: 0, falsePositives: 0 };
   formats.set(doc.format, fmt);
   fmt.docs++;
+  if (doc.spans.length) fmt.labelledDocs++;
+  let exposed = false;
   const covered = new Uint8Array(doc.text.length);
   for (const m of found) covered.fill(1, m.start, m.end);
   for (const g of doc.spans) {
@@ -78,10 +80,12 @@ for (const doc of docs) {
       s.protected++;
       fmt.protected++;
     } else {
+      exposed = true;
       const got = found.filter((m) => overlaps(m, g)).map((m) => `${m.type} ${JSON.stringify(m.value)}`);
       misses.push(`${doc.id} [${doc.format}] ${g.type} ${JSON.stringify(doc.text.slice(g.start, g.end))}${got.length ? ` (partly: ${got.join(', ')})` : ''}`);
     }
   }
+  if (exposed) fmt.exposedDocs++;
   for (const m of found) {
     const s = of(m.type);
     s.detected++;
@@ -135,7 +139,14 @@ const result = {
   labelled: total.gold,
   overall,
   types,
-  formats: Object.fromEntries([...formats].map(([f, s]) => [f, { documents: s.docs, labelled: s.gold, protected: ratio(s.protected, s.gold), falsePositives: s.falsePositives }])),
+  formats: Object.fromEntries([...formats].map(([format, stats]) => [format, {
+    documents: stats.docs,
+    labelled: stats.gold,
+    protected: ratio(stats.protected, stats.gold),
+    labelledDocuments: stats.labelledDocs,
+    exposedDocuments: stats.exposedDocs,
+    falsePositives: stats.falsePositives,
+  }])),
 };
 
 // --- report --------------------------------------------------------------------------------------------------------
@@ -148,11 +159,14 @@ for (const t of types) {
   console.log(`${t.type.padEnd(16)} ${String(t.gold).padStart(8)}  ${pct(t.precision).padStart(9)}  ${pct(t.recall).padStart(6)}  ${pct(t.f1)}  ${pct(t.protected).padStart(9)}  ${ci(t.protectedCI)}`);
 }
 console.log(`${'all'.padEnd(16)} ${String(total.gold).padStart(8)}  ${pct(overall.precision).padStart(9)}  ${pct(overall.recall).padStart(6)}  ${pct(overall.f1)}  ${pct(overall.protected).padStart(9)}  ${ci(overall.protectedCI)}`);
-console.log('\nformat       documents  protected  false positives');
+console.log('\nformat       documents  protected  exposed/labelled docs  false positives');
 for (const [f, s] of Object.entries(result.formats)) {
-  console.log(`${f.padEnd(12)} ${String(s.documents).padStart(9)}  ${pct(s.protected).padStart(9)}  ${String(s.falsePositives).padStart(15)}`);
+  console.log(`${f.padEnd(12)} ${String(s.documents).padStart(9)}  ${pct(s.protected).padStart(9)}  ${(`${s.exposedDocuments}/${s.labelledDocuments}`).padStart(21)}  ${String(s.falsePositives).padStart(15)}`);
 }
-console.log(`\n${misses.length} values not fully masked, ${falsePositives.length} false positives`);
+const exposedDocs = [...formats.values()].reduce((sum, stats) => sum + stats.exposedDocs, 0);
+const labelledDocs = [...formats.values()].reduce((sum, stats) => sum + stats.labelledDocs, 0);
+console.log(`\n${exposedDocs}/${labelledDocs} labelled documents contain at least one value that was not fully masked`);
+console.log(`${misses.length} values not fully masked, ${falsePositives.length} false positives`);
 if (flag('misses')) {
   if (split === 'test') console.log('(test split: read these to understand the numbers, not to tune a detector; add a dev template instead)');
   console.log(`\nnot fully masked:\n  ${misses.join('\n  ')}\n\nfalse positives:\n  ${falsePositives.join('\n  ')}`);

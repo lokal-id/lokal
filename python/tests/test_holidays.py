@@ -81,3 +81,15 @@ def test_dates_that_do_not_exist_are_rejected() -> None:
         add_working_days('2026-13-01', 1)
     with pytest.raises(ValueError, match='YYYY-MM-DD'):
         is_working_day('17-08-2026')
+
+
+def test_workday_arithmetic_validates_its_calendar_and_offset() -> None:
+    with pytest.raises(ValueError, match='belum tersedia'):
+        is_working_day('2028-01-01')
+    with pytest.raises(ValueError, match='belum tersedia'):
+        add_working_days('2028-01-01', 0)
+    with pytest.raises(ValueError, match='bilangan bulat'):
+        add_working_days('2026-01-05', 0.5)  # type: ignore[call-overload]
+    with pytest.raises(ValueError, match='satu hari kerja'):
+        add_working_days('2026-01-05', 1, weekend=range(7))
+    assert add_working_days('2026-12-31', 1) == '2027-01-04'
