@@ -3,13 +3,15 @@
 //
 //   npm run build && node scripts/smoke-mcp.mjs
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { createInterface } from 'node:readline';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = path.join(ROOT, 'packages/mcp/dist/cli.js');
@@ -29,13 +31,42 @@ try {
   assert.equal((await call('anonymize_file', { paths: ['pelanggan.csv'], output: 'staging.csv', secret: 's' })).files[0].replaced.NIK, 1);
   await client.close();
 
+  const http = spawn(process.execPath, [CLI, 'serve', '--http', '--port', '0'], { stdio: ['ignore', 'ignore', 'pipe'] });
+  const stderr = createInterface({ input: http.stderr });
+  const remote = new Client({ name: 'smoke-http', version: '0' });
+  try {
+    const url = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('HTTP bundle did not announce its listener')), 10_000);
+      http.once('error', (error) => { clearTimeout(timer); reject(error); });
+      http.once('exit', (code) => { clearTimeout(timer); reject(new Error(`HTTP bundle exited with code ${code}`)); });
+      stderr.on('line', (line) => {
+        const match = line.match(/http:\/\/127\.0\.0\.1:\d+\/mcp/);
+        if (match) {
+          clearTimeout(timer);
+          resolve(new URL(match[0]));
+        } else {
+          console.error(line);
+        }
+      });
+    });
+    const timeout = { timeout: 5000 };
+    await remote.connect(new StreamableHTTPClientTransport(url), timeout);
+    const { tools: remoteTools } = await remote.listTools(undefined, timeout);
+    assert.ok(remoteTools.some((tool) => tool.name === 'parse_nik'));
+    assert.ok(!remoteTools.some((tool) => tool.name === 'read_file_masked'));
+  } finally {
+    await remote.close();
+    stderr.close();
+    http.kill();
+  }
+
   const run = (args, input) => spawnSync(process.execPath, [CLI, ...args], { input, encoding: 'utf8', cwd: dir, env: { ...process.env, CLAUDE_PROJECT_DIR: dir } });
   assert.equal(run(['guard'], JSON.stringify({ hook_event_name: 'UserPromptSubmit', prompt: 'NIK 3201011508950001' })).status, 2);
   const scan = run(['scan', 'pelanggan.csv', '--format', 'json']);
   assert.equal(scan.status, 1, scan.stderr);
   assert.equal(JSON.parse(scan.stdout).findings.filter((f) => f.type === 'NIK').length, 1);
   for (const command of ['kembaran', 'proxy', 'scan']) assert.equal(run([command, '--help']).status, 0, command);
-  console.log(`bundle ok: ${tools.length} tools, guard, kembaran, proxy, scan`);
+  console.log(`bundle ok: ${tools.length} tools, HTTP, guard, kembaran, proxy, scan`);
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }
