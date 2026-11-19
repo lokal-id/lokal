@@ -1,13 +1,13 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { samples } from './pdf-builder.ts';
-import { recordTrust } from '../src/files.ts';
+import { recordTrust, unmaskedRecordDirs } from '../src/files.ts';
 
 const CLI = path.resolve(import.meta.dirname, '../src/cli.ts');
 
@@ -695,8 +695,14 @@ test('guard: file yang ditulis write_file_unmasked diperiksa seperti file data, 
   try {
     const wrote = await call('write_file_unmasked', { path: 'docs/catatan.md', content: `# Catatan\n\n${name}, NIK ${nik}\n` });
     assert.equal(wrote.isError, undefined, wrote.text);
-    assert.match(readFileSync(path.join(dir, '.lokal', 'unmasked.json'), 'utf8'), /docs\/catatan\.md/);
-    assert.ok(!readFileSync(path.join(dir, '.lokal', 'unmasked.json'), 'utf8').includes('3201011508950001'), 'only paths');
+    const registry = unmaskedRecordDirs(dir).project;
+    const record = readdirSync(registry).find((name) => {
+      const entry = JSON.parse(readFileSync(path.join(registry, name), 'utf8')) as { files: string[] };
+      return entry.files.includes('docs/catatan.md');
+    });
+    assert.ok(record);
+    const recordPath = path.join(registry, record);
+    assert.deepEqual(JSON.parse(readFileSync(recordPath, 'utf8')), { files: ['docs/catatan.md'] });
     const read = guard({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: note }, cwd: dir });
     assert.equal(read.status, 2, read.stderr);
     const cat = guard({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'cat docs/catatan.md' }, cwd: dir });
@@ -705,12 +711,12 @@ test('guard: file yang ditulis write_file_unmasked diperiksa seperti file data, 
     assert.equal(guard({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: path.join(dir, 'README.md') }, cwd: dir }).status, 0);
     // The list cannot be emptied or deleted to make the file readable again; without the one in the project, the copy
     // in the user's cache still holds it.
-    for (const command of ['rm .lokal/unmasked.json', "echo '{}' > .lokal/unmasked.json", 'rm -rf .lokal', 'git clean -fdX', 'Remove-Item .lokal -Recurse']) {
+    for (const command of ['rm .lokal/unmasked.json', 'rm -r .lokal/unmasked', "echo '{}' > .lokal/unmasked.json", 'rm -rf .lokal', 'git clean -fdX', 'Remove-Item .lokal -Recurse']) {
       assert.equal(guard({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd: dir }).status, 2, command);
     }
-    const edit = guard({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: path.join(dir, '.lokal', 'unmasked.json'), content: '{}' }, cwd: dir });
+    const edit = guard({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: recordPath, content: '{}' }, cwd: dir });
     assert.equal(edit.status, 2);
-    assert.equal(guard({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'cat .lokal/unmasked.json' }, cwd: dir }).status, 0, 'reading the list is fine');
+    assert.equal(guard({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `cat .lokal/unmasked/${record}` }, cwd: dir }).status, 0, 'reading the list is fine');
     rmSync(path.join(dir, '.lokal'), { recursive: true, force: true });
     assert.equal(guard({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: note }, cwd: dir }).status, 2, 'the copy in the cache');
   } finally {

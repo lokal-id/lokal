@@ -25,7 +25,7 @@ import path from 'node:path';
 import { PII_TYPES, type PiiMatch, type PiiType } from '@lokal-id/core';
 import {
   detectConfigured, GUARD_MAX_ZIP_BYTES, GUARD_SAMPLE_BYTES, globToRegExp, loadConfig, loadDocument, loadIgnore, loadUnmasked,
-  policyFor, previewForModel, recordUnmasked, unmaskedCopy,
+  isUnmaskedRegistryPath, policyFor, previewForModel, recordUnmasked,
   walkFiles, type Document, type SamaranConfig,
 } from './files.ts';
 import { countMatches, writeAudit } from './audit.ts';
@@ -349,7 +349,7 @@ function readTool(
 
 const TAMPER_MESSAGE = [
   'Samaran blocked this: it would change or delete the list of files write_file_unmasked wrote with real values',
-  '(.lokal/unmasked.json, or its copy in the user cache), after which they could be read like source code.',
+  '(the records in .lokal or the user cache), after which they could be read like source code.',
   'If those files no longer hold real data, the user can delete them and the list by hand.',
 ].join(' ');
 // A command that names either copy of the list, or Lokal's folder, and changes files: deletes, moves, writes, edits.
@@ -383,7 +383,7 @@ function askSettings(what: string): Verdict {
  * A command that would switch protection off: run `trust`, write the trust record, empty or delete the list of
  * unmasked files (while there is one), or change a settings file (asked about).
  */
-function protectionTamper(command: string, root: string): Verdict | undefined {
+function protectionTamper(command: string, hasUnmasked: boolean): Verdict | undefined {
   // As the shell reads it: quotes and escapes taken out (`tru""st`, `t\rust`, PowerShell's `tr`ust`). `trust` itself
   // approves nothing without a terminal and a typed "yes"; this only tells the agent so early.
   const bare = command.replace(/["'`\\^]/g, '');
@@ -392,7 +392,7 @@ function protectionTamper(command: string, root: string): Verdict | undefined {
   if ((TRUST_PATH.test(command) || TRUST_PATH.test(bare) || /lokal-id[\s\S]*trust\.json/i.test(bare)) && changes) return block(TRUST_MESSAGE);
   // `git clean -x` and `-X` delete ignored files, and .lokal/ is ignored.
   const registry = (REGISTRY_PATH.test(command) && changes) || /\bgit\s+clean\b[^\n;&|]*\s-[a-zA-Z]*[xX]/.test(command);
-  if (registry && loadUnmasked(root).length) return block(TAMPER_MESSAGE);
+  if (registry && hasUnmasked) return block(TAMPER_MESSAGE);
   if (SETTINGS_PATH.test(command) && changes) return askSettings('perintah ini');
   return undefined;
 }
@@ -567,7 +567,8 @@ export function evaluate(input: HookInput, projectRoot?: string): Verdict | unde
     process.stderr.write(`samaran-guard: ${(e as Error).message} The guard checks with its defaults until it is fixed.\n`);
   }
   // Files write_file_unmasked wrote hold real values whatever their extension: checked like data files.
-  markDataFiles(loadUnmasked(root));
+  const unmasked = loadUnmasked(root);
+  markDataFiles(unmasked);
 
   if (input.hook_event_name === 'UserPromptSubmit' && input.prompt) {
     if (BYPASS.test(input.prompt)) return undefined;
@@ -606,9 +607,9 @@ export function evaluate(input: HookInput, projectRoot?: string): Verdict | unde
     case 'Grep':
       return grepTool(tool, cwd, ignored);
     case 'Bash':
-      return tool.command ? protectionTamper(tool.command, root) ?? shellTool(tool.command, cwd, false, ignored, root) : undefined;
+      return tool.command ? protectionTamper(tool.command, unmasked.length > 0) ?? shellTool(tool.command, cwd, false, ignored, root) : undefined;
     case 'PowerShell':
-      return tool.command ? protectionTamper(tool.command, root) ?? shellTool(tool.command, cwd, true, ignored, root) : undefined;
+      return tool.command ? protectionTamper(tool.command, unmasked.length > 0) ?? shellTool(tool.command, cwd, true, ignored, root) : undefined;
     case 'Write':
     case 'Edit':
     case 'MultiEdit':
@@ -617,7 +618,7 @@ export function evaluate(input: HookInput, projectRoot?: string): Verdict | unde
       if (!target) return undefined;
       const file = path.resolve(root, target);
       if (TRUST_PATH.test(file.split(path.sep).join('/'))) return block(TRUST_MESSAGE);
-      if (loadUnmasked(root).length && [path.join(root, '.lokal', 'unmasked.json'), unmaskedCopy(root)].some((f) => path.resolve(f) === file)) {
+      if (unmasked.length && isUnmaskedRegistryPath(root, file)) {
         return block(TAMPER_MESSAGE);
       }
       return SETTINGS_PATH.test(` ${file}`) ? askSettings(`${input.tool_name} ${path.relative(root, file) || file}`) : undefined;

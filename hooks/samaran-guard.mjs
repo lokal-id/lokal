@@ -4317,40 +4317,76 @@ function detectConfigured(text, options, config2) {
   return config2.allow.length ? found.filter((m) => !config2.allow.includes(m.value)) : found;
 }
 var UNMASKED_LIST = path.join(".lokal", "unmasked.json");
-function unmaskedCopy(root) {
+function legacyUnmaskedCopy(root) {
   return path.join(cacheDir(), "unmasked", `${projectKey(root)}.json`);
+}
+function unmaskedRecordDirs(root) {
+  return {
+    project: path.join(root, ".lokal", "unmasked"),
+    cache: path.join(cacheDir(), "unmasked", projectKey(root))
+  };
+}
+function isUnmaskedRegistryPath(root, file) {
+  const dirs = unmaskedRecordDirs(root);
+  return [path.join(root, UNMASKED_LIST), legacyUnmaskedCopy(root)].some((legacy) => path.relative(legacy, file) === "") || [dirs.project, dirs.cache].some((dir) => !outside(dir, file));
 }
 function readList(file, root) {
   try {
     const list = JSON.parse(readFileSync(file, "utf8"));
-    return Array.isArray(list.files) ? list.files.filter((f) => typeof f === "string").map((f) => path.resolve(root, f)) : [];
+    if (!Array.isArray(list.files)) return [];
+    return list.files.filter((f) => typeof f === "string" && f !== "" && !path.isAbsolute(f)).map((f) => path.resolve(root, f)).filter((f) => f !== root && !outside(root, f));
+  } catch {
+    return [];
+  }
+}
+function readUnmaskedRecords(dir, root) {
+  try {
+    return readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isFile() && /^[a-f0-9]{64}\.json$/.test(entry.name)).flatMap((entry) => readList(path.join(dir, entry.name), root));
   } catch {
     return [];
   }
 }
 function loadUnmasked(root) {
-  return [.../* @__PURE__ */ new Set([...readList(path.join(root, UNMASKED_LIST), root), ...readList(unmaskedCopy(root), root)])];
+  const dirs = unmaskedRecordDirs(root);
+  return [.../* @__PURE__ */ new Set([
+    ...readList(path.join(root, UNMASKED_LIST), root),
+    ...readList(legacyUnmaskedCopy(root), root),
+    ...readUnmaskedRecords(dirs.project, root),
+    ...readUnmaskedRecords(dirs.cache, root)
+  ])];
 }
 function recordUnmasked(root, file) {
-  try {
-    const rel = toPosix(path.relative(root, file));
-    const known = loadUnmasked(root).map((f) => toPosix(path.relative(root, f)));
-    const files = known.includes(rel) ? known : [...known, rel];
-    const text = `${JSON.stringify({ files }, null, 2)}
+  const abs = path.resolve(root, file);
+  if (path.relative(root, abs) === "" || outside(root, abs)) return false;
+  const rel = toPosix(path.relative(root, abs));
+  const key = process.platform === "win32" ? rel.toLowerCase() : rel;
+  const name = `${createHash("sha256").update(key).digest("hex")}.json`;
+  const text = `${JSON.stringify({ files: [rel] })}
 `;
+  const dirs = unmaskedRecordDirs(root);
+  let recorded = false;
+  try {
     const dir = path.join(root, ".lokal");
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
-      writeFileSync(path.join(dir, ".gitignore"), "*\n");
+      writeInRoot(root, path.join(dir, ".gitignore"), "*\n");
     }
-    writeInRoot(root, UNMASKED_LIST, text);
-    const copy = unmaskedCopy(root);
-    mkdirSync(path.dirname(copy), { recursive: true });
-    writeFileSync(copy, text);
+    writeInRoot(root, path.join(dirs.project, name), text);
+    recorded = true;
   } catch (e) {
-    process.stderr.write(`lokal: could not record ${file} as holding real data: ${e.message}
+    process.stderr.write(`lokal: could not record the unmasked output in the project: ${e.message}
 `);
   }
+  try {
+    const cache = cacheDir();
+    mkdirSync(cache, { recursive: true });
+    writeInRoot(cache, path.join(dirs.cache, name), text);
+    recorded = true;
+  } catch (e) {
+    process.stderr.write(`lokal: could not record the unmasked output in the cache: ${e.message}
+`);
+  }
+  return recorded;
 }
 function loadIgnore(root, options = {}) {
   const file = path.join(root, ".samaranignore");
@@ -5758,7 +5794,7 @@ function readTool(file, shownAs, root, ignored, lines) {
 }
 var TAMPER_MESSAGE = [
   "Samaran blocked this: it would change or delete the list of files write_file_unmasked wrote with real values",
-  "(.lokal/unmasked.json, or its copy in the user cache), after which they could be read like source code.",
+  "(the records in .lokal or the user cache), after which they could be read like source code.",
   "If those files no longer hold real data, the user can delete them and the list by hand."
 ].join(" ");
 var REGISTRY_PATH = /\.lokal(?:[\\/]|\b)|unmasked\.json|lokal-id[\\/]unmasked/i;
@@ -5779,13 +5815,13 @@ function askSettings(what) {
     ].join(" ")
   };
 }
-function protectionTamper(command, root) {
+function protectionTamper(command, hasUnmasked) {
   const bare = command.replace(/["'`\\^]/g, "");
   if (TRUST_COMMAND.test(command) || TRUST_COMMAND.test(bare)) return block(TRUST_MESSAGE);
   const changes = CHANGES_FILES.test(command);
   if ((TRUST_PATH.test(command) || TRUST_PATH.test(bare) || /lokal-id[\s\S]*trust\.json/i.test(bare)) && changes) return block(TRUST_MESSAGE);
   const registry = REGISTRY_PATH.test(command) && changes || /\bgit\s+clean\b[^\n;&|]*\s-[a-zA-Z]*[xX]/.test(command);
-  if (registry && loadUnmasked(root).length) return block(TAMPER_MESSAGE);
+  if (registry && hasUnmasked) return block(TAMPER_MESSAGE);
   if (SETTINGS_PATH.test(command) && changes) return askSettings("perintah ini");
   return void 0;
 }
@@ -5936,7 +5972,8 @@ function evaluate(input, projectRoot) {
     process.stderr.write(`samaran-guard: ${e.message} The guard checks with its defaults until it is fixed.
 `);
   }
-  markDataFiles(loadUnmasked(root));
+  const unmasked = loadUnmasked(root);
+  markDataFiles(unmasked);
   if (input.hook_event_name === "UserPromptSubmit" && input.prompt) {
     if (BYPASS.test(input.prompt)) return void 0;
     const held = Object.entries(config.policy ?? {}).filter(([type, action]) => (action === "block" || action === "route") && PII_TYPES.includes(type)).map(([type]) => type);
@@ -5968,9 +6005,9 @@ function evaluate(input, projectRoot) {
     case "Grep":
       return grepTool(tool, cwd, ignored);
     case "Bash":
-      return tool.command ? protectionTamper(tool.command, root) ?? shellTool(tool.command, cwd, false, ignored, root) : void 0;
+      return tool.command ? protectionTamper(tool.command, unmasked.length > 0) ?? shellTool(tool.command, cwd, false, ignored, root) : void 0;
     case "PowerShell":
-      return tool.command ? protectionTamper(tool.command, root) ?? shellTool(tool.command, cwd, true, ignored, root) : void 0;
+      return tool.command ? protectionTamper(tool.command, unmasked.length > 0) ?? shellTool(tool.command, cwd, true, ignored, root) : void 0;
     case "Write":
     case "Edit":
     case "MultiEdit":
@@ -5979,7 +6016,7 @@ function evaluate(input, projectRoot) {
       if (!target) return void 0;
       const file = path4.resolve(root, target);
       if (TRUST_PATH.test(file.split(path4.sep).join("/"))) return block(TRUST_MESSAGE);
-      if (loadUnmasked(root).length && [path4.join(root, ".lokal", "unmasked.json"), unmaskedCopy(root)].some((f) => path4.resolve(f) === file)) {
+      if (unmasked.length && isUnmaskedRegistryPath(root, file)) {
         return block(TAMPER_MESSAGE);
       }
       return SETTINGS_PATH.test(` ${file}`) ? askSettings(`${input.tool_name} ${path4.relative(root, file) || file}`) : void 0;

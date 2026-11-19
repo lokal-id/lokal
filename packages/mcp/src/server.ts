@@ -673,7 +673,7 @@ export function createServer(
       }
       const restored = placeholders.filter((p) => !unknown.includes(p));
       // Real values are in it now: the guard checks it from here on like a data file, whatever its extension.
-      if (restored.length) recordUnmasked(root, abs);
+      const recorded = !restored.length || recordUnmasked(root, abs);
       audit('restored', 'write_file_unmasked', {
         file: toPosix(path.relative(root, abs)),
         counts: countMatches(restored.map((p) => ({ type: p.slice(1, p.lastIndexOf('_')) }))),
@@ -681,7 +681,8 @@ export function createServer(
       return json({
         wrote: toPosix(path.relative(root, abs)),
         bytes: Buffer.byteLength(restoredText),
-        restored: placeholders.filter((p) => !unknown.includes(p)).length,
+        restored: restored.length,
+        guardWarning: recorded ? undefined : 'The file contains restored personal data, but neither guard record could be written.',
         unknownPlaceholders: unknown.length ? unknown : undefined,
         warning: unknown.length
           ? `${unknown.length} placeholder(s) were not made in this session and were written as they are. If you wrote them (a made-up or mistyped placeholder), fix the content and write it again; if they come from the data itself, such as a template, this is expected.`

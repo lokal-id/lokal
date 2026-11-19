@@ -679,48 +679,87 @@ export function detectConfigured(text: string, options: DetectOptions, config: S
 // Only paths, never contents; in .lokal/, which is kept out of git.
 const UNMASKED_LIST = path.join('.lokal', 'unmasked.json');
 
-/**
- * The same list outside the project, in the user's cache (keyed by the project's real path): an agent that deletes or
- * empties .lokal/unmasked.json does not make the files readable again, and the guard holds back commands that touch
- * either copy.
- */
-export function unmaskedCopy(root: string): string {
+function legacyUnmaskedCopy(root: string): string {
   return path.join(cacheDir(), 'unmasked', `${projectKey(root)}.json`);
+}
+
+export function unmaskedRecordDirs(root: string): { project: string; cache: string } {
+  return {
+    project: path.join(root, '.lokal', 'unmasked'),
+    cache: path.join(cacheDir(), 'unmasked', projectKey(root)),
+  };
+}
+
+export function isUnmaskedRegistryPath(root: string, file: string): boolean {
+  const dirs = unmaskedRecordDirs(root);
+  return [path.join(root, UNMASKED_LIST), legacyUnmaskedCopy(root)].some((legacy) => path.relative(legacy, file) === '')
+    || [dirs.project, dirs.cache].some((dir) => !outside(dir, file));
 }
 
 function readList(file: string, root: string): string[] {
   try {
     const list = JSON.parse(readFileSync(file, 'utf8')) as { files?: unknown };
-    return Array.isArray(list.files) ? list.files.filter((f): f is string => typeof f === 'string').map((f) => path.resolve(root, f)) : [];
+    if (!Array.isArray(list.files)) return [];
+    return list.files
+      .filter((f): f is string => typeof f === 'string' && f !== '' && !path.isAbsolute(f))
+      .map((f) => path.resolve(root, f))
+      .filter((f) => f !== root && !outside(root, f));
   } catch {
     return [];
   }
 }
 
-/** The files write_file_unmasked wrote in this project, as absolute paths: both copies of the list together. */
-export function loadUnmasked(root: string): string[] {
-  return [...new Set([...readList(path.join(root, UNMASKED_LIST), root), ...readList(unmaskedCopy(root), root)])];
+function readUnmaskedRecords(dir: string, root: string): string[] {
+  try {
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && /^[a-f0-9]{64}\.json$/.test(entry.name))
+      .flatMap((entry) => readList(path.join(dir, entry.name), root));
+  } catch {
+    return [];
+  }
 }
 
-/** Adds a file write_file_unmasked wrote to both lists. Never throws: the write itself already happened. */
-export function recordUnmasked(root: string, file: string): void {
+/** Union of both record directories and lists written by earlier versions. */
+export function loadUnmasked(root: string): string[] {
+  const dirs = unmaskedRecordDirs(root);
+  return [...new Set([
+    ...readList(path.join(root, UNMASKED_LIST), root),
+    ...readList(legacyUnmaskedCopy(root), root),
+    ...readUnmaskedRecords(dirs.project, root),
+    ...readUnmaskedRecords(dirs.cache, root),
+  ])];
+}
+
+/** One atomic record per output so independent writers cannot drop each other's paths. */
+export function recordUnmasked(root: string, file: string): boolean {
+  const abs = path.resolve(root, file);
+  if (path.relative(root, abs) === '' || outside(root, abs)) return false;
+  const rel = toPosix(path.relative(root, abs));
+  const key = process.platform === 'win32' ? rel.toLowerCase() : rel;
+  const name = `${createHash('sha256').update(key).digest('hex')}.json`;
+  const text = `${JSON.stringify({ files: [rel] })}\n`;
+  const dirs = unmaskedRecordDirs(root);
+  let recorded = false;
   try {
-    const rel = toPosix(path.relative(root, file));
-    const known = loadUnmasked(root).map((f) => toPosix(path.relative(root, f)));
-    const files = known.includes(rel) ? known : [...known, rel];
-    const text = `${JSON.stringify({ files }, null, 2)}\n`;
     const dir = path.join(root, '.lokal');
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
-      writeFileSync(path.join(dir, '.gitignore'), '*\n');
+      writeInRoot(root, path.join(dir, '.gitignore'), '*\n');
     }
-    writeInRoot(root, UNMASKED_LIST, text);
-    const copy = unmaskedCopy(root);
-    mkdirSync(path.dirname(copy), { recursive: true });
-    writeFileSync(copy, text);
+    writeInRoot(root, path.join(dirs.project, name), text);
+    recorded = true;
   } catch (e) {
-    process.stderr.write(`lokal: could not record ${file} as holding real data: ${(e as Error).message}\n`);
+    process.stderr.write(`lokal: could not record the unmasked output in the project: ${(e as Error).message}\n`);
   }
+  try {
+    const cache = cacheDir();
+    mkdirSync(cache, { recursive: true });
+    writeInRoot(cache, path.join(dirs.cache, name), text);
+    recorded = true;
+  } catch (e) {
+    process.stderr.write(`lokal: could not record the unmasked output in the cache: ${(e as Error).message}\n`);
+  }
+  return recorded;
 }
 
 /**
