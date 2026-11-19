@@ -18659,11 +18659,11 @@
   "matches": []
  },
  {
-  "text": ".lokal",
+  "text": "utf8",
   "matches": []
  },
  {
-  "text": "unmasked.json",
+  "text": "docs/catatan.md",
   "matches": []
  },
  {
@@ -18671,31 +18671,7 @@
   "matches": []
  },
  {
-  "text": ".lokal",
-  "matches": []
- },
- {
-  "text": "unmasked.json",
-  "matches": []
- },
- {
-  "text": "utf8",
-  "matches": []
- },
- {
-  "text": "3201011508950001",
-  "matches": [
-   [
-    "NIK",
-    0,
-    16,
-    "3201011508950001",
-    "high"
-   ]
-  ]
- },
- {
-  "text": "only paths",
+  "text": "docs/catatan.md",
   "matches": []
  },
  {
@@ -18735,6 +18711,10 @@
   "matches": []
  },
  {
+  "text": "rm -r .lokal/unmasked",
+  "matches": []
+ },
+ {
   "text": "{}",
   "matches": []
  },
@@ -18767,14 +18747,6 @@
   "matches": []
  },
  {
-  "text": ".lokal",
-  "matches": []
- },
- {
-  "text": "unmasked.json",
-  "matches": []
- },
- {
   "text": "{}",
   "matches": []
  },
@@ -18784,10 +18756,6 @@
  },
  {
   "text": "Bash",
-  "matches": []
- },
- {
-  "text": "cat .lokal/unmasked.json",
   "matches": []
  },
  {
