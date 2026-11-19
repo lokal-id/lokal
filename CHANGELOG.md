@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format is based on 
 
 ## [Unreleased]
 
+## [0.18.2] - 2026-11-20
+
 ### Fixed
 
 - Keep restored-file records from concurrent MCP sessions independently in both the project and machine cache. Update the guard hook and MCP server together.
@@ -486,7 +488,8 @@ First public release.
 - Claude Code plugin and marketplace manifests.
 - End-to-end evaluation against real Claude Code sessions (`npm run eval`).
 
-[Unreleased]: https://github.com/lokal-id/lokal/compare/v0.18.1...HEAD
+[Unreleased]: https://github.com/lokal-id/lokal/compare/v0.18.2...HEAD
+[0.18.2]: https://github.com/lokal-id/lokal/compare/v0.18.1...v0.18.2
 [0.18.1]: https://github.com/lokal-id/lokal/compare/v0.18.0...v0.18.1
 [0.18.0]: https://github.com/lokal-id/lokal/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/lokal-id/lokal/compare/v0.16.1...v0.17.0

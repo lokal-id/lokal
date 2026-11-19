@@ -102,7 +102,7 @@ Update the guard hook and MCP server together when upgrading. The guard reads re
 
 ## Lokal Scan
 
-`lokal-mcp scan --staged` (pre-commit) or `lokal-mcp scan --diff origin/main` (CI) fails when a commit or pull request adds Indonesian personal data, and shows each value partially masked. `lokal-mcp scan [path…]` checks whole files. There is a GitHub Action too: `uses: lokal-id/lokal@v0.18.1`. See the [Lokal README](https://github.com/lokal-id/lokal#lokal-scan-keep-personal-data-out-of-the-repository).
+`lokal-mcp scan --staged` (pre-commit) or `lokal-mcp scan --diff origin/main` (CI) fails when a commit or pull request adds Indonesian personal data, and shows each value partially masked. `lokal-mcp scan [path…]` checks whole files. There is a GitHub Action too: `uses: lokal-id/lokal@v0.18.2`. See the [Lokal README](https://github.com/lokal-id/lokal#lokal-scan-keep-personal-data-out-of-the-repository).
 
 ## Remote (HTTP) mode
 
