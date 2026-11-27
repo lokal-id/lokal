@@ -67,7 +67,7 @@
   "plain": "Rp0",
   "decimals": "-Rp0,40",
   "noSymbol": "0",
-  "short": "-Rp0"
+  "short": "Rp0"
  },
  {
   "amount": 1.005,
@@ -123,7 +123,7 @@
   "plain": "Rp0",
   "decimals": "-Rp0,01",
   "noSymbol": "0",
-  "short": "-Rp0"
+  "short": "Rp0"
  },
  {
   "amount": 99999.995,
@@ -368,7 +368,7 @@
   "plain": "Rp0",
   "decimals": "-Rp0,19",
   "noSymbol": "0",
-  "short": "-Rp0"
+  "short": "Rp0"
  },
  {
   "amount": 5991.01,

@@ -24,6 +24,8 @@ def test_rounding_across_units_and_huge_numbers() -> None:
     assert format_rupiah_short(999999) == 'Rp1 jt'
     assert format_rupiah_short(999.96) == 'Rp1 rb'
     assert format_rupiah_short(950000) == 'Rp950 rb'
+    assert format_rupiah_short(-0.4) == 'Rp0'
+    assert format_rupiah_short(-0.5) == '-Rp1'
     assert format_rupiah(1e21) == 'Rp1.000.000.000.000.000.000.000'
     assert format_rupiah(0.125, decimals=True) == 'Rp0,13'
     assert format_rupiah(2.5) == 'Rp3'  # half up like Math.round, not Python's half to even
