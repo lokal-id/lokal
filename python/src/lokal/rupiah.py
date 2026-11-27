@@ -63,7 +63,11 @@ def format_rupiah_short(amount: Number) -> str:
         if i > 0 and one_decimal(size) >= 1000:
             return short(*_SHORT_UNITS[i - 1])
         return short(size, unit)
-    return short(10**3, 'rb') if round_half_up(a) >= 1000 else f'{sign}Rp{round_half_up(a)}'
+    rounded = round_half_up(a)
+    if rounded >= 1000:
+        return short(10**3, 'rb')
+    # -0.4 rounds to 0; show "Rp0" like format_rupiah, not "-Rp0".
+    return f'{sign if rounded else ""}Rp{rounded}'
 
 
 @dataclass(slots=True)

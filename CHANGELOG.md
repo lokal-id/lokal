@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format is based on 
 
 ## [Unreleased]
 
+### Fixed
+
+- Show `Rp0` instead of `-Rp0` from `formatRupiahShort` / `format_rupiah_short` when a small negative amount rounds to zero, matching `formatRupiah`.
+
 ## [0.18.2] - 2026-11-20
 
 ### Fixed

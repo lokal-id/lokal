@@ -88,6 +88,8 @@ test('pembulatan yang melewati satuan dan angka sangat besar', () => {
   assert.equal(formatRupiahShort(999999), 'Rp1 jt');
   assert.equal(formatRupiahShort(999.96), 'Rp1 rb');
   assert.equal(formatRupiahShort(950000), 'Rp950 rb');
+  assert.equal(formatRupiahShort(-0.4), 'Rp0');
+  assert.equal(formatRupiahShort(-0.5), '-Rp1');
   assert.equal(formatRupiah(1e21), 'Rp1.000.000.000.000.000.000.000');
   assert.equal(formatRupiah(0.125, { decimals: true }), 'Rp0,13');
   assert.equal(formatRupiah(2.5), 'Rp3');

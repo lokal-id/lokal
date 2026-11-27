@@ -44,7 +44,10 @@ export function formatRupiahShort(amount: number): string {
     if (i > 0 && Math.round((abs / size) * 10) / 10 >= 1000) return short(...SHORT_UNITS[i - 1]!);
     return short(size, unit);
   }
-  return Math.round(abs) >= 1000 ? short(1e3, 'rb') : `${sign}Rp${Math.round(abs)}`;
+  const rounded = Math.round(abs);
+  if (rounded >= 1000) return short(1e3, 'rb');
+  // -0.4 rounds to 0; show "Rp0" like formatRupiah, not "-Rp0".
+  return `${rounded === 0 ? '' : sign}Rp${rounded}`;
 }
 
 export interface ParsedRupiah {
